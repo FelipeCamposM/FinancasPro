@@ -1,0 +1,133 @@
+import { Router } from "express";
+import {
+  summary as getSummary,
+  gastosPorCategoria as getGastosPorCategoria,
+  rendaVsGastos as getRendaVsGastos,
+  gastosPorFormaPagamento as getGastosPorFormaPagamento,
+} from "../controllers/dashboard.controller";
+import { authenticate } from "../middlewares/auth.middleware";
+
+const router = Router();
+
+/**
+ * @swagger
+ * tags:
+ *   name: Dashboard
+ *   description: Dados agregados para o painel de controle
+ */
+
+/**
+ * @swagger
+ * /dashboard/summary:
+ *   get:
+ *     tags: [Dashboard]
+ *     summary: Resumo financeiro de um mês
+ *     parameters:
+ *       - in: query
+ *         name: mes
+ *         description: Mês de referência (YYYY-MM). Default é o mês atual.
+ *         schema: { type: string, example: '2025-06' }
+ *     responses:
+ *       200:
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 total_renda:         { type: number, example: 5000.00 }
+ *                 total_gastos:        { type: number, example: 3200.00 }
+ *                 saldo:               { type: number, example: 1800.00 }
+ *                 parcelas_pendentes:
+ *                   type: object
+ *                   properties:
+ *                     count: { type: integer, example: 4 }
+ *                     total: { type: number,  example: 450.00 }
+ */
+router.get("/summary", authenticate, getSummary);
+
+/**
+ * @swagger
+ * /dashboard/gastos-por-categoria:
+ *   get:
+ *     tags: [Dashboard]
+ *     summary: Gastos agrupados por categoria no mês
+ *     parameters:
+ *       - in: query
+ *         name: mes
+ *         description: Mês de referência (YYYY-MM). Default é o mês atual.
+ *         schema: { type: string, example: '2025-06' }
+ *     responses:
+ *       200:
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   categoria_id:   { type: integer }
+ *                   nome:           { type: string }
+ *                   cor:            { type: string }
+ *                   icone:          { type: string }
+ *                   quantidade:     { type: integer }
+ *                   total:          { type: number }
+ */
+router.get("/gastos-por-categoria", authenticate, getGastosPorCategoria);
+
+/**
+ * @swagger
+ * /dashboard/renda-vs-gastos:
+ *   get:
+ *     tags: [Dashboard]
+ *     summary: Comparativo renda x gastos por mês
+ *     parameters:
+ *       - in: query
+ *         name: meses
+ *         description: Quantidade de meses retroativos. Default 6.
+ *         schema: { type: integer, default: 6, maximum: 24 }
+ *     responses:
+ *       200:
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   mes:          { type: string, example: '2025-06' }
+ *                   total_renda:  { type: number }
+ *                   total_gastos: { type: number }
+ */
+router.get("/renda-vs-gastos", authenticate, getRendaVsGastos);
+
+/**
+ * @swagger
+ * /dashboard/gastos-por-forma-pagamento:
+ *   get:
+ *     tags: [Dashboard]
+ *     summary: Gastos agrupados por forma de pagamento no mês
+ *     parameters:
+ *       - in: query
+ *         name: mes
+ *         description: Mês de referência (YYYY-MM). Default é o mês atual.
+ *         schema: { type: string, example: '2025-06' }
+ *     responses:
+ *       200:
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   forma_pagamento: { type: string }
+ *                   quantidade:      { type: integer }
+ *                   total:           { type: number }
+ */
+router.get(
+  "/gastos-por-forma-pagamento",
+  authenticate,
+  getGastosPorFormaPagamento,
+);
+
+export default router;

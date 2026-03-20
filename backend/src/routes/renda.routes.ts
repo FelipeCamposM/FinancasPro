@@ -1,0 +1,151 @@
+import { Router } from "express";
+import {
+  listRenda,
+  getRenda,
+  createRenda,
+  updateRenda,
+  deleteRenda,
+} from "../controllers/renda.controller";
+import { authenticate } from "../middlewares/auth.middleware";
+import { paginate } from "../middlewares/pagination.middleware";
+import { validate } from "../middlewares/validate.middleware";
+import { createRendaSchema, updateRendaSchema } from "../schemas/renda.schema";
+
+const router = Router();
+
+/**
+ * @swagger
+ * tags:
+ *   name: Renda
+ *   description: Registros de entradas financeiras
+ */
+
+/**
+ * @swagger
+ * /renda:
+ *   get:
+ *     tags: [Renda]
+ *     summary: Listar entradas de renda do usuário
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, default: 1 }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 10 }
+ *       - in: query
+ *         name: tipo
+ *         schema: { type: string, enum: [salario, freelance, investimento, aluguel, bonus, outro] }
+ *       - in: query
+ *         name: categoria_id
+ *         schema: { type: integer }
+ *       - in: query
+ *         name: mes
+ *         description: Filtrar por mês de referência (formato YYYY-MM)
+ *         schema: { type: string, example: '2025-06' }
+ *       - in: query
+ *         name: data_inicio
+ *         schema: { type: string, format: date }
+ *       - in: query
+ *         name: data_fim
+ *         schema: { type: string, format: date }
+ *     responses:
+ *       200:
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:       { type: array, items: { $ref: '#/components/schemas/Renda' } }
+ *                 pagination: { $ref: '#/components/schemas/Pagination' }
+ *   post:
+ *     tags: [Renda]
+ *     summary: Registrar nova entrada de renda
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [descricao, valor, tipo, origem, mes_referencia, data_recebimento]
+ *             properties:
+ *               descricao:              { type: string, example: Salário Maio }
+ *               valor:                  { type: number, example: 5000.00 }
+ *               tipo:                   { type: string, enum: [salario, freelance, investimento, aluguel, bonus, outro] }
+ *               origem:                 { type: string, example: Empresa XYZ }
+ *               categoria_id:           { type: integer }
+ *               mes_referencia:         { type: string, format: date, example: '2025-06-01' }
+ *               data_recebimento:       { type: string, format: date, example: '2025-06-05' }
+ *               recorrente:             { type: boolean, default: false }
+ *               frequencia_recorrencia: { type: string, enum: [diario, semanal, quinzenal, mensal, bimestral, trimestral, semestral, anual] }
+ *               data_fim_recorrencia:   { type: string, format: date }
+ *               observacoes:            { type: string }
+ *     responses:
+ *       201:
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/Renda' }
+ *       422: { description: Dados inválidos }
+ */
+router.get("/", authenticate, paginate, listRenda);
+router.post("/", authenticate, validate(createRendaSchema), createRenda);
+
+/**
+ * @swagger
+ * /renda/{id}:
+ *   get:
+ *     tags: [Renda]
+ *     summary: Obter registro de renda por ID
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/Renda' }
+ *       404: { description: Não encontrado }
+ *   put:
+ *     tags: [Renda]
+ *     summary: Atualizar registro de renda
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               descricao:        { type: string }
+ *               valor:            { type: number }
+ *               tipo:             { type: string }
+ *               origem:           { type: string }
+ *               mes_referencia:   { type: string, format: date }
+ *               data_recebimento: { type: string, format: date }
+ *               observacoes:      { type: string, nullable: true }
+ *     responses:
+ *       200:
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/Renda' }
+ *   delete:
+ *     tags: [Renda]
+ *     summary: Remover registro de renda
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       204: { description: Removido }
+ */
+router.get("/:id", authenticate, getRenda);
+router.put("/:id", authenticate, validate(updateRendaSchema), updateRenda);
+router.delete("/:id", authenticate, deleteRenda);
+
+export default router;

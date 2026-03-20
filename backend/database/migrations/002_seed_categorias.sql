@@ -1,0 +1,171 @@
+-- ============================================================
+-- Migration 002 — Seed: Categorias Globais Padrão
+-- user_id = NULL → disponíveis para todos os usuários
+-- ============================================================
+
+INSERT INTO
+    categorias (
+        user_id,
+        nome,
+        cor,
+        icone,
+        tipo
+    )
+VALUES
+    -- Gastos
+    (
+        NULL,
+        'Alimentação',
+        '#EF4444',
+        '🍽️',
+        'gasto'
+    ),
+    (
+        NULL,
+        'Transporte',
+        '#F97316',
+        '🚗',
+        'gasto'
+    ),
+    (
+        NULL,
+        'Saúde',
+        '#06B6D4',
+        '💊',
+        'gasto'
+    ),
+    (
+        NULL,
+        'Educação',
+        '#8B5CF6',
+        '📚',
+        'gasto'
+    ),
+    (
+        NULL,
+        'Lazer',
+        '#EC4899',
+        '🎮',
+        'gasto'
+    ),
+    (
+        NULL,
+        'Moradia',
+        '#6366F1',
+        '🏠',
+        'gasto'
+    ),
+    (
+        NULL,
+        'Vestuário',
+        '#F59E0B',
+        '👕',
+        'gasto'
+    ),
+    (
+        NULL,
+        'Tecnologia',
+        '#3B82F6',
+        '💻',
+        'gasto'
+    ),
+    (
+        NULL,
+        'Assinaturas',
+        '#14B8A6',
+        '📱',
+        'gasto'
+    ),
+    (
+        NULL,
+        'Pets',
+        '#A78BFA',
+        '🐾',
+        'gasto'
+    ),
+    (
+        NULL,
+        'Viagem',
+        '#FB923C',
+        '✈️',
+        'gasto'
+    ),
+    (
+        NULL,
+        'Beleza & Estética',
+        '#F472B6',
+        '💅',
+        'gasto'
+    ),
+    (
+        NULL,
+        'Mercado',
+        '#84CC16',
+        '🛒',
+        'gasto'
+    ),
+    (
+        NULL,
+        'Farmácia',
+        '#34D399',
+        '💉',
+        'gasto'
+    ),
+    (
+        NULL,
+        'Outros Gastos',
+        '#9CA3AF',
+        '📦',
+        'gasto'
+    ),
+
+-- Rendas
+(
+    NULL,
+    'Salário',
+    '#22C55E',
+    '💰',
+    'renda'
+),
+(
+    NULL,
+    'Freelance',
+    '#EAB308',
+    '💼',
+    'renda'
+),
+(
+    NULL,
+    'Investimentos',
+    '#10B981',
+    '📈',
+    'renda'
+),
+(
+    NULL,
+    'Aluguel Recebido',
+    '#0EA5E9',
+    '🏘️',
+    'renda'
+),
+(
+    NULL,
+    'Bônus',
+    '#6366F1',
+    '🎁',
+    'renda'
+),
+(
+    NULL,
+    'Vendas',
+    '#F97316',
+    '🛍️',
+    'renda'
+),
+(
+    NULL,
+    'Outros Rendimentos',
+    '#9CA3AF',
+    '💵',
+    'renda'
+);

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { SilkBackground } from "@/components/SilkBackground";
 
 export const metadata: Metadata = {
   title: "Gerenciar Gastos",
@@ -13,7 +14,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR">
-      <body>{children}</body>
+      <body>
+        <SilkBackground />
+        {children}
+      </body>
     </html>
   );
 }

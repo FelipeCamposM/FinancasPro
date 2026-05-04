@@ -13,6 +13,8 @@ import gastosRoutes from "./routes/gastos.routes";
 import parcelasRoutes from "./routes/parcelas.routes";
 import rendaRoutes from "./routes/renda.routes";
 import dashboardRoutes from "./routes/dashboard.routes";
+import assinaturasRoutes from "./routes/assinaturas.routes";
+import routeMapRoutes from "./routes/route-map.routes";
 
 const app = express();
 
@@ -24,6 +26,7 @@ app.use(
   }),
 );
 app.use(express.json({ limit: "5mb" }));
+app.use(express.urlencoded({ extended: false }));
 
 // Health check
 app.get("/api/healthz", (_req, res) => res.json({ status: "ok" }));
@@ -48,6 +51,8 @@ app.use("/api/gastos", gastosRoutes);
 app.use("/api/parcelas", parcelasRoutes);
 app.use("/api/renda", rendaRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/assinaturas", assinaturasRoutes);
+app.use("/api/route-map", routeMapRoutes);
 
 // 404
 app.use((_req, res) => {

@@ -151,3 +151,45 @@ export const deleteUser = async (
     next(err);
   }
 };
+
+/** GET /api/users/me/api-key — retorna a API Key permanente do usuário. */
+export const getApiKey = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const { rows } = await pool.query(
+      "SELECT api_key FROM users WHERE id = $1",
+      [req.user!.userId],
+    );
+    if (!rows[0]) {
+      res.status(404).json({ error: "Usuário não encontrado" });
+      return;
+    }
+    res.json({ api_key: rows[0].api_key });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/** POST /api/users/me/api-key/rotate — gera uma nova API Key, invalidando a anterior. */
+export const rotateApiKey = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const { rows } = await pool.query(
+      "UPDATE users SET api_key = gen_random_uuid() WHERE id = $1 RETURNING api_key",
+      [req.user!.userId],
+    );
+    if (!rows[0]) {
+      res.status(404).json({ error: "Usuário não encontrado" });
+      return;
+    }
+    res.json({ api_key: rows[0].api_key });
+  } catch (err) {
+    next(err);
+  }
+};

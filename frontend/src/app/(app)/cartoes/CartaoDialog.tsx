@@ -47,6 +47,8 @@ const createSchema = z.object({
     "elo",
     "amex",
     "hipercard",
+    "alelo",
+    "paypal",
     "discover",
     "outro",
   ]),
@@ -98,12 +100,24 @@ interface Props {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
+const BANDEIRA_LOGOS: Record<string, string> = {
+  visa: "/brand_cardlogos/visa.svg",
+  mastercard: "/brand_cardlogos/mastercard.svg",
+  elo: "/brand_cardlogos/elo.svg",
+  amex: "/brand_cardlogos/amex.svg",
+  hipercard: "/brand_cardlogos/hipercard.svg",
+  alelo: "/brand_cardlogos/alelo.svg",
+  paypal: "/brand_cardlogos/paypal.svg",
+};
+
 const BANDEIRAS = [
   { value: "visa", label: "Visa" },
   { value: "mastercard", label: "Mastercard" },
   { value: "elo", label: "Elo" },
   { value: "amex", label: "American Express" },
   { value: "hipercard", label: "Hipercard" },
+  { value: "alelo", label: "Alelo" },
+  { value: "paypal", label: "PayPal" },
   { value: "discover", label: "Discover" },
   { value: "outro", label: "Outro" },
 ];
@@ -295,7 +309,7 @@ export function CartaoDialog({ open, onClose, onSuccess, cartao }: Props) {
                             <button
                               key={c}
                               type="button"
-                              className="h-6 w-6 rounded-full border border-border"
+                              className="h-6 w-6 rounded-full border border-white/20"
                               style={{ background: c }}
                               onClick={() => field.onChange(c)}
                             />
@@ -497,7 +511,18 @@ export function CartaoDialog({ open, onClose, onSuccess, cartao }: Props) {
                         <SelectContent>
                           {BANDEIRAS.map((b) => (
                             <SelectItem key={b.value} value={b.value}>
-                              {b.label}
+                              <div className="flex items-center gap-2">
+                                {BANDEIRA_LOGOS[b.value] ? (
+                                  <img
+                                    src={BANDEIRA_LOGOS[b.value]}
+                                    alt={b.label}
+                                    className="h-4 w-auto object-contain"
+                                  />
+                                ) : (
+                                  <span className="inline-block h-4 w-7 rounded-sm bg-muted" />
+                                )}
+                                {b.label}
+                              </div>
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -557,7 +582,7 @@ export function CartaoDialog({ open, onClose, onSuccess, cartao }: Props) {
                             <button
                               key={c}
                               type="button"
-                              className="h-6 w-6 rounded-full border border-border"
+                              className="h-6 w-6 rounded-full border border-white/20"
                               style={{ background: c }}
                               onClick={() => field.onChange(c)}
                             />

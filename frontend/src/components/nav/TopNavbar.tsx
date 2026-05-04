@@ -64,19 +64,19 @@ export default function TopNavbar() {
 
   return (
     <>
-      <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border bg-card px-4 shadow-sm">
+      <header className="flex h-14 shrink-0 items-center gap-2 border-b border-white/10 bg-white/[0.05] backdrop-blur-xl px-4 shadow-md ring-1 ring-white/5">
         <SidebarTrigger className="-ml-1" />
         <Separator orientation="vertical" className="mr-2 h-4" />
 
         <div className="flex flex-1 items-center gap-2">
           <Button
             variant="outline"
-            className="relative h-9 w-full max-w-xs justify-start text-sm text-muted-foreground hover:text-foreground bg-muted/40 border-border/60 hover:bg-muted"
+            className="relative h-9 w-full max-w-xs justify-start text-sm text-white/50 hover:text-white bg-white/[0.06] border-white/10 hover:bg-white/[0.10]"
             onClick={() => setOpen(true)}
           >
             <Search className="mr-2 h-4 w-4 shrink-0" />
             <span className="hidden sm:inline-flex">Pesquisar...</span>
-            <kbd className="pointer-events-none ml-auto hidden h-5 select-none items-center gap-1 rounded border bg-background px-1.5 font-mono text-[10px] font-medium sm:flex">
+            <kbd className="pointer-events-none ml-auto hidden h-5 select-none items-center gap-1 rounded border border-white/15 bg-white/[0.08] px-1.5 font-mono text-[10px] font-medium sm:flex">
               /
             </kbd>
           </Button>
@@ -86,7 +86,7 @@ export default function TopNavbar() {
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              className="flex items-center gap-2 h-9 px-2 rounded-full hover:bg-muted"
+              className="flex items-center gap-2 h-9 px-2 rounded-full hover:bg-white/[0.10] text-white"
             >
               <Avatar className="h-8 w-8">
                 {user?.avatar && (
@@ -114,17 +114,13 @@ export default function TopNavbar() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push("/perfil")}>
+            <DropdownMenuItem onClick={() => router.push("/perfil")} className="cursor-pointer">
               <User className="mr-2 h-4 w-4" />
               Ver perfil
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push("/perfil")}>
-              <User className="mr-2 h-4 w-4" />
-              Editar perfil
-            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              className="text-destructive focus:text-destructive focus:bg-destructive/10"
+              className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer"
               onClick={handleLogout}
             >
               <LogOut className="mr-2 h-4 w-4" />

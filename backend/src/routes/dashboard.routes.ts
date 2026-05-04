@@ -4,6 +4,7 @@ import {
   gastosPorCategoria as getGastosPorCategoria,
   rendaVsGastos as getRendaVsGastos,
   gastosPorFormaPagamento as getGastosPorFormaPagamento,
+  periodSummary as getPeriodSummary,
 } from "../controllers/dashboard.controller";
 import { authenticate } from "../middlewares/auth.middleware";
 
@@ -129,5 +130,31 @@ router.get(
   authenticate,
   getGastosPorFormaPagamento,
 );
+
+/**
+ * @swagger
+ * /dashboard/period-summary:
+ *   get:
+ *     tags: [Dashboard]
+ *     summary: Total de gastos e renda em um período arbitrário
+ *     parameters:
+ *       - in: query
+ *         name: data_inicio
+ *         schema: { type: string, format: date }
+ *       - in: query
+ *         name: data_fim
+ *         schema: { type: string, format: date }
+ *     responses:
+ *       200:
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 total_gastos: { type: number }
+ *                 total_renda:  { type: number }
+ *                 diferenca:    { type: number }
+ */
+router.get("/period-summary", authenticate, getPeriodSummary);
 
 export default router;

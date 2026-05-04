@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageDataState } from "@/components/ui/page-data-state";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,8 +17,20 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, CreditCard, Pencil, Trash2, Wifi } from "lucide-react";
+import {
+  Plus,
+  CreditCard,
+  Pencil,
+  Trash2,
+  Wifi,
+  AlertTriangle,
+  CircleCheck,
+  CircleX,
+  Wallet,
+} from "lucide-react";
 import { CartaoDialog, type Cartao } from "./CartaoDialog";
+import { PageShell } from "@/components/ui/page-shell";
+import { SectionHeader } from "@/components/ui/section-header";
 
 const BANDEIRA_LABELS: Record<string, string> = {
   visa: "Visa",
@@ -25,8 +38,20 @@ const BANDEIRA_LABELS: Record<string, string> = {
   elo: "Elo",
   amex: "Amex",
   hipercard: "Hipercard",
+  alelo: "Alelo",
+  paypal: "PayPal",
   discover: "Discover",
   outro: "Outro",
+};
+
+const BANDEIRA_LOGOS: Record<string, string> = {
+  visa: "/brand_cardlogos/visa.svg",
+  mastercard: "/brand_cardlogos/mastercard.svg",
+  elo: "/brand_cardlogos/elo.svg",
+  amex: "/brand_cardlogos/amex.svg",
+  hipercard: "/brand_cardlogos/hipercard.svg",
+  alelo: "/brand_cardlogos/alelo.svg",
+  paypal: "/brand_cardlogos/paypal.svg",
 };
 
 const TIPO_LABELS: Record<string, string> = {
@@ -84,9 +109,24 @@ function CreditCardVisual({ cartao }: { cartao: Cartao }) {
 
       {/* Chip / número */}
       <div className="mt-4 flex items-center gap-3">
-        <div
-          className={`h-8 w-10 rounded-md ${isLight ? "bg-black/15" : "bg-white/25"}`}
-        />
+        {BANDEIRA_LOGOS[cartao.bandeira] ? (
+          <img
+            src={BANDEIRA_LOGOS[cartao.bandeira]}
+            alt={BANDEIRA_LABELS[cartao.bandeira] ?? cartao.bandeira}
+            className="h-8 w-auto max-w-[64px] object-contain drop-shadow-sm shrink-0"
+            style={
+              isLight
+                ? { filter: "none" }
+                : { filter: "brightness(0) invert(1)" }
+            }
+          />
+        ) : (
+          <div
+            className={`h-8 w-10 rounded-md shrink-0 ${
+              isLight ? "bg-black/15" : "bg-white/25"
+            }`}
+          />
+        )}
         <p
           className="font-mono text-lg tracking-widest"
           style={{ color: textColor }}
@@ -116,10 +156,10 @@ function CreditCardVisual({ cartao }: { cartao: Cartao }) {
             className="text-xs uppercase tracking-widest opacity-60"
             style={{ color: textColor }}
           >
-            {BANDEIRA_LABELS[cartao.bandeira] ?? cartao.bandeira}
+            {TIPO_LABELS[cartao.tipo] ?? cartao.tipo}
           </p>
           <p className="text-sm font-semibold" style={{ color: textColor }}>
-            {TIPO_LABELS[cartao.tipo] ?? cartao.tipo}
+            {BANDEIRA_LABELS[cartao.bandeira] ?? cartao.bandeira}
           </p>
         </div>
       </div>
@@ -146,6 +186,7 @@ export default function CartoesPage() {
   const [selectedCartao, setSelectedCartao] = useState<Cartao | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
   const fetchCartoes = useCallback(async () => {
     setLoading(true);
@@ -156,7 +197,9 @@ export default function CartoesPage() {
         ? res.data
         : (res.data as { data: Cartao[] }).data;
       setCartoes(list ?? []);
+      setLoadError(false);
     } catch {
+      setLoadError(true);
       toast.error("Erro ao carregar cartões");
     } finally {
       setLoading(false);
@@ -192,61 +235,118 @@ export default function CartoesPage() {
     setDialogOpen(true);
   }
 
+  const ativos = cartoes.filter((cartao) => cartao.ativo).length;
+  const inativos = cartoes.length - ativos;
+  const limiteTotal = cartoes.reduce(
+    (acc, cartao) => acc + Number(cartao.limite || 0),
+    0,
+  );
+
   return (
-    <div className="flex flex-col gap-6 p-6">
+    <PageShell contentClassName="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="rounded-lg bg-primary/10 p-2">
-            <CreditCard className="h-5 w-5 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Cartões</h1>
-            <p className="text-sm text-muted-foreground">
-              {cartoes.length} {cartoes.length === 1 ? "cartão" : "cartões"}
+      <SectionHeader
+        title="Cartões"
+        description={`${cartoes.length} ${cartoes.length === 1 ? "cartão" : "cartões"}`}
+        actions={
+          <Button
+            onClick={openNew}
+            className="bg-blue-500/20 border border-blue-400/40 text-blue-300 hover:bg-blue-500/30 hover:text-blue-200 backdrop-blur"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Novo Cartão
+          </Button>
+        }
+      />
+
+      {!loading && !loadError && cartoes.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 ui-stagger">
+          <div className="rounded-xl border border-blue-400/25 bg-blue-500/10 backdrop-blur-xl p-4">
+            <div className="flex items-center gap-2 text-blue-300">
+              <CircleCheck className="h-4 w-4" />
+              <p className="text-[11px] uppercase tracking-wider font-semibold">
+                Ativos
+              </p>
+            </div>
+            <p className="mt-1 text-lg font-bold text-white tabular-nums">
+              {ativos}
+            </p>
+            <p className="text-xs text-white/55">
+              Cartões disponíveis para uso
             </p>
           </div>
+
+          <div className="rounded-xl border border-white/20 bg-white/[0.06] backdrop-blur-xl p-4">
+            <div className="flex items-center gap-2 text-white/70">
+              <CircleX className="h-4 w-4" />
+              <p className="text-[11px] uppercase tracking-wider font-semibold">
+                Inativos
+              </p>
+            </div>
+            <p className="mt-1 text-lg font-bold text-white tabular-nums">
+              {inativos}
+            </p>
+            <p className="text-xs text-white/55">Cartões fora de operação</p>
+          </div>
+
+          <div className="rounded-xl border border-violet-400/25 bg-violet-500/10 backdrop-blur-xl p-4">
+            <div className="flex items-center gap-2 text-violet-300">
+              <Wallet className="h-4 w-4" />
+              <p className="text-[11px] uppercase tracking-wider font-semibold">
+                Limite consolidado
+              </p>
+            </div>
+            <p className="mt-1 text-lg font-bold text-white tabular-nums">
+              {formatCurrency(limiteTotal)}
+            </p>
+            <p className="text-xs text-white/55">Soma dos limites informados</p>
+          </div>
         </div>
-        <Button onClick={openNew}>
-          <Plus className="mr-2 h-4 w-4" />
-          Novo Cartão
-        </Button>
-      </div>
+      )}
 
       {/* Card Grid */}
       {loading ? (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 ui-stagger">
           {Array.from({ length: 3 }).map((_, i) => (
             <Skeleton key={i} className="h-44 rounded-2xl" />
           ))}
         </div>
+      ) : loadError ? (
+        <PageDataState
+          mode="error"
+          icon={AlertTriangle}
+          title="Não foi possível carregar os cartões"
+          description="Houve um problema ao buscar os cartões cadastrados."
+          onAction={fetchCartoes}
+        />
       ) : cartoes.length === 0 ? (
-        <div className="flex flex-col items-center justify-center gap-3 py-24 text-muted-foreground">
-          <CreditCard className="h-10 w-10 opacity-25" />
-          <p className="text-sm">Nenhum cartão cadastrado</p>
-          <Button variant="outline" onClick={openNew}>
-            <Plus className="mr-2 h-4 w-4" />
-            Adicionar cartão
-          </Button>
-        </div>
+        <PageDataState
+          mode="empty"
+          icon={CreditCard}
+          title="Nenhum cartão cadastrado"
+          description="Adicione um cartão para começar a organizar suas formas de pagamento."
+        />
       ) : (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 ui-stagger">
           {cartoes.map((cartao) => (
-            <div key={cartao.id} className="flex flex-col gap-3">
+            <div
+              key={cartao.id}
+              className="flex flex-col gap-4 rounded-2xl border border-white/10 bg-white/[0.06] backdrop-blur-xl p-4 shadow-lg ring-1 ring-white/5"
+            >
               <CreditCardVisual cartao={cartao} />
 
               {/* Info row */}
-              <div className="flex items-center justify-between px-1">
+              <div className="flex items-center justify-between">
                 <div className="flex flex-col gap-0.5">
                   {cartao.limite && (
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-white/50">
                       Limite:{" "}
-                      <span className="font-semibold text-foreground">
+                      <span className="font-semibold text-white">
                         {formatCurrency(cartao.limite)}
                       </span>
                     </p>
                   )}
-                  <div className="flex gap-2 text-xs text-muted-foreground">
+                  <div className="flex gap-2 text-xs text-white/40">
                     {cartao.dia_fechamento && (
                       <span>Fecha dia {cartao.dia_fechamento}</span>
                     )}
@@ -260,7 +360,7 @@ export default function CartoesPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-primary"
+                    className="h-8 w-8 text-white/40 hover:text-blue-400 hover:bg-blue-500/10"
                     onClick={() => openEdit(cartao)}
                   >
                     <Pencil className="h-3.5 w-3.5" />
@@ -268,7 +368,7 @@ export default function CartoesPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                    className="h-8 w-8 text-white/40 hover:text-rose-400 hover:bg-rose-500/10"
                     onClick={() => setDeleteId(cartao.id)}
                   >
                     <Trash2 className="h-3.5 w-3.5" />
@@ -312,6 +412,6 @@ export default function CartoesPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </PageShell>
   );
 }

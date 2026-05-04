@@ -6,7 +6,7 @@ interface Props {
 }
 
 const colorMap = {
-  green: "bg-green-50 border-green-200 text-green-700",
+  green: "bg-blue-50 border-blue-200 text-blue-700",
   red: "bg-red-50   border-red-200   text-red-700",
   blue: "bg-blue-50  border-blue-200  text-blue-700",
   slate: "bg-slate-50 border-slate-200 text-slate-700",

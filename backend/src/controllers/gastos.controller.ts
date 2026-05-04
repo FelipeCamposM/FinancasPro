@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+import { z } from "zod";
 import pool from "../config/database";
 import { paginated } from "../utils/response";
 import { CreateGastoInput, UpdateGastoInput } from "../schemas/gastos.schema";
@@ -32,6 +33,10 @@ export const listGastos = async (
     if (req.query.forma_pagamento) {
       filters.push(`g.forma_pagamento = $${idx++}`);
       values.push(req.query.forma_pagamento);
+    }
+    if (req.query.tipo_pagamento) {
+      filters.push(`g.tipo_pagamento = $${idx++}`);
+      values.push(req.query.tipo_pagamento);
     }
     if (req.query.data_inicio) {
       filters.push(`g.data_gasto >= $${idx++}`);
@@ -110,8 +115,8 @@ export const createGasto = async (
         `INSERT INTO gastos
           (user_id, descricao, valor_total, categoria_id, forma_pagamento, cartao_id,
            tipo_pagamento, quantidade_parcelas, recorrente, frequencia_recorrencia,
-           data_fim_recorrencia, data_gasto, observacoes, status, gasto_origem_id)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+           data_fim_recorrencia, data_gasto, observacoes, status, gasto_origem_id, numero_parcela)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
          RETURNING *`,
         [
           userId,
@@ -129,23 +134,47 @@ export const createGasto = async (
           body.observacoes ?? null,
           body.status,
           body.gasto_origem_id ?? null,
+          1,
         ],
       );
 
       const gasto = rows[0];
 
-      // Gerar parcelas automaticamente quando parcelado
+      // Criar cobranças futuras como registros independentes em gastos (parcelas 2..N).
+      // O gasto original já representa a 1ª parcela.
       if (body.tipo_pagamento === "parcelado" && body.quantidade_parcelas > 1) {
-        const valorParcela = parseFloat(
-          (body.valor_total / body.quantidade_parcelas).toFixed(2),
-        );
-        const baseDate = new Date(body.data_gasto);
-        for (let i = 1; i <= body.quantidade_parcelas; i++) {
-          const venc = new Date(baseDate);
-          venc.setMonth(venc.getMonth() + i);
+        const [anoBase, mesBase, diaBase] = body.data_gasto
+          .split("-")
+          .map(Number);
+        for (let i = 1; i < body.quantidade_parcelas; i++) {
+          const dataFutura = new Date(anoBase, mesBase - 1 + i, diaBase, 12);
+          const dataStr = [
+            dataFutura.getFullYear(),
+            String(dataFutura.getMonth() + 1).padStart(2, "0"),
+            String(dataFutura.getDate()).padStart(2, "0"),
+          ].join("-");
           await client.query(
-            "INSERT INTO parcelas (gasto_id, numero_parcela, valor_parcela, data_vencimento) VALUES ($1,$2,$3,$4)",
-            [gasto.id, i, valorParcela, venc.toISOString().split("T")[0]],
+            `INSERT INTO gastos
+              (user_id, descricao, valor_total, categoria_id, forma_pagamento, cartao_id,
+               tipo_pagamento, quantidade_parcelas, recorrente,
+               data_gasto, observacoes, status, gasto_origem_id, numero_parcela)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+            [
+              userId,
+              body.descricao,
+              body.valor_total,
+              body.categoria_id ?? null,
+              body.forma_pagamento,
+              body.cartao_id ?? null,
+              body.tipo_pagamento,
+              body.quantidade_parcelas,
+              false,
+              dataStr,
+              body.observacoes ?? null,
+              body.status,
+              gasto.id,
+              i + 1,
+            ],
           );
         }
       }
@@ -233,6 +262,91 @@ export const deleteGasto = async (
       return;
     }
     res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ── Schema de validação do endpoint /atalho (formato Notion via iPhone Shortcuts) ──
+const atalhoBodySchema = z.object({
+  parent: z.object({ database_id: z.string() }).optional(),
+  properties: z.object({
+    DescricaoGasto: z.object({
+      title: z
+        .array(
+          z.object({ text: z.object({ content: z.string().min(1).max(255) }) }),
+        )
+        .min(1),
+    }),
+    ValorGasto: z.object({ number: z.number().positive() }),
+    Categoria: z.object({ select: z.object({ name: z.string() }) }).optional(),
+    Data: z.object({ date: z.object({ start: z.string() }) }),
+  }),
+});
+
+/**
+ * POST /api/gastos/atalho
+ * Registra um gasto parcial vindo do iPhone Shortcuts (formato Notion).
+ * Sempre cartao_credito + a_vista + cartao_id=null (preenchido depois na web).
+ */
+export const createGastoAtalho = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const parsed = atalhoBodySchema.safeParse(req.body);
+    if (!parsed.success) {
+      const details = parsed.error.errors.map(
+        (e) => `${e.path.join(".")}: ${e.message}`,
+      );
+      res.status(422).json({ error: "Dados inválidos", details });
+      return;
+    }
+
+    const userId = req.user!.userId;
+    const { properties } = parsed.data;
+
+    const descricao = properties.DescricaoGasto.title[0].text.content;
+    const valor_total = properties.ValorGasto.number;
+    const categoriaName = properties.Categoria?.select?.name ?? null;
+    // Suporta "2026-03-27" e "2026-03-27T14:30:00" — extrai apenas a data
+    const data_gasto = properties.Data.date.start.slice(0, 10);
+
+    // Resolve categoria pelo nome (prefere a do usuário antes da global)
+    let categoria_id: number | null = null;
+    if (categoriaName) {
+      const catRes = await pool.query(
+        `SELECT id FROM categorias
+         WHERE nome ILIKE $1
+           AND tipo = 'gasto'
+           AND (user_id = $2 OR user_id IS NULL)
+         ORDER BY user_id NULLS LAST
+         LIMIT 1`,
+        [categoriaName, userId],
+      );
+      if (catRes.rows[0]) categoria_id = catRes.rows[0].id as number;
+    }
+
+    const { rows } = await pool.query(
+      `INSERT INTO gastos
+         (user_id, descricao, valor_total, categoria_id,
+          forma_pagamento, cartao_id,
+          tipo_pagamento, quantidade_parcelas,
+          recorrente, data_gasto, status, numero_parcela)
+       VALUES ($1,$2,$3,$4,'cartao_credito',NULL,'a_vista',1,false,$5,'pendente',1)
+       RETURNING *`,
+      [userId, descricao, valor_total, categoria_id, data_gasto],
+    );
+
+    const g = rows[0];
+    res.status(200).json({
+      ok: true,
+      id: g.id,
+      descricao: g.descricao,
+      valor: g.valor_total,
+      data: g.data_gasto,
+    });
   } catch (err) {
     next(err);
   }

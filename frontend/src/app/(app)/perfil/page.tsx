@@ -110,7 +110,16 @@ async function getCroppedImg(
     400,
     400,
   );
-  return canvas.toDataURL("image/jpeg", 0.85);
+
+  // Comprime iterativamente até ficar abaixo de 5 MB
+  const maxBase64Len = Math.ceil((5 * 1024 * 1024 * 4) / 3); // ~6.67 MB em base64
+  let quality = 0.85;
+  let dataUrl = canvas.toDataURL("image/jpeg", quality);
+  while (dataUrl.length > maxBase64Len && quality > 0.1) {
+    quality = Math.max(0.1, +(quality - 0.1).toFixed(2));
+    dataUrl = canvas.toDataURL("image/jpeg", quality);
+  }
+  return dataUrl;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -166,8 +175,8 @@ export default function PerfilPage() {
       toast.error("Selecione um arquivo de imagem");
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Imagem deve ter no máximo 5 MB");
+    if (file.size > 50 * 1024 * 1024) {
+      toast.error("Imagem deve ter no máximo 50 MB");
       return;
     }
 
@@ -250,7 +259,8 @@ export default function PerfilPage() {
           </CardTitle>
           <CardDescription>
             Clique na foto para alterar e ajustar o recorte. Formatos aceitos:
-            JPG, PNG, WebP (máx. 5 MB).
+            JPG, PNG, WebP (máx. 50 MB — a imagem será comprimida
+            automaticamente).
           </CardDescription>
         </CardHeader>
         <CardContent className="flex items-center gap-6">
@@ -298,9 +308,9 @@ export default function PerfilPage() {
               {user?.email ?? "—"}
             </p>
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
-              className="mt-2"
+              className="mt-2 border border-white/15 bg-white/[0.06] text-white/70 hover:bg-white/10 hover:text-white"
               onClick={() => fileInputRef.current?.click()}
               disabled={avatarLoading}
             >

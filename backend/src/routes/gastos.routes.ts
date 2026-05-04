@@ -5,9 +5,11 @@ import {
   createGasto,
   updateGasto,
   deleteGasto,
+  createGastoAtalho,
 } from "../controllers/gastos.controller";
 import { listParcelasByGasto } from "../controllers/parcelas.controller";
 import { authenticate } from "../middlewares/auth.middleware";
+import { authenticateAny } from "../middlewares/auth.middleware";
 import { paginate } from "../middlewares/pagination.middleware";
 import { validate } from "../middlewares/validate.middleware";
 import { createGastoSchema, updateGastoSchema } from "../schemas/gastos.schema";
@@ -95,6 +97,78 @@ const router = Router();
  */
 router.get("/", authenticate, paginate, listGastos);
 router.post("/", authenticate, validate(createGastoSchema), createGasto);
+
+/**
+ * @swagger
+ * /gastos/atalho:
+ *   post:
+ *     tags: [Gastos]
+ *     summary: Registrar gasto via iPhone Shortcuts (formato Notion)
+ *     description: |
+ *       Endpoint para integração com o atalho do iPhone.
+ *       Cria um gasto parcial no formato Notion (cartao_credito + a_vista).
+ *       O cartão e demais detalhes podem ser completados na versão web.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [properties]
+ *             properties:
+ *               parent:
+ *                 type: object
+ *                 properties:
+ *                   database_id: { type: string }
+ *               properties:
+ *                 type: object
+ *                 required: [DescricaoGasto, ValorGasto, Data]
+ *                 properties:
+ *                   DescricaoGasto:
+ *                     type: object
+ *                     properties:
+ *                       title:
+ *                         type: array
+ *                         items:
+ *                           type: object
+ *                           properties:
+ *                             text:
+ *                               type: object
+ *                               properties:
+ *                                 content: { type: string, example: 'Supermercado' }
+ *                   ValorGasto:
+ *                     type: object
+ *                     properties:
+ *                       number: { type: number, example: 79.90 }
+ *                   Categoria:
+ *                     type: object
+ *                     properties:
+ *                       select:
+ *                         type: object
+ *                         properties:
+ *                           name: { type: string, example: 'Alimentação' }
+ *                   Data:
+ *                     type: object
+ *                     properties:
+ *                       date:
+ *                         type: object
+ *                         properties:
+ *                           start: { type: string, example: '2026-03-27T14:30:00' }
+ *     responses:
+ *       201:
+ *         description: Gasto criado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data: { $ref: '#/components/schemas/Gasto' }
+ *       401: { description: Token não fornecido ou inválido }
+ *       422: { description: Dados inválidos }
+ */
+router.post("/atalho", authenticateAny, createGastoAtalho);
 
 /**
  * @swagger

@@ -19,6 +19,7 @@ import {
   TrendingUp,
   CreditCard,
   Wallet,
+  Repeat,
 } from "lucide-react";
 
 const navItems = [
@@ -26,6 +27,7 @@ const navItems = [
   { href: "/gastos", icon: TrendingDown, label: "Gastos" },
   { href: "/renda", icon: TrendingUp, label: "Renda" },
   { href: "/cartoes", icon: CreditCard, label: "Cartões" },
+  { href: "/assinaturas", icon: Repeat, label: "Assinaturas" },
 ];
 
 export default function AppSidebar() {

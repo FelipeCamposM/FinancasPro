@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p \"D:\\\\PROGRAMACAO\\\\PROJETOS\\\\PROJETOS_NEXT\\\\GERENCIAR_GASTOS_NOTION\\\\.claude\\\\skills\\\\project-architecture-reference\")",
+      "Bash(mkdir -p \"D:\\\\PROGRAMACAO\\\\PROJETOS\\\\PROJETOS_NEXT\\\\GERENCIAR_GASTOS_NOTION\\\\.claude\\\\skills\\\\frontend-visual-system-fluid-glass\")",
+      "Bash(mkdir -p \"D:\\\\PROGRAMACAO\\\\PROJETOS\\\\PROJETOS_NEXT\\\\GERENCIAR_GASTOS_NOTION\\\\.claude\\\\skills\\\\project-code-conventions\")",
+      "Bash(mkdir -p \"D:\\\\PROGRAMACAO\\\\PROJETOS\\\\PROJETOS_NEXT\\\\GERENCIAR_GASTOS_NOTION\\\\.claude\\\\skills\\\\project-engineering-patterns\")",
+      "Bash(mkdir -p \"D:\\\\PROGRAMACAO\\\\PROJETOS\\\\PROJETOS_NEXT\\\\GERENCIAR_GASTOS_NOTION\\\\.claude\\\\skills\\\\project-structure-guide\")",
+      "Bash(cp \"D:\\\\PROGRAMACAO\\\\PROJETOS\\\\PROJETOS_NEXT\\\\GERENCIAR_GASTOS_NOTION\\\\.github\\\\skills\\\\project-architecture-reference\\\\SKILL.md\" \"D:\\\\PROGRAMACAO\\\\PROJETOS\\\\PROJETOS_NEXT\\\\GERENCIAR_GASTOS_NOTION\\\\.claude\\\\skills\\\\project-architecture-reference\\\\SKILL.md\")",
+      "Bash(cp \"D:\\\\PROGRAMACAO\\\\PROJETOS\\\\PROJETOS_NEXT\\\\GERENCIAR_GASTOS_NOTION\\\\.github\\\\skills\\\\frontend-visual-system-fluid-glass\\\\SKILL.md\" \"D:\\\\PROGRAMACAO\\\\PROJETOS\\\\PROJETOS_NEXT\\\\GERENCIAR_GASTOS_NOTION\\\\.claude\\\\skills\\\\frontend-visual-system-fluid-glass\\\\SKILL.md\")",
+      "Bash(cp \"D:\\\\PROGRAMACAO\\\\PROJETOS\\\\PROJETOS_NEXT\\\\GERENCIAR_GASTOS_NOTION\\\\.github\\\\skills\\\\project-code-conventions\\\\SKILL.md\" \"D:\\\\PROGRAMACAO\\\\PROJETOS\\\\PROJETOS_NEXT\\\\GERENCIAR_GASTOS_NOTION\\\\.claude\\\\skills\\\\project-code-conventions\\\\SKILL.md\")",
+      "Bash(cp \"D:\\\\PROGRAMACAO\\\\PROJETOS\\\\PROJETOS_NEXT\\\\GERENCIAR_GASTOS_NOTION\\\\.github\\\\skills\\\\project-engineering-patterns\\\\SKILL.md\" \"D:\\\\PROGRAMACAO\\\\PROJETOS\\\\PROJETOS_NEXT\\\\GERENCIAR_GASTOS_NOTION\\\\.claude\\\\skills\\\\project-engineering-patterns\\\\SKILL.md\")",
+      "Bash(cp \"D:\\\\PROGRAMACAO\\\\PROJETOS\\\\PROJETOS_NEXT\\\\GERENCIAR_GASTOS_NOTION\\\\.github\\\\skills\\\\project-structure-guide\\\\SKILL.md\" \"D:\\\\PROGRAMACAO\\\\PROJETOS\\\\PROJETOS_NEXT\\\\GERENCIAR_GASTOS_NOTION\\\\.claude\\\\skills\\\\project-structure-guide\\\\SKILL.md\")"
+    ]
+  }
+}

@@ -5,6 +5,7 @@ import {
   createRenda,
   updateRenda,
   deleteRenda,
+  autoLancarMes,
 } from "../controllers/renda.controller";
 import { authenticate } from "../middlewares/auth.middleware";
 import { paginate } from "../middlewares/pagination.middleware";
@@ -89,61 +90,8 @@ const router = Router();
  */
 router.get("/", authenticate, paginate, listRenda);
 router.post("/", authenticate, validate(createRendaSchema), createRenda);
+router.post("/auto-lancar-mes", authenticate, autoLancarMes);
 
-/**
- * @swagger
- * /renda/{id}:
- *   get:
- *     tags: [Renda]
- *     summary: Obter registro de renda por ID
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema: { type: string, format: uuid }
- *     responses:
- *       200:
- *         content:
- *           application/json:
- *             schema: { $ref: '#/components/schemas/Renda' }
- *       404: { description: Não encontrado }
- *   put:
- *     tags: [Renda]
- *     summary: Atualizar registro de renda
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema: { type: string, format: uuid }
- *     requestBody:
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               descricao:        { type: string }
- *               valor:            { type: number }
- *               tipo:             { type: string }
- *               origem:           { type: string }
- *               mes_referencia:   { type: string, format: date }
- *               data_recebimento: { type: string, format: date }
- *               observacoes:      { type: string, nullable: true }
- *     responses:
- *       200:
- *         content:
- *           application/json:
- *             schema: { $ref: '#/components/schemas/Renda' }
- *   delete:
- *     tags: [Renda]
- *     summary: Remover registro de renda
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema: { type: string, format: uuid }
- *     responses:
- *       204: { description: Removido }
- */
 router.get("/:id", authenticate, getRenda);
 router.put("/:id", authenticate, validate(updateRendaSchema), updateRenda);
 router.delete("/:id", authenticate, deleteRenda);

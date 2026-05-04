@@ -5,52 +5,58 @@
 @layer base {
   :root {
     /* ── Fundo e texto ── */
-    --background: 42 33% 97%;
-    --foreground: 20 10% 10%;
+    --background: 222 47% 7%;
+    --foreground: 210 40% 96%;
 
     /* ── Card e Popover ── */
-    --card: 0 0% 100%;
-    --card-foreground: 20 10% 10%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 20 10% 10%;
+    --card: 223 39% 12%;
+    --card-foreground: 210 40% 96%;
+    --popover: 223 39% 12%;
+    --popover-foreground: 210 40% 96%;
 
-    /* ── Cor principal: verde floresta ── */
-    --primary: 142 62% 33%;
+    /* ── Cor principal: azul profundo ── */
+    --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
 
-    /* ── Secundária: bege quente ── */
-    --secondary: 40 38% 92%;
-    --secondary-foreground: 20 10% 22%;
+    /* ── Secundária: azul grafite ── */
+    --secondary: 222 34% 17%;
+    --secondary-foreground: 210 40% 96%;
 
     /* ── Muted: bege claro ── */
-    --muted: 40 28% 94%;
-    --muted-foreground: 30 8% 48%;
+    --muted: 215 28% 17%;
+    --muted-foreground: 215 20% 70%;
 
-    /* ── Accent: verde suave ── */
-    --accent: 142 38% 88%;
-    --accent-foreground: 142 62% 22%;
+    /* ── Accent: azul neon controlado ── */
+    --accent: 217 80% 24%;
+    --accent-foreground: 214 95% 88%;
 
     /* ── Destrutivo: vermelho ── */
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
     /* ── Borda e Input ── */
-    --border: 38 20% 88%;
-    --input: 38 20% 91%;
-    --ring: 142 62% 33%;
+    --border: 217 32% 26%;
+    --input: 221 30% 20%;
+    --ring: 217 91% 60%;
 
     /* ── Raio ── */
     --radius: 0.6rem;
 
-    /* ── Sidebar: verde escuro ── */
-    --sidebar-background: 150 48% 15%;
-    --sidebar-foreground: 42 40% 95%;
-    --sidebar-primary: 142 55% 52%;
+    /* ── Sidebar: azul/preto ── */
+    --sidebar-background: 222 45% 10%;
+    --sidebar-foreground: 210 40% 96%;
+    --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 150 42% 20%;
-    --sidebar-accent-foreground: 42 40% 95%;
-    --sidebar-border: 150 35% 19%;
-    --sidebar-ring: 142 55% 52%;
+    --sidebar-accent: 222 37% 16%;
+    --sidebar-accent-foreground: 210 40% 94%;
+    --sidebar-border: 217 30% 22%;
+    --sidebar-ring: 217 91% 60%;
+
+    /* ── Escala visual unificada ── */
+    --glass-radius: 0.9rem;
+    --glass-blur: 18px;
+    --glass-shadow: 0 16px 40px rgba(2, 6, 23, 0.42);
+    --glass-shadow-soft: 0 10px 26px rgba(2, 6, 23, 0.26);
   }
 }
 
@@ -59,7 +65,160 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply text-foreground antialiased;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: hsl(222 47% 5%);
+  }
+}
+
+@layer components {
+  @keyframes ui-fade-up {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 10px, 0);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+  }
+
+  .ui-glass-surface {
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: var(--glass-radius);
+    background: linear-gradient(
+      165deg,
+      rgba(255, 255, 255, 0.1) 0%,
+      rgba(255, 255, 255, 0.04) 100%
+    );
+    box-shadow: var(--glass-shadow-soft);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+  }
+
+  .ui-glass-surface-strong {
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: var(--glass-radius);
+    background: linear-gradient(
+      165deg,
+      rgba(255, 255, 255, 0.14) 0%,
+      rgba(255, 255, 255, 0.05) 100%
+    );
+    box-shadow: var(--glass-shadow);
+    backdrop-filter: blur(calc(var(--glass-blur) + 2px));
+    -webkit-backdrop-filter: blur(calc(var(--glass-blur) + 2px));
+  }
+
+  .ui-control {
+    @apply rounded-md border border-white/15 bg-white/[0.08] text-white;
+    @apply placeholder:text-white/35 transition-all duration-200;
+    @apply focus-visible:outline-none focus-visible:ring-2;
+    @apply focus-visible:ring-blue-400/60 focus-visible:border-blue-300/40;
+    @apply disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .ui-stagger {
+    --stagger-step: 48ms;
+    --stagger-duration: 220ms;
+    --stagger-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .ui-stagger > * {
+    opacity: 0;
+    animation: ui-fade-up var(--stagger-duration) var(--stagger-ease) both;
+  }
+
+  .ui-stagger > :nth-child(1) {
+    animation-delay: calc(var(--stagger-step) * 0);
+  }
+  .ui-stagger > :nth-child(2) {
+    animation-delay: calc(var(--stagger-step) * 1);
+  }
+  .ui-stagger > :nth-child(3) {
+    animation-delay: calc(var(--stagger-step) * 2);
+  }
+  .ui-stagger > :nth-child(4) {
+    animation-delay: calc(var(--stagger-step) * 3);
+  }
+  .ui-stagger > :nth-child(5) {
+    animation-delay: calc(var(--stagger-step) * 4);
+  }
+  .ui-stagger > :nth-child(6) {
+    animation-delay: calc(var(--stagger-step) * 5);
+  }
+  .ui-stagger > :nth-child(7) {
+    animation-delay: calc(var(--stagger-step) * 6);
+  }
+  .ui-stagger > :nth-child(8) {
+    animation-delay: calc(var(--stagger-step) * 7);
+  }
+  .ui-stagger > :nth-child(9) {
+    animation-delay: calc(var(--stagger-step) * 8);
+  }
+  .ui-stagger > :nth-child(10) {
+    animation-delay: calc(var(--stagger-step) * 9);
+  }
+  .ui-stagger > :nth-child(11) {
+    animation-delay: calc(var(--stagger-step) * 10);
+  }
+  .ui-stagger > :nth-child(12) {
+    animation-delay: calc(var(--stagger-step) * 11);
+  }
+
+  .ui-stagger-rows {
+    --stagger-step: 36ms;
+    --stagger-duration: 220ms;
+  }
+
+  .ui-stagger-rows > * {
+    opacity: 0;
+    transform: translate3d(0, 6px, 0);
+    animation: ui-fade-up var(--stagger-duration) var(--stagger-ease) both;
+  }
+
+  .ui-stagger-rows > :nth-child(1) {
+    animation-delay: calc(var(--stagger-step) * 0);
+  }
+  .ui-stagger-rows > :nth-child(2) {
+    animation-delay: calc(var(--stagger-step) * 1);
+  }
+  .ui-stagger-rows > :nth-child(3) {
+    animation-delay: calc(var(--stagger-step) * 2);
+  }
+  .ui-stagger-rows > :nth-child(4) {
+    animation-delay: calc(var(--stagger-step) * 3);
+  }
+  .ui-stagger-rows > :nth-child(5) {
+    animation-delay: calc(var(--stagger-step) * 4);
+  }
+  .ui-stagger-rows > :nth-child(6) {
+    animation-delay: calc(var(--stagger-step) * 5);
+  }
+  .ui-stagger-rows > :nth-child(7) {
+    animation-delay: calc(var(--stagger-step) * 6);
+  }
+  .ui-stagger-rows > :nth-child(8) {
+    animation-delay: calc(var(--stagger-step) * 7);
+  }
+  .ui-stagger-rows > :nth-child(9) {
+    animation-delay: calc(var(--stagger-step) * 8);
+  }
+  .ui-stagger-rows > :nth-child(10) {
+    animation-delay: calc(var(--stagger-step) * 9);
+  }
+  .ui-stagger-rows > :nth-child(11) {
+    animation-delay: calc(var(--stagger-step) * 10);
+  }
+  .ui-stagger-rows > :nth-child(12) {
+    animation-delay: calc(var(--stagger-step) * 11);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ui-stagger > *,
+    .ui-stagger-rows > * {
+      opacity: 1;
+      transform: none;
+      animation: none;
+    }
   }
 }

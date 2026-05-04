@@ -12,15 +12,31 @@ export const summary = async (
 ): Promise<void> => {
   try {
     const userId = req.user!.userId;
-    const mes =
-      (req.query.mes as string) ?? new Date().toISOString().slice(0, 7) + "-01";
+    const mesRaw =
+      (req.query.mes as string) ?? new Date().toISOString().slice(0, 7);
+    const mes = mesRaw.length === 7 ? mesRaw + "-01" : mesRaw;
 
     const [rendaRes, gastosRes, parcelasRes] = await Promise.all([
       pool.query(
         `SELECT COALESCE(SUM(valor), 0)::float AS total
-         FROM renda
-         WHERE user_id = $1
-           AND DATE_TRUNC('month', mes_referencia) = DATE_TRUNC('month', $2::date)`,
+         FROM renda r
+         WHERE r.user_id = $1
+           AND (
+             -- Rendas diretas do mês (pontuais e instâncias lançadas)
+             DATE_TRUNC('month', r.mes_referencia) = DATE_TRUNC('month', $2::date)
+             OR (
+               -- Templates recorrentes ativos neste mês, sem instância já lançada
+               r.recorrente = true
+               AND r.renda_origem_id IS NULL
+               AND DATE_TRUNC('month', r.mes_referencia) <= DATE_TRUNC('month', $2::date)
+               AND (r.data_fim_recorrencia IS NULL OR r.data_fim_recorrencia >= DATE_TRUNC('month', $2::date))
+               AND NOT EXISTS (
+                 SELECT 1 FROM renda inst
+                 WHERE inst.renda_origem_id = r.id
+                   AND DATE_TRUNC('month', inst.mes_referencia) = DATE_TRUNC('month', $2::date)
+               )
+             )
+           )`,
         [userId, mes],
       ),
       pool.query(
@@ -71,8 +87,9 @@ export const gastosPorCategoria = async (
 ): Promise<void> => {
   try {
     const userId = req.user!.userId;
-    const mes =
-      (req.query.mes as string) ?? new Date().toISOString().slice(0, 7) + "-01";
+    const mesRaw =
+      (req.query.mes as string) ?? new Date().toISOString().slice(0, 7);
+    const mes = mesRaw.length === 7 ? mesRaw + "-01" : mesRaw;
 
     const { rows } = await pool.query(
       `SELECT
@@ -147,8 +164,9 @@ export const gastosPorFormaPagamento = async (
 ): Promise<void> => {
   try {
     const userId = req.user!.userId;
-    const mes =
-      (req.query.mes as string) ?? new Date().toISOString().slice(0, 7) + "-01";
+    const mesRaw =
+      (req.query.mes as string) ?? new Date().toISOString().slice(0, 7);
+    const mes = mesRaw.length === 7 ? mesRaw + "-01" : mesRaw;
 
     const { rows } = await pool.query(
       `SELECT forma_pagamento, COUNT(*)::int AS quantidade, SUM(valor_total)::float AS total
@@ -162,6 +180,111 @@ export const gastosPorFormaPagamento = async (
     );
 
     res.json(rows);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * GET /api/dashboard/period-summary?data_inicio=YYYY-MM-DD&data_fim=YYYY-MM-DD
+ * Total de gastos e renda em um período arbitrário (ou sem filtro para todos os registros).
+ */
+export const periodSummary = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const userId = req.user!.userId;
+    const mesRaw = req.query.mes as string | undefined;
+    const dataInicio = req.query.data_inicio as string | undefined;
+    const dataFim = req.query.data_fim as string | undefined;
+
+    let gastosRes: { rows: { total: number }[] };
+    let rendaRes: { rows: { total: number }[] };
+
+    if (mesRaw) {
+      // Modo mês: usa a mesma lógica do endpoint summary (mes_referencia + deduplicação de recorrentes)
+      const mes = mesRaw.length === 7 ? mesRaw + "-01" : mesRaw;
+      [gastosRes, rendaRes] = await Promise.all([
+        pool.query(
+          `SELECT COALESCE(SUM(valor_total), 0)::float AS total
+           FROM gastos
+           WHERE user_id = $1
+             AND status != 'cancelado'
+             AND DATE_TRUNC('month', data_gasto) = DATE_TRUNC('month', $2::date)`,
+          [userId, mes],
+        ),
+        pool.query(
+          `SELECT COALESCE(SUM(valor), 0)::float AS total
+           FROM renda r
+           WHERE r.user_id = $1
+             AND r.renda_origem_id IS NULL
+             AND (
+               DATE_TRUNC('month', r.mes_referencia) = DATE_TRUNC('month', $2::date)
+               OR (
+                 r.recorrente = true
+                 AND DATE_TRUNC('month', r.mes_referencia) <= DATE_TRUNC('month', $2::date)
+                 AND (r.data_fim_recorrencia IS NULL OR r.data_fim_recorrencia >= DATE_TRUNC('month', $2::date))
+                 AND NOT EXISTS (
+                   SELECT 1 FROM renda inst
+                   WHERE inst.renda_origem_id = r.id
+                     AND DATE_TRUNC('month', inst.mes_referencia) = DATE_TRUNC('month', $2::date)
+                 )
+               )
+             )`,
+          [userId, mes],
+        ),
+      ]);
+    } else {
+      // Modo período customizado: filtra por data_gasto / data_recebimento
+      const gastoFilters: string[] = ["user_id = $1", "status != 'cancelado'"];
+      const rendaFilters: string[] = [
+        "user_id = $1",
+        "renda_origem_id IS NULL",
+      ];
+      const gastoValues: unknown[] = [userId];
+      const rendaValues: unknown[] = [userId];
+      let gastoIdx = 2;
+      let rendaIdx = 2;
+
+      if (dataInicio) {
+        gastoFilters.push(`data_gasto >= $${gastoIdx++}`);
+        gastoValues.push(dataInicio);
+        rendaFilters.push(`data_recebimento >= $${rendaIdx++}`);
+        rendaValues.push(dataInicio);
+      }
+      if (dataFim) {
+        gastoFilters.push(`data_gasto <= $${gastoIdx++}`);
+        gastoValues.push(dataFim);
+        rendaFilters.push(`data_recebimento <= $${rendaIdx++}`);
+        rendaValues.push(dataFim);
+      }
+
+      [gastosRes, rendaRes] = await Promise.all([
+        pool.query(
+          `SELECT COALESCE(SUM(valor_total), 0)::float AS total
+           FROM gastos
+           WHERE ${gastoFilters.join(" AND ")}`,
+          gastoValues,
+        ),
+        pool.query(
+          `SELECT COALESCE(SUM(valor), 0)::float AS total
+           FROM renda
+           WHERE ${rendaFilters.join(" AND ")}`,
+          rendaValues,
+        ),
+      ]);
+    }
+
+    const totalGastos = gastosRes.rows[0].total;
+    const totalRenda = rendaRes.rows[0].total;
+
+    res.json({
+      total_gastos: totalGastos,
+      total_renda: totalRenda,
+      diferenca: totalRenda - totalGastos,
+    });
   } catch (err) {
     next(err);
   }

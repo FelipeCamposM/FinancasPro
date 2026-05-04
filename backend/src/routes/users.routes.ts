@@ -5,6 +5,8 @@ import {
   updateUser,
   updatePassword,
   deleteUser,
+  getApiKey,
+  rotateApiKey,
 } from "../controllers/users.controller";
 import { authenticate } from "../middlewares/auth.middleware";
 import { paginate } from "../middlewares/pagination.middleware";
@@ -135,5 +137,42 @@ router.patch(
   validate(updatePasswordSchema),
   updatePassword,
 );
+
+/**
+ * @swagger
+ * /users/me/api-key:
+ *   get:
+ *     tags: [Users]
+ *     summary: Obter API Key permanente do usuário logado
+ *     description: Retorna a API Key usada no endpoint /gastos/atalho (iPhone Shortcuts).
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 api_key: { type: string, format: uuid }
+ *
+ * /users/me/api-key/rotate:
+ *   post:
+ *     tags: [Users]
+ *     summary: Rotacionar API Key
+ *     description: Gera uma nova API Key, invalidando imediatamente a anterior.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 api_key: { type: string, format: uuid }
+ */
+router.get("/me/api-key", authenticate, getApiKey);
+router.post("/me/api-key/rotate", authenticate, rotateApiKey);
 
 export default router;

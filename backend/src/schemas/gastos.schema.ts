@@ -23,6 +23,7 @@ export const createGastoSchema = z
   .object({
     descricao: z.string().min(1).max(255),
     valor_total: z.number().positive(),
+    valor_parcela: z.number().positive().optional(),
     categoria_id: z.number().int().positive().optional(),
     forma_pagamento: z.enum(formasPagamento),
     cartao_id: z.string().uuid().optional(),

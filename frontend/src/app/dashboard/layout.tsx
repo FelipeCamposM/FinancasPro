@@ -29,9 +29,7 @@ export default function DashboardLayout({
           <AppSidebar />
           <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
             <TopNavbar />
-            <main className="flex-1 overflow-auto bg-background p-6">
-              {children}
-            </main>
+            <main className="flex-1 overflow-auto p-6">{children}</main>
           </div>
         </div>
         <Toaster richColors position="top-right" />

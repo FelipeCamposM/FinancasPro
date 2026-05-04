@@ -50,8 +50,15 @@ export const updateRendaSchema = z.object({
   recorrente: z.boolean().optional(),
   frequencia_recorrencia: z.enum(frequencias).nullable().optional(),
   data_fim_recorrencia: z.string().date().nullable().optional(),
+  renda_origem_id: z.string().uuid().nullable().optional(),
   observacoes: z.string().max(1000).nullable().optional(),
+});
+
+export const lancarRendaMesSchema = z.object({
+  mes_referencia: z.string().date(),
+  data_recebimento: z.string().date(),
 });
 
 export type CreateRendaInput = z.infer<typeof createRendaSchema>;
 export type UpdateRendaInput = z.infer<typeof updateRendaSchema>;
+export type LancarRendaMesInput = z.infer<typeof lancarRendaMesSchema>;

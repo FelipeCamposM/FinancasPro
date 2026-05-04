@@ -127,9 +127,12 @@ export interface Renda {
   recorrente: boolean;
   frequencia_recorrencia: Frequencia | null;
   data_fim_recorrencia: Date | null;
+  renda_origem_id: string | null;
   observacoes: string | null;
   created_at: Date;
   updated_at: Date;
+  // campo computado retornado pela listagem
+  lancada_neste_mes?: boolean;
 }
 
 // -------------------------------------------------------

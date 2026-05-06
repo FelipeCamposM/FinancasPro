@@ -2,9 +2,36 @@ import axios from "axios";
 import Cookies from "js-cookie";
 
 const TOKEN_KEY = "gg_token";
+const DEFAULT_API_URL = "http://localhost:3001/api";
+
+export function getApiBaseUrl(): string {
+  const configuredUrl = process.env.NEXT_PUBLIC_API_URL || DEFAULT_API_URL;
+
+  if (typeof window === "undefined") {
+    return configuredUrl;
+  }
+
+  try {
+    const url = new URL(configuredUrl);
+    const isLocalhostApi =
+      url.hostname === "localhost" || url.hostname === "127.0.0.1";
+    const isRemoteBrowser =
+      window.location.hostname !== "localhost" &&
+      window.location.hostname !== "127.0.0.1";
+
+    if (isLocalhostApi && isRemoteBrowser) {
+      url.hostname = window.location.hostname;
+      return url.toString().replace(/\/$/, "");
+    }
+  } catch {
+    return configuredUrl;
+  }
+
+  return configuredUrl;
+}
 
 export const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api",
+  baseURL: getApiBaseUrl(),
   headers: { "Content-Type": "application/json" },
 });
 

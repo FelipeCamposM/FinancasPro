@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  @font-face {
+    font-family: 'BebasNeue';
+    src: url('../fonts/BebasNeue-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-display: swap;
+  }
+  @import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=Geist+Mono:wght@400;500&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Geist', sans-serif;
+    background: hsl(222 47% 5%);
+    color: hsl(210 40% 96%);
+    padding: 20px;
+  }
+  .divider { border: none; border-top: 1px solid rgba(255,255,255,0.07); margin: 10px 0; }
+  .row { display: flex; align-items: baseline; gap: 12px; padding: 5px 0; }
+  .row + .row { border-top: 1px solid rgba(255,255,255,0.05); }
+  .sample { flex: 1; color: hsl(210 40% 96%); line-height: 1.2; }
+  .meta { font-size: 9px; font-weight: 600; opacity: 0.30; white-space: nowrap; font-family: 'Geist Mono', monospace; }
+  .pill {
+    display: inline-block;
+    font-size: 8px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.1em; border-radius: 4px;
+    padding: 1px 5px; margin-right: 4px; vertical-align: middle;
+    background: rgba(59,130,246,0.18); color: hsl(213 94% 68%);
+    border: 1px solid rgba(59,130,246,0.28);
+  }
+  .pill.brand { background: rgba(139,92,246,0.18); color: hsl(267 84% 81%); border-color: rgba(139,92,246,0.30); }
+  .pill.mono  { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.45); border-color: rgba(255,255,255,0.12); }
+</style>
+</head>
+<body>
+
+  <!-- BebasNeue display section -->
+  <div class="row">
+    <span class="sample" style="font-family:'BebasNeue',sans-serif;font-size:44px;letter-spacing:0.04em;color:hsl(213 94% 68%)">
+      R$ 12.450,00
+    </span>
+    <span class="meta"><span class="pill brand">BebasNeue</span>44px / display</span>
+  </div>
+  <div class="row">
+    <span class="sample" style="font-family:'BebasNeue',sans-serif;font-size:30px;letter-spacing:0.04em">
+      CONTROLE FINANCEIRO
+    </span>
+    <span class="meta"><span class="pill brand">BebasNeue</span>30px / hero heading</span>
+  </div>
+  <div class="row">
+    <span class="sample" style="font-family:'BebasNeue',sans-serif;font-size:22px;letter-spacing:0.05em;color:rgba(255,255,255,0.60)">
+      MAIO DE 2025
+    </span>
+    <span class="meta"><span class="pill brand">BebasNeue</span>22px / section label</span>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Geist UI scale -->
+  <div class="row">
+    <span class="sample" style="font-size:28px;font-weight:700;letter-spacing:-0.02em">Dashboard</span>
+    <span class="meta"><span class="pill">Geist</span>28px / 700 — h1</span>
+  </div>
+  <div class="row">
+    <span class="sample" style="font-size:22px;font-weight:700;letter-spacing:-0.01em">Seus Gastos</span>
+    <span class="meta"><span class="pill">Geist</span>22px / 700 — h2</span>
+  </div>
+  <div class="row">
+    <span class="sample" style="font-size:18px;font-weight:600">Resumo estratégico</span>
+    <span class="meta"><span class="pill">Geist</span>18px / 600 — h3</span>
+  </div>
+  <div class="row">
+    <span class="sample" style="font-size:15px;font-weight:400;color:rgba(255,255,255,0.80)">Controle financeiro pessoal</span>
+    <span class="meta"><span class="pill">Geist</span>15px / 400 — body-lg</span>
+  </div>
+  <div class="row">
+    <span class="sample" style="font-size:13px;font-weight:400;color:rgba(255,255,255,0.65)">23 registros no período selecionado</span>
+    <span class="meta"><span class="pill">Geist</span>13px / 400 — body</span>
+  </div>
+  <div class="row">
+    <span class="sample" style="font-size:11px;font-weight:400;color:rgba(255,255,255,0.45)">Cadastre um gasto para visualizar.</span>
+    <span class="meta"><span class="pill">Geist</span>11px — body-sm</span>
+  </div>
+  <div class="row">
+    <span class="sample" style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.14em;color:rgba(255,255,255,0.35)">INDICADORES PRINCIPAIS</span>
+    <span class="meta"><span class="pill">Geist</span>9px / 700 UPPER — label</span>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Mono -->
+  <div class="row">
+    <span class="sample" style="font-family:'Geist Mono',monospace;font-size:13px;letter-spacing:0.18em;color:rgba(255,255,255,0.75)">•••• •••• •••• 4242</span>
+    <span class="meta"><span class="pill mono">Geist Mono</span>13px — card num</span>
+  </div>
+  <div class="row">
+    <span class="sample" style="font-family:'Geist Mono',monospace;font-size:11px;color:hsl(213 94% 68%)">R$ 1.234,56</span>
+    <span class="meta"><span class="pill mono">Geist Mono</span>11px — tabular</span>
+  </div>
+
+</body>
+</html>

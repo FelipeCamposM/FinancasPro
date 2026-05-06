@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Geist',sans-serif;background:hsl(222 47% 5%);color:hsl(210 40% 96%);padding:16px;}
+  .input-group{display:flex;flex-direction:column;gap:4px;margin-bottom:12px;}
+  label{font-size:11px;font-weight:500;color:rgba(255,255,255,0.7);}
+  input,select,textarea{
+    background:rgba(255,255,255,0.08);
+    border:1px solid rgba(255,255,255,0.15);
+    border-radius:8px;
+    color:hsl(210 40% 96%);
+    font-family:'Geist',sans-serif;
+    font-size:13px;
+    padding:8px 12px;
+    outline:none;
+    transition:all 200ms;
+    width:100%;
+  }
+  input::placeholder{color:rgba(255,255,255,0.30);}
+  input:focus{border-color:rgba(147,197,253,0.40);box-shadow:0 0 0 2px rgba(96,165,250,0.30);}
+  .error input{border-color:rgba(251,113,133,0.40);box-shadow:0 0 0 2px rgba(244,63,94,0.20);}
+  .error-msg{font-size:10px;color:hsl(351 95% 71%);margin-top:2px;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px;}
+</style>
+</head>
+<body>
+<div class="grid">
+  <div class="input-group">
+    <label>Descrição</label>
+    <input type="text" value="Netflix" />
+  </div>
+  <div class="input-group">
+    <label>Valor</label>
+    <input type="text" value="R$ 55,90" />
+  </div>
+  <div class="input-group">
+    <label>Data</label>
+    <input type="text" placeholder="dd/mm/aaaa" />
+  </div>
+  <div class="input-group error">
+    <label>Categoria</label>
+    <input type="text" placeholder="Selecione..." />
+    <span class="error-msg">Campo obrigatório</span>
+  </div>
+  <div class="input-group" style="grid-column:1/-1">
+    <label>Observações</label>
+    <textarea rows="2" placeholder="Adicione uma observação..."></textarea>
+  </div>
+</div>
+</body>
+</html>

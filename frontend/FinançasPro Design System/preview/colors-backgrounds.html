@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Geist',sans-serif;background:hsl(222 47% 5%);color:hsl(210 40% 96%);padding:20px;}
+  .row{display:flex;gap:8px;flex-wrap:wrap;}
+  .swatch{display:flex;flex-direction:column;align-items:center;gap:6px;}
+  .block{border-radius:8px;width:72px;height:52px;border:1px solid rgba(255,255,255,0.08);}
+  .label{font-size:9px;font-weight:600;opacity:0.5;letter-spacing:0.05em;text-align:center;}
+  .sub{font-size:8px;opacity:0.35;text-align:center;}
+  .row-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;opacity:0.45;margin-bottom:8px;}
+</style>
+</head>
+<body>
+<div class="row-label">Background Scale</div>
+<div class="row">
+  <div class="swatch"><div class="block" style="background:hsl(222 47% 5%)"></div><div class="label">Base</div><div class="sub">5% light</div></div>
+  <div class="swatch"><div class="block" style="background:hsl(222 47% 7%)"></div><div class="label">Elevated</div><div class="sub">7%</div></div>
+  <div class="swatch"><div class="block" style="background:hsl(222 45% 10%)"></div><div class="label">Sidebar</div><div class="sub">10%</div></div>
+  <div class="swatch"><div class="block" style="background:hsl(223 39% 12%)"></div><div class="label">Card</div><div class="sub">12%</div></div>
+  <div class="swatch"><div class="block" style="background:hsl(222 34% 17%)"></div><div class="label">Secondary</div><div class="sub">17%</div></div>
+  <div class="swatch"><div class="block" style="background:hsl(215 28% 17%)"></div><div class="label">Muted</div><div class="sub">muted</div></div>
+  <div class="swatch"><div class="block" style="background:hsl(221 30% 20%)"></div><div class="label">Input</div><div class="sub">input</div></div>
+  <div class="swatch"><div class="block" style="background:hsl(217 32% 26%)"></div><div class="label">Border</div><div class="sub">border</div></div>
+</div>
+<div style="margin-top:16px">
+<div class="row-label">Foreground Scale</div>
+<div class="row">
+  <div class="swatch"><div class="block" style="background:hsl(210 40% 96%)"></div><div class="label">Primary</div><div class="sub">96%</div></div>
+  <div class="swatch"><div class="block" style="background:hsl(215 20% 70%)"></div><div class="label">Secondary</div><div class="sub">70%</div></div>
+  <div class="swatch"><div class="block" style="background:hsl(215 16% 47%)"></div><div class="label">Muted</div><div class="sub">47%</div></div>
+  <div class="swatch"><div class="block" style="background:hsl(215 12% 35%)"></div><div class="label">Disabled</div><div class="sub">35%</div></div>
+</div>
+</div>
+</body>
+</html>

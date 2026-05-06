@@ -8,6 +8,7 @@ interface SectionHeaderProps {
   actions?: React.ReactNode;
   className?: string;
   titleClassName?: string;
+  titleColor?: string;
 }
 
 export function SectionHeader({
@@ -16,31 +17,46 @@ export function SectionHeader({
   actions,
   className,
   titleClassName,
+  titleColor,
 }: SectionHeaderProps) {
+  const accentClass =
+    titleColor?.includes("rose")
+      ? "from-rose-500/60 via-rose-400/20"
+      : titleColor?.includes("violet")
+        ? "from-violet-500/60 via-violet-400/20"
+        : titleColor?.includes("blue")
+          ? "from-blue-500/60 via-blue-400/20"
+          : "from-white/40 via-white/15";
+
   return (
     <header
       className={cn(
-        "rounded-2xl border border-white/10 bg-black/25 p-4 backdrop-blur-xl",
-        "flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between",
+        "overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-xl",
         className,
       )}
     >
-      <div>
-        <h1
-          className={cn(
-            "text-2xl font-bold leading-tight text-white",
-            titleClassName,
-          )}
-        >
-          {title}
-        </h1>
-        {description ? (
-          <p className="mt-1 text-sm text-white/60">{description}</p>
+      <div
+        className={cn("h-px w-full bg-gradient-to-r to-transparent", accentClass)}
+      />
+      <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1
+            className={cn(
+              "font-display text-4xl uppercase leading-none tracking-wide text-white sm:text-5xl",
+              titleColor,
+              titleClassName,
+            )}
+          >
+            {title}
+          </h1>
+          {description ? (
+            <p className="mt-0.5 text-[12px] text-white/40">{description}</p>
+          ) : null}
+        </div>
+        {actions ? (
+          <div className="flex flex-wrap items-center gap-2">{actions}</div>
         ) : null}
       </div>
-      {actions ? (
-        <div className="flex items-center gap-2">{actions}</div>
-      ) : null}
     </header>
   );
 }

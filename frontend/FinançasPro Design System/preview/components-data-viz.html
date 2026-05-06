@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Geist',sans-serif;background:hsl(222 47% 5%);color:hsl(210 40% 96%);padding:16px;}
+  .label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;opacity:0.40;margin-bottom:8px;}
+  /* Budget bar */
+  .budget{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);border-radius:12px;padding:14px 16px;margin-bottom:12px;}
+  .budget-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+  .budget-title{font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;}
+  .budget-pct{font-size:12px;font-weight:700;color:hsl(217 91% 60%);}
+  .track{height:10px;background:rgba(255,255,255,0.08);border-radius:9999px;overflow:hidden;}
+  .fill{height:100%;border-radius:9999px;}
+  .budget-meta{display:flex;justify-content:space-between;margin-top:8px;font-size:10px;color:rgba(255,255,255,0.45);}
+  /* Category mini-bars */
+  .cat-row{display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.06);}
+  .cat-icon{width:24px;height:24px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .cat-name{flex:1;font-size:12px;color:rgba(255,255,255,0.75);}
+  .cat-mini-track{flex:0 0 80px;height:4px;background:rgba(255,255,255,0.08);border-radius:9999px;overflow:hidden;}
+  .cat-val{font-size:11px;font-weight:600;font-variant-numeric:tabular-nums;color:rgba(255,255,255,0.65);min-width:64px;text-align:right;}
+  .cat-pct{font-size:10px;border-radius:4px;padding:2px 5px;border:1px solid;min-width:40px;text-align:center;}
+</style>
+</head>
+<body>
+<div class="label">Budget Progress Bar</div>
+<div class="budget">
+  <div class="budget-top">
+    <div class="budget-title">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="hsl(258 90% 66%)" stroke-width="2"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+      Orçamento do mês
+    </div>
+    <span class="budget-pct">62% utilizado</span>
+  </div>
+  <div class="track"><div class="fill" style="width:62%;background:hsl(217 91% 60%)"></div></div>
+  <div class="budget-meta">
+    <span>Gastos: <b style="color:rgba(255,255,255,0.8)">R$ 5.230,00</b></span>
+    <span>Renda: <b style="color:rgba(255,255,255,0.8)">R$ 8.400,00</b></span>
+    <span>Disponível: <b style="color:hsl(213 94% 68%)">R$ 3.170,00</b></span>
+  </div>
+</div>
+
+<div class="label">Category Detail Table Row</div>
+<div>
+  <div class="cat-row">
+    <div class="cat-icon" style="background:rgba(251,146,60,0.22);color:#fb923c"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg></div>
+    <span class="cat-name">Alimentação</span>
+    <div class="cat-mini-track"><div class="fill" style="width:45%;background:#fb923c"></div></div>
+    <span class="cat-val">R$ 1.850,00</span>
+    <span class="cat-pct" style="background:rgba(251,146,60,0.15);color:#fb923c;border-color:rgba(251,146,60,0.35)">35.4%</span>
+  </div>
+  <div class="cat-row">
+    <div class="cat-icon" style="background:rgba(99,102,241,0.22);color:#818cf8"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div>
+    <span class="cat-name">Assinaturas</span>
+    <div class="cat-mini-track"><div class="fill" style="width:20%;background:#818cf8"></div></div>
+    <span class="cat-val">R$ 340,00</span>
+    <span class="cat-pct" style="background:rgba(99,102,241,0.15);color:#818cf8;border-color:rgba(99,102,241,0.35)">6.5%</span>
+  </div>
+  <div class="cat-row">
+    <div class="cat-icon" style="background:rgba(34,197,94,0.22);color:#4ade80"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div>
+    <span class="cat-name">Transporte</span>
+    <div class="cat-mini-track"><div class="fill" style="width:14%;background:#4ade80"></div></div>
+    <span class="cat-val">R$ 580,00</span>
+    <span class="cat-pct" style="background:rgba(34,197,94,0.15);color:#4ade80;border-color:rgba(34,197,94,0.35)">11.1%</span>
+  </div>
+</div>
+</body>
+</html>

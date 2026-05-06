@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Geist',sans-serif;background:hsl(222 47% 5%);color:hsl(210 40% 96%);padding:20px;}
+  .chips{display:flex;flex-direction:column;gap:8px;}
+  .chip{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;border:1px solid;}
+  .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+  .name{font-size:12px;font-weight:600;flex:1;}
+  .accent{font-size:10px;opacity:0.6;}
+</style>
+</head>
+<body>
+<div class="chips">
+  <div class="chip" style="background:rgba(244,63,94,0.10);border-color:rgba(251,113,133,0.30)">
+    <div class="dot" style="background:hsl(351 95% 71%)"></div>
+    <span class="name" style="color:hsl(351 95% 71%)">Gastos</span>
+    <span class="accent">rose-400 / rose-500/10</span>
+  </div>
+  <div class="chip" style="background:rgba(59,130,246,0.10);border-color:rgba(96,165,250,0.30)">
+    <div class="dot" style="background:hsl(213 94% 68%)"></div>
+    <span class="name" style="color:hsl(213 94% 68%)">Renda</span>
+    <span class="accent">blue-400 / blue-500/10</span>
+  </div>
+  <div class="chip" style="background:rgba(59,130,246,0.08);border-color:rgba(147,197,253,0.25)">
+    <div class="dot" style="background:hsl(217 91% 60%)"></div>
+    <span class="name" style="color:hsl(217 91% 60%)">Cartões</span>
+    <span class="accent">blue-500 / blue-400/25</span>
+  </div>
+  <div class="chip" style="background:rgba(139,92,246,0.10);border-color:rgba(167,139,250,0.30)">
+    <div class="dot" style="background:hsl(263 78% 72%)"></div>
+    <span class="name" style="color:hsl(263 78% 72%)">Assinaturas</span>
+    <span class="accent">violet-400 / violet-500/10</span>
+  </div>
+  <div class="chip" style="background:rgba(245,158,11,0.10);border-color:rgba(251,191,36,0.25)">
+    <div class="dot" style="background:hsl(38 92% 67%)"></div>
+    <span class="name" style="color:hsl(38 92% 67%)">Pendências</span>
+    <span class="accent">amber-400 / amber-500/10</span>
+  </div>
+  <div class="chip" style="background:rgba(139,92,246,0.08);border-color:rgba(196,181,253,0.25)">
+    <div class="dot" style="background:hsl(267 84% 81%)"></div>
+    <span class="name" style="color:hsl(267 84% 81%)">Economia / Taxa poupança</span>
+    <span class="accent">violet-300 / violet-400/25</span>
+  </div>
+</div>
+</body>
+</html>

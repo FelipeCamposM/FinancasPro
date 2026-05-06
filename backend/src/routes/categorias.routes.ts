@@ -1,17 +1,20 @@
 import { Router } from "express";
 import {
   listCategorias,
+  listCategoriasIphone,
   getCategoria,
   createCategoria,
   updateCategoria,
   deleteCategoria,
+  importCategorias,
 } from "../controllers/categorias.controller";
-import { authenticate } from "../middlewares/auth.middleware";
+import { authenticateAny } from "../middlewares/auth.middleware";
 import { paginate } from "../middlewares/pagination.middleware";
 import { validate } from "../middlewares/validate.middleware";
 import {
   createCategoriaSchema,
   updateCategoriaSchema,
+  importCategoriasSchema,
 } from "../schemas/categorias.schema";
 
 const router = Router();
@@ -66,13 +69,95 @@ const router = Router();
  *           application/json:
  *             schema: { $ref: '#/components/schemas/Categoria' }
  */
-router.get("/", authenticate, paginate, listCategorias);
+router.get("/", authenticateAny, paginate, listCategorias);
 router.post(
   "/",
-  authenticate,
+  authenticateAny,
   validate(createCategoriaSchema),
   createCategoria,
 );
+
+/**
+ * @swagger
+ * /categorias/import:
+ *   post:
+ *     tags: [Categorias]
+ *     summary: Importar múltiplas categorias em lote
+ *     description: Cria até 200 categorias de uma vez para o usuário autenticado. Operação atômica — falha reverte tudo.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [categorias]
+ *             properties:
+ *               categorias:
+ *                 type: array
+ *                 maxItems: 200
+ *                 items:
+ *                   type: object
+ *                   required: [nome, tipo]
+ *                   properties:
+ *                     nome:  { type: string, example: Alimentação }
+ *                     cor:   { type: string, example: '#F59E0B' }
+ *                     icone: { type: string, example: '🍔' }
+ *                     tipo:  { type: string, enum: [gasto, renda] }
+ *           example:
+ *             categorias:
+ *               - { nome: Alimentação, cor: '#F59E0B', icone: '🍔', tipo: gasto }
+ *               - { nome: Transporte, cor: '#3B82F6', icone: '🚗', tipo: gasto }
+ *               - { nome: Salário, cor: '#10B981', icone: '💼', tipo: renda }
+ *     responses:
+ *       201:
+ *         description: Categorias criadas
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 created: { type: integer, example: 3 }
+ *                 data:    { type: array, items: { $ref: '#/components/schemas/Categoria' } }
+ *       400: { description: Dados inválidos }
+ */
+router.post(
+  "/import",
+  authenticateAny,
+  validate(importCategoriasSchema),
+  importCategorias,
+);
+
+/**
+ * @swagger
+ * /categorias/iphone:
+ *   get:
+ *     tags: [Categorias]
+ *     summary: Listar categorias para integracao com iPhone
+ *     description: Retorna uma lista simples de categorias globais e categorias do usuario vinculado ao JWT ou API Key informada.
+ *     security:
+ *       - bearerAuth: []
+ *       - apiKeyAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista simples de categorias para consumo por atalhos/listas do iPhone
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:    { type: integer }
+ *                       nome:  { type: string, example: Alimentacao }
+ *                       cor:   { type: string, nullable: true, example: '#F59E0B' }
+ *                       icone: { type: string, nullable: true, example: 'burger' }
+ *                       tipo:  { type: string, enum: [gasto, renda] }
+ *       401: { description: Token nao fornecido ou invalido }
+ */
+router.get("/iphone", authenticateAny, listCategoriasIphone);
 
 /**
  * @swagger
@@ -125,13 +210,13 @@ router.post(
  *     responses:
  *       204: { description: Removida }
  */
-router.get("/:id", authenticate, getCategoria);
+router.get("/:id", authenticateAny, getCategoria);
 router.put(
   "/:id",
-  authenticate,
+  authenticateAny,
   validate(updateCategoriaSchema),
   updateCategoria,
 );
-router.delete("/:id", authenticate, deleteCategoria);
+router.delete("/:id", authenticateAny, deleteCategoria);
 
 export default router;

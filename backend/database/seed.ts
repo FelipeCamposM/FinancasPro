@@ -75,6 +75,7 @@ async function insertRenda(
     descricao: string;
     valor: number;
     tipo: string;
+    origem?: string;
     cat: string;
     mesRef: string;
     dataRec: string;
@@ -82,14 +83,15 @@ async function insertRenda(
 ) {
   await client.query(
     `INSERT INTO renda
-       (id, user_id, descricao, valor, tipo, categoria_id, mes_referencia, data_recebimento)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+       (id, user_id, descricao, valor, tipo, origem, categoria_id, mes_referencia, data_recebimento)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
     [
       crypto.randomUUID(),
       uid,
       params.descricao,
       params.valor,
       params.tipo,
+      params.origem ?? params.descricao,
       catMap[params.cat],
       params.mesRef,
       params.dataRec,

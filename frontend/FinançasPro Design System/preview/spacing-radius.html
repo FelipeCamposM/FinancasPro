@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Geist',sans-serif;background:hsl(222 47% 5%);color:hsl(210 40% 96%);padding:20px;}
+  .section{margin-bottom:18px;}
+  .label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;opacity:0.4;margin-bottom:10px;}
+  .row{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;}
+  .box{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.14);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:8px;gap:4px;}
+  .token{font-size:9px;font-weight:600;opacity:0.55;}
+  .px{font-size:8px;opacity:0.35;}
+  /* Spacing */
+  .bar{background:rgba(59,130,246,0.5);height:100%;width:100%;border-radius:2px;}
+</style>
+</head>
+<body>
+<div class="section">
+  <div class="label">Border Radius</div>
+  <div class="row">
+    <div><div class="box" style="width:40px;height:40px;border-radius:4px"></div><div class="token" style="text-align:center;margin-top:4px">sm</div><div class="px" style="text-align:center">5.6px</div></div>
+    <div><div class="box" style="width:48px;height:48px;border-radius:6px"></div><div class="token" style="text-align:center;margin-top:4px">md</div><div class="px" style="text-align:center">7.6px</div></div>
+    <div><div class="box" style="width:52px;height:52px;border-radius:9.6px"></div><div class="token" style="text-align:center;margin-top:4px">base</div><div class="px" style="text-align:center">9.6px</div></div>
+    <div><div class="box" style="width:58px;height:58px;border-radius:14.4px"></div><div class="token" style="text-align:center;margin-top:4px">lg/glass</div><div class="px" style="text-align:center">14.4px</div></div>
+    <div><div class="box" style="width:64px;height:64px;border-radius:16px"></div><div class="token" style="text-align:center;margin-top:4px">xl</div><div class="px" style="text-align:center">16px</div></div>
+    <div><div class="box" style="width:52px;height:52px;border-radius:9999px"></div><div class="token" style="text-align:center;margin-top:4px">full</div><div class="px" style="text-align:center">pill</div></div>
+  </div>
+</div>
+<div class="section">
+  <div class="label">Spacing Scale</div>
+  <div class="row" style="align-items:flex-end">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><div style="background:rgba(96,165,250,0.5);width:16px;height:4px;border-radius:2px"></div><div class="token">1</div><div class="px">4px</div></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><div style="background:rgba(96,165,250,0.5);width:16px;height:8px;border-radius:2px"></div><div class="token">2</div><div class="px">8px</div></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><div style="background:rgba(96,165,250,0.5);width:16px;height:12px;border-radius:2px"></div><div class="token">3</div><div class="px">12px</div></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><div style="background:rgba(96,165,250,0.5);width:16px;height:16px;border-radius:2px"></div><div class="token">4</div><div class="px">16px</div></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><div style="background:rgba(96,165,250,0.5);width:16px;height:20px;border-radius:2px"></div><div class="token">5</div><div class="px">20px</div></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><div style="background:rgba(96,165,250,0.5);width:16px;height:24px;border-radius:2px"></div><div class="token">6</div><div class="px">24px</div></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><div style="background:rgba(96,165,250,0.5);width:16px;height:32px;border-radius:2px"></div><div class="token">8</div><div class="px">32px</div></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><div style="background:rgba(96,165,250,0.5);width:16px;height:40px;border-radius:2px"></div><div class="token">10</div><div class="px">40px</div></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><div style="background:rgba(96,165,250,0.5);width:16px;height:48px;border-radius:2px"></div><div class="token">12</div><div class="px">48px</div></div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Geist',sans-serif;background:hsl(222 47% 5%);color:hsl(210 40% 96%);padding:24px;}
+  .row{display:flex;gap:16px;flex-wrap:wrap;}
+  .card{border-radius:12px;background:hsl(223 39% 12%);border:1px solid rgba(255,255,255,0.10);padding:16px 20px;min-width:130px;}
+  .name{font-size:10px;font-weight:700;opacity:0.45;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px;}
+  .desc{font-size:9px;opacity:0.3;}
+  /* glass */
+  .glass{background:linear-gradient(165deg,rgba(255,255,255,0.10),rgba(255,255,255,0.04));border:1px solid rgba(255,255,255,0.14);backdrop-filter:blur(18px);}
+</style>
+</head>
+<body>
+<div class="row">
+  <div class="card" style="box-shadow:0 1px 2px rgba(2,6,23,0.3)">
+    <div class="name">shadow-sm</div>
+    <div class="desc">0 1px 2px #02061780</div>
+  </div>
+  <div class="card" style="box-shadow:0 4px 12px rgba(2,6,23,0.35)">
+    <div class="name">shadow-md</div>
+    <div class="desc">0 4px 12px #020617</div>
+  </div>
+  <div class="card" style="box-shadow:0 10px 26px rgba(2,6,23,0.4)">
+    <div class="name">shadow-lg</div>
+    <div class="desc">glass-soft</div>
+  </div>
+  <div class="card" style="box-shadow:0 16px 40px rgba(2,6,23,0.42)">
+    <div class="name">shadow-xl</div>
+    <div class="desc">glass-strong</div>
+  </div>
+  <div class="card" style="box-shadow:0 8px 24px rgba(37,99,235,0.28)">
+    <div class="name">btn-primary</div>
+    <div class="desc">blue glow</div>
+  </div>
+  <div class="card" style="box-shadow:0 8px 24px rgba(244,63,94,0.28)">
+    <div class="name">btn-destruct</div>
+    <div class="desc">rose glow</div>
+  </div>
+  <div class="card glass" style="box-shadow:0 10px 26px rgba(2,6,23,0.26)">
+    <div class="name">Glass Surface</div>
+    <div class="desc">blur(18px) + border</div>
+  </div>
+</div>
+</body>
+</html>

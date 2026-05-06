@@ -6,7 +6,7 @@ import {
   gastosPorFormaPagamento as getGastosPorFormaPagamento,
   periodSummary as getPeriodSummary,
 } from "../controllers/dashboard.controller";
-import { authenticate } from "../middlewares/auth.middleware";
+import { authenticateAny } from "../middlewares/auth.middleware";
 
 const router = Router();
 
@@ -44,7 +44,7 @@ const router = Router();
  *                     count: { type: integer, example: 4 }
  *                     total: { type: number,  example: 450.00 }
  */
-router.get("/summary", authenticate, getSummary);
+router.get("/summary", authenticateAny, getSummary);
 
 /**
  * @swagger
@@ -73,7 +73,7 @@ router.get("/summary", authenticate, getSummary);
  *                   quantidade:     { type: integer }
  *                   total:          { type: number }
  */
-router.get("/gastos-por-categoria", authenticate, getGastosPorCategoria);
+router.get("/gastos-por-categoria", authenticateAny, getGastosPorCategoria);
 
 /**
  * @swagger
@@ -99,7 +99,7 @@ router.get("/gastos-por-categoria", authenticate, getGastosPorCategoria);
  *                   total_renda:  { type: number }
  *                   total_gastos: { type: number }
  */
-router.get("/renda-vs-gastos", authenticate, getRendaVsGastos);
+router.get("/renda-vs-gastos", authenticateAny, getRendaVsGastos);
 
 /**
  * @swagger
@@ -127,7 +127,7 @@ router.get("/renda-vs-gastos", authenticate, getRendaVsGastos);
  */
 router.get(
   "/gastos-por-forma-pagamento",
-  authenticate,
+  authenticateAny,
   getGastosPorFormaPagamento,
 );
 
@@ -155,6 +155,6 @@ router.get(
  *                 total_renda:  { type: number }
  *                 diferenca:    { type: number }
  */
-router.get("/period-summary", authenticate, getPeriodSummary);
+router.get("/period-summary", authenticateAny, getPeriodSummary);
 
 export default router;

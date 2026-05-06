@@ -4,6 +4,7 @@ import { paginated } from "../utils/response";
 import {
   CreateCategoriaInput,
   UpdateCategoriaInput,
+  ImportCategoriasInput,
 } from "../schemas/categorias.schema";
 
 export const listCategorias = async (
@@ -26,6 +27,26 @@ export const listCategorias = async (
       ),
     ]);
     res.json(paginated(rows, total[0].count, page, limit));
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const listCategoriasIphone = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const userId = req.user!.userId;
+    const { rows } = await pool.query(
+      `SELECT id, nome, cor, icone, tipo
+       FROM categorias
+       WHERE user_id IS NULL OR user_id = $1
+       ORDER BY tipo, nome`,
+      [userId],
+    );
+    res.json({ data: rows });
   } catch (err) {
     next(err);
   }
@@ -121,6 +142,36 @@ export const updateCategoria = async (
     res.json(rows[0]);
   } catch (err) {
     next(err);
+  }
+};
+
+export const importCategorias = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  const client = await pool.connect();
+  try {
+    const userId = req.user!.userId;
+    const { categorias }: ImportCategoriasInput = req.body;
+
+    await client.query("BEGIN");
+    const inserted: unknown[] = [];
+    for (const cat of categorias) {
+      const { rows } = await client.query(
+        "INSERT INTO categorias (user_id, nome, cor, icone, tipo) VALUES ($1,$2,$3,$4,$5) RETURNING *",
+        [userId, cat.nome, cat.cor ?? null, cat.icone ?? null, cat.tipo],
+      );
+      inserted.push(rows[0]);
+    }
+    await client.query("COMMIT");
+
+    res.status(201).json({ created: inserted.length, data: inserted });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    next(err);
+  } finally {
+    client.release();
   }
 };
 

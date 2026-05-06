@@ -4,58 +4,75 @@
 
 @layer base {
   :root {
-    /* ── Fundo e texto ── */
-    --background: 222 47% 7%;
-    --foreground: 210 40% 96%;
+    /* ── Superfícies (paleta DS FinançasPro) ── */
+    --background:           222 47%  7%;
+    --foreground:           210 40% 96%;
 
-    /* ── Card e Popover ── */
-    --card: 223 39% 12%;
-    --card-foreground: 210 40% 96%;
-    --popover: 223 39% 12%;
-    --popover-foreground: 210 40% 96%;
+    --card:                 223 39% 12%;
+    --card-foreground:      210 40% 96%;
+    --popover:              223 39% 12%;
+    --popover-foreground:   210 40% 96%;
 
-    /* ── Cor principal: azul profundo ── */
-    --primary: 217 91% 60%;
-    --primary-foreground: 0 0% 100%;
+    /* ── Primária: azul DS ── */
+    --primary:              217 91% 60%;
+    --primary-foreground:   0   0%  100%;
 
-    /* ── Secundária: azul grafite ── */
-    --secondary: 222 34% 17%;
+    /* ── Secundária ── */
+    --secondary:            222 34% 17%;
     --secondary-foreground: 210 40% 96%;
 
-    /* ── Muted: bege claro ── */
-    --muted: 215 28% 17%;
-    --muted-foreground: 215 20% 70%;
+    /* ── Muted ── */
+    --muted:                215 28% 17%;
+    --muted-foreground:     215 20% 70%;
 
-    /* ── Accent: azul neon controlado ── */
-    --accent: 217 80% 24%;
-    --accent-foreground: 214 95% 88%;
+    /* ── Accent ── */
+    --accent:               217 80% 24%;
+    --accent-foreground:    214 95% 88%;
 
-    /* ── Destrutivo: vermelho ── */
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
+    /* ── Sucesso ── */
+    --success:              142 71% 45%;
+    --success-foreground:   0   0%  100%;
 
-    /* ── Borda e Input ── */
-    --border: 217 32% 26%;
-    --input: 221 30% 20%;
-    --ring: 217 91% 60%;
+    /* ── Destrutivo ── */
+    --destructive:          0   84% 60%;
+    --destructive-foreground: 0 0%  100%;
 
-    /* ── Raio ── */
-    --radius: 0.6rem;
+    /* ── Utilitários ── */
+    --border:               217 32% 26%;
+    --input:                221 30% 20%;
+    --ring:                 217 91% 60%;
+    --radius:               0.6rem;
 
-    /* ── Sidebar: azul/preto ── */
-    --sidebar-background: 222 45% 10%;
-    --sidebar-foreground: 210 40% 96%;
-    --sidebar-primary: 217 91% 60%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 37% 16%;
-    --sidebar-accent-foreground: 210 40% 94%;
-    --sidebar-border: 217 30% 22%;
-    --sidebar-ring: 217 91% 60%;
+    /* ── Sidebar ── */
+    --sidebar-background:         222 45% 10%;
+    --sidebar-foreground:         210 40% 96%;
+    --sidebar-primary:            217 91% 60%;
+    --sidebar-primary-foreground: 0   0%  100%;
+    --sidebar-accent:             222 37% 16%;
+    --sidebar-accent-foreground:  210 40% 94%;
+    --sidebar-border:             217 30% 22%;
+    --sidebar-ring:               217 91% 60%;
 
-    /* ── Escala visual unificada ── */
-    --glass-radius: 0.9rem;
-    --glass-blur: 18px;
-    --glass-shadow: 0 16px 40px rgba(2, 6, 23, 0.42);
+    /* ── Module accent colors ── */
+    --module-gastos:      hsl(351 95% 71%);   /* rose-400  */
+    --module-renda:       hsl(213 94% 68%);   /* blue-400  */
+    --module-cartoes:     hsl(212 96% 78%);   /* blue-300  */
+    --module-assinaturas: hsl(263 78% 72%);   /* violet-400 */
+    --module-parcelas:    hsl(38  92% 67%);   /* amber-400 */
+
+    /* ── Status colors ── */
+    --status-pending:     hsl(38  92% 67%);   /* amber-400 */
+    --status-paid:        hsl(213 94% 68%);   /* blue-400  */
+    --status-cancelled:   hsl(351 95% 71%);   /* rose-400  */
+
+    /* ── Glass system (DS spec) ── */
+    --glass-radius:      0.9rem;
+    --glass-blur:        18px;
+    --glass-bg:          linear-gradient(165deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.04) 100%);
+    --glass-bg-strong:   linear-gradient(165deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.05) 100%);
+    --glass-border:      1px solid rgba(255,255,255,0.14);
+    --glass-border-strong: 1px solid rgba(255,255,255,0.18);
+    --glass-shadow:      0 16px 40px rgba(2, 6, 23, 0.42);
     --glass-shadow-soft: 0 10px 26px rgba(2, 6, 23, 0.26);
   }
 }
@@ -64,51 +81,53 @@
   * {
     @apply border-border;
   }
+
   body {
     @apply text-foreground antialiased;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: var(--font-body), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     background-color: hsl(222 47% 5%);
+    font-size: 0.9375rem; /* 15px */
   }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-display), sans-serif;
+    letter-spacing: 0.02em;
+  }
+
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.10); border-radius: 3px; }
 }
 
 @layer components {
+  /* ── Animações ─────────────────────────────── */
   @keyframes ui-fade-up {
-    from {
-      opacity: 0;
-      transform: translate3d(0, 10px, 0);
-    }
-    to {
-      opacity: 1;
-      transform: translate3d(0, 0, 0);
-    }
+    from { opacity: 0; transform: translate3d(0, 10px, 0); }
+    to   { opacity: 1; transform: translate3d(0, 0, 0); }
   }
 
+  /* ── Superfícies glass ─────────────────────── */
+  .ui-glass,
   .ui-glass-surface {
-    border: 1px solid rgba(255, 255, 255, 0.14);
+    border: var(--glass-border);
     border-radius: var(--glass-radius);
-    background: linear-gradient(
-      165deg,
-      rgba(255, 255, 255, 0.1) 0%,
-      rgba(255, 255, 255, 0.04) 100%
-    );
+    background: var(--glass-bg);
     box-shadow: var(--glass-shadow-soft);
     backdrop-filter: blur(var(--glass-blur));
     -webkit-backdrop-filter: blur(var(--glass-blur));
   }
 
+  .ui-glass-strong,
   .ui-glass-surface-strong {
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    border: var(--glass-border-strong);
     border-radius: var(--glass-radius);
-    background: linear-gradient(
-      165deg,
-      rgba(255, 255, 255, 0.14) 0%,
-      rgba(255, 255, 255, 0.05) 100%
-    );
+    background: var(--glass-bg-strong);
     box-shadow: var(--glass-shadow);
     backdrop-filter: blur(calc(var(--glass-blur) + 2px));
     -webkit-backdrop-filter: blur(calc(var(--glass-blur) + 2px));
   }
 
+  /* ── Controles de formulário ───────────────── */
   .ui-control {
     @apply rounded-md border border-white/15 bg-white/[0.08] text-white;
     @apply placeholder:text-white/35 transition-all duration-200;
@@ -117,6 +136,28 @@
     @apply disabled:cursor-not-allowed disabled:opacity-50;
   }
 
+  /* ── Utilitários tipográficos ──────────────── */
+  .font-display {
+    font-family: var(--font-display), sans-serif;
+    letter-spacing: 0.02em;
+  }
+
+  /* Rótulo de seção — 10px uppercase tracking */
+  .ds-label {
+    font-size: 0.625rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: rgba(255,255,255,0.40);
+  }
+
+  /* Números tabulares alinhados */
+  .ds-numeric {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+
+  /* ── Stagger grid (cards) ──────────────────── */
   .ui-stagger {
     --stagger-step: 48ms;
     --stagger-duration: 220ms;
@@ -128,46 +169,24 @@
     animation: ui-fade-up var(--stagger-duration) var(--stagger-ease) both;
   }
 
-  .ui-stagger > :nth-child(1) {
-    animation-delay: calc(var(--stagger-step) * 0);
-  }
-  .ui-stagger > :nth-child(2) {
-    animation-delay: calc(var(--stagger-step) * 1);
-  }
-  .ui-stagger > :nth-child(3) {
-    animation-delay: calc(var(--stagger-step) * 2);
-  }
-  .ui-stagger > :nth-child(4) {
-    animation-delay: calc(var(--stagger-step) * 3);
-  }
-  .ui-stagger > :nth-child(5) {
-    animation-delay: calc(var(--stagger-step) * 4);
-  }
-  .ui-stagger > :nth-child(6) {
-    animation-delay: calc(var(--stagger-step) * 5);
-  }
-  .ui-stagger > :nth-child(7) {
-    animation-delay: calc(var(--stagger-step) * 6);
-  }
-  .ui-stagger > :nth-child(8) {
-    animation-delay: calc(var(--stagger-step) * 7);
-  }
-  .ui-stagger > :nth-child(9) {
-    animation-delay: calc(var(--stagger-step) * 8);
-  }
-  .ui-stagger > :nth-child(10) {
-    animation-delay: calc(var(--stagger-step) * 9);
-  }
-  .ui-stagger > :nth-child(11) {
-    animation-delay: calc(var(--stagger-step) * 10);
-  }
-  .ui-stagger > :nth-child(12) {
-    animation-delay: calc(var(--stagger-step) * 11);
-  }
+  .ui-stagger > :nth-child(1)  { animation-delay: calc(var(--stagger-step) * 0); }
+  .ui-stagger > :nth-child(2)  { animation-delay: calc(var(--stagger-step) * 1); }
+  .ui-stagger > :nth-child(3)  { animation-delay: calc(var(--stagger-step) * 2); }
+  .ui-stagger > :nth-child(4)  { animation-delay: calc(var(--stagger-step) * 3); }
+  .ui-stagger > :nth-child(5)  { animation-delay: calc(var(--stagger-step) * 4); }
+  .ui-stagger > :nth-child(6)  { animation-delay: calc(var(--stagger-step) * 5); }
+  .ui-stagger > :nth-child(7)  { animation-delay: calc(var(--stagger-step) * 6); }
+  .ui-stagger > :nth-child(8)  { animation-delay: calc(var(--stagger-step) * 7); }
+  .ui-stagger > :nth-child(9)  { animation-delay: calc(var(--stagger-step) * 8); }
+  .ui-stagger > :nth-child(10) { animation-delay: calc(var(--stagger-step) * 9); }
+  .ui-stagger > :nth-child(11) { animation-delay: calc(var(--stagger-step) * 10); }
+  .ui-stagger > :nth-child(12) { animation-delay: calc(var(--stagger-step) * 11); }
 
+  /* ── Stagger rows (tabelas/listas) ────────── */
   .ui-stagger-rows {
     --stagger-step: 36ms;
     --stagger-duration: 220ms;
+    --stagger-ease: cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   .ui-stagger-rows > * {
@@ -176,42 +195,18 @@
     animation: ui-fade-up var(--stagger-duration) var(--stagger-ease) both;
   }
 
-  .ui-stagger-rows > :nth-child(1) {
-    animation-delay: calc(var(--stagger-step) * 0);
-  }
-  .ui-stagger-rows > :nth-child(2) {
-    animation-delay: calc(var(--stagger-step) * 1);
-  }
-  .ui-stagger-rows > :nth-child(3) {
-    animation-delay: calc(var(--stagger-step) * 2);
-  }
-  .ui-stagger-rows > :nth-child(4) {
-    animation-delay: calc(var(--stagger-step) * 3);
-  }
-  .ui-stagger-rows > :nth-child(5) {
-    animation-delay: calc(var(--stagger-step) * 4);
-  }
-  .ui-stagger-rows > :nth-child(6) {
-    animation-delay: calc(var(--stagger-step) * 5);
-  }
-  .ui-stagger-rows > :nth-child(7) {
-    animation-delay: calc(var(--stagger-step) * 6);
-  }
-  .ui-stagger-rows > :nth-child(8) {
-    animation-delay: calc(var(--stagger-step) * 7);
-  }
-  .ui-stagger-rows > :nth-child(9) {
-    animation-delay: calc(var(--stagger-step) * 8);
-  }
-  .ui-stagger-rows > :nth-child(10) {
-    animation-delay: calc(var(--stagger-step) * 9);
-  }
-  .ui-stagger-rows > :nth-child(11) {
-    animation-delay: calc(var(--stagger-step) * 10);
-  }
-  .ui-stagger-rows > :nth-child(12) {
-    animation-delay: calc(var(--stagger-step) * 11);
-  }
+  .ui-stagger-rows > :nth-child(1)  { animation-delay: calc(var(--stagger-step) * 0); }
+  .ui-stagger-rows > :nth-child(2)  { animation-delay: calc(var(--stagger-step) * 1); }
+  .ui-stagger-rows > :nth-child(3)  { animation-delay: calc(var(--stagger-step) * 2); }
+  .ui-stagger-rows > :nth-child(4)  { animation-delay: calc(var(--stagger-step) * 3); }
+  .ui-stagger-rows > :nth-child(5)  { animation-delay: calc(var(--stagger-step) * 4); }
+  .ui-stagger-rows > :nth-child(6)  { animation-delay: calc(var(--stagger-step) * 5); }
+  .ui-stagger-rows > :nth-child(7)  { animation-delay: calc(var(--stagger-step) * 6); }
+  .ui-stagger-rows > :nth-child(8)  { animation-delay: calc(var(--stagger-step) * 7); }
+  .ui-stagger-rows > :nth-child(9)  { animation-delay: calc(var(--stagger-step) * 8); }
+  .ui-stagger-rows > :nth-child(10) { animation-delay: calc(var(--stagger-step) * 9); }
+  .ui-stagger-rows > :nth-child(11) { animation-delay: calc(var(--stagger-step) * 10); }
+  .ui-stagger-rows > :nth-child(12) { animation-delay: calc(var(--stagger-step) * 11); }
 
   @media (prefers-reduced-motion: reduce) {
     .ui-stagger > *,

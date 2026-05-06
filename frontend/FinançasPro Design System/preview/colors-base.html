@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Geist',sans-serif;background:hsl(222 47% 5%);color:hsl(210 40% 96%);padding:20px;}
+  .grid{display:grid;grid-template-columns:repeat(9,1fr);gap:6px;margin-bottom:18px;}
+  .swatch{border-radius:6px;height:44px;position:relative;}
+  .swatch-label{font-size:9px;font-weight:600;text-align:center;margin-top:4px;opacity:0.6;letter-spacing:0.05em;}
+  .row-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;opacity:0.45;margin-bottom:6px;}
+</style>
+</head>
+<body>
+<div class="row-label">Blue</div>
+<div class="grid">
+  <div><div class="swatch" style="background:hsl(214 95% 93%)"></div><div class="swatch-label">50</div></div>
+  <div><div class="swatch" style="background:hsl(213 97% 87%)"></div><div class="swatch-label">200</div></div>
+  <div><div class="swatch" style="background:hsl(212 96% 78%)"></div><div class="swatch-label">300</div></div>
+  <div><div class="swatch" style="background:hsl(213 94% 68%)"></div><div class="swatch-label">400</div></div>
+  <div><div class="swatch" style="background:hsl(217 91% 60%)"></div><div class="swatch-label">500 ★</div></div>
+  <div><div class="swatch" style="background:hsl(221 83% 53%)"></div><div class="swatch-label">600</div></div>
+  <div><div class="swatch" style="background:hsl(224 76% 48%)"></div><div class="swatch-label">700</div></div>
+  <div><div class="swatch" style="background:hsl(226 71% 40%)"></div><div class="swatch-label">800</div></div>
+  <div><div class="swatch" style="background:hsl(228 68% 30%)"></div><div class="swatch-label">900</div></div>
+</div>
+<div class="row-label">Rose</div>
+<div class="grid" style="grid-template-columns:repeat(5,1fr)">
+  <div><div class="swatch" style="background:hsl(353 96% 89%)"></div><div class="swatch-label">200</div></div>
+  <div><div class="swatch" style="background:hsl(353 96% 80%)"></div><div class="swatch-label">300</div></div>
+  <div><div class="swatch" style="background:hsl(351 95% 71%)"></div><div class="swatch-label">400</div></div>
+  <div><div class="swatch" style="background:hsl(0 84% 60%)"></div><div class="swatch-label">500 ★</div></div>
+  <div><div class="swatch" style="background:hsl(0 72% 51%)"></div><div class="swatch-label">600</div></div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:12px;">
+  <div>
+    <div class="row-label">Amber</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+      <div><div class="swatch" style="background:hsl(43 96% 76%)"></div><div class="swatch-label">300</div></div>
+      <div><div class="swatch" style="background:hsl(38 92% 67%)"></div><div class="swatch-label">400</div></div>
+      <div><div class="swatch" style="background:hsl(32 95% 58%)"></div><div class="swatch-label">500 ★</div></div>
+    </div>
+  </div>
+  <div>
+    <div class="row-label">Violet</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+      <div><div class="swatch" style="background:hsl(267 84% 81%)"></div><div class="swatch-label">300</div></div>
+      <div><div class="swatch" style="background:hsl(263 78% 72%)"></div><div class="swatch-label">400</div></div>
+      <div><div class="swatch" style="background:hsl(258 90% 66%)"></div><div class="swatch-label">500 ★</div></div>
+    </div>
+  </div>
+  <div>
+    <div class="row-label">Green</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+      <div><div class="swatch" style="background:hsl(142 71% 65%)"></div><div class="swatch-label">400</div></div>
+      <div><div class="swatch" style="background:hsl(142 71% 45%)"></div><div class="swatch-label">500 ★</div></div>
+      <div><div class="swatch" style="background:hsl(142 71% 36%)"></div><div class="swatch-label">600</div></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

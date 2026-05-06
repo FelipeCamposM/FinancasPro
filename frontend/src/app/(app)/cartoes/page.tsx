@@ -243,15 +243,16 @@ export default function CartoesPage() {
   );
 
   return (
-    <PageShell contentClassName="space-y-6">
+    <PageShell contentClassName="space-y-5">
       {/* Header */}
       <SectionHeader
         title="Cartões"
+        titleColor="text-blue-300"
         description={`${cartoes.length} ${cartoes.length === 1 ? "cartão" : "cartões"}`}
         actions={
           <Button
             onClick={openNew}
-            className="bg-blue-500/20 border border-blue-400/40 text-blue-300 hover:bg-blue-500/30 hover:text-blue-200 backdrop-blur"
+            variant="default"
           >
             <Plus className="mr-2 h-4 w-4" />
             Novo Cartão
@@ -261,7 +262,7 @@ export default function CartoesPage() {
 
       {!loading && !loadError && cartoes.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 ui-stagger">
-          <div className="rounded-xl border border-blue-400/25 bg-blue-500/10 backdrop-blur-xl p-4">
+          <div className="rounded-xl border border-white/[0.09] bg-white/[0.04] p-4 backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5">
             <div className="flex items-center gap-2 text-blue-300">
               <CircleCheck className="h-4 w-4" />
               <p className="text-[11px] uppercase tracking-wider font-semibold">
@@ -276,7 +277,7 @@ export default function CartoesPage() {
             </p>
           </div>
 
-          <div className="rounded-xl border border-white/20 bg-white/[0.06] backdrop-blur-xl p-4">
+          <div className="rounded-xl border border-white/[0.09] bg-white/[0.04] p-4 backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5">
             <div className="flex items-center gap-2 text-white/70">
               <CircleX className="h-4 w-4" />
               <p className="text-[11px] uppercase tracking-wider font-semibold">
@@ -289,7 +290,7 @@ export default function CartoesPage() {
             <p className="text-xs text-white/55">Cartões fora de operação</p>
           </div>
 
-          <div className="rounded-xl border border-violet-400/25 bg-violet-500/10 backdrop-blur-xl p-4">
+          <div className="rounded-xl border border-white/[0.09] bg-white/[0.04] p-4 backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5">
             <div className="flex items-center gap-2 text-violet-300">
               <Wallet className="h-4 w-4" />
               <p className="text-[11px] uppercase tracking-wider font-semibold">
@@ -331,7 +332,7 @@ export default function CartoesPage() {
           {cartoes.map((cartao) => (
             <div
               key={cartao.id}
-              className="flex flex-col gap-4 rounded-2xl border border-white/10 bg-white/[0.06] backdrop-blur-xl p-4 shadow-lg ring-1 ring-white/5"
+              className="flex flex-col gap-4 rounded-xl border border-white/[0.09] bg-white/[0.03] p-4 backdrop-blur-xl ring-1 ring-white/5 transition-all duration-200 hover:-translate-y-0.5"
             >
               <CreditCardVisual cartao={cartao} />
 
@@ -405,7 +406,7 @@ export default function CartoesPage() {
             <AlertDialogAction
               onClick={handleDelete}
               disabled={deleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-rose-500/20 border border-rose-400/40 text-rose-300 hover:bg-rose-500/30"
             >
               Excluir
             </AlertDialogAction>

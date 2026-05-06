@@ -13,9 +13,36 @@ const SwaggerUI = dynamic(() => import("swagger-ui-react"), { ssr: false });
 // fazemos isso via import side-effect aqui mesmo
 import "swagger-ui-react/swagger-ui.css";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+function getApiBaseUrl(): string {
+  const configuredUrl =
+    process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+
+  if (typeof window === "undefined") {
+    return configuredUrl;
+  }
+
+  try {
+    const url = new URL(configuredUrl);
+    const isLocalhostApi =
+      url.hostname === "localhost" || url.hostname === "127.0.0.1";
+    const isRemoteBrowser =
+      window.location.hostname !== "localhost" &&
+      window.location.hostname !== "127.0.0.1";
+
+    if (isLocalhostApi && isRemoteBrowser) {
+      url.hostname = window.location.hostname;
+      return url.toString().replace(/\/$/, "");
+    }
+  } catch {
+    return configuredUrl;
+  }
+
+  return configuredUrl;
+}
 
 export default function DocsPage() {
+  const apiUrl = getApiBaseUrl();
+
   return (
     <PageShell className="min-h-screen">
       <SectionHeader
@@ -33,7 +60,7 @@ export default function DocsPage() {
 
       <Card>
         <CardContent className="p-0">
-          <SwaggerUI url={`${API_URL}/docs-json`} docExpansion="list" />
+          <SwaggerUI url={`${apiUrl}/docs-json`} docExpansion="list" />
         </CardContent>
       </Card>
     </PageShell>

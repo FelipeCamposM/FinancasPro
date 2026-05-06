@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<style>
+  @font-face {
+    font-family: 'BebasNeue';
+    src: url('../fonts/BebasNeue-Regular.ttf') format('truetype');
+    font-display: swap;
+  }
+  @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Geist', sans-serif;
+    background: hsl(222 47% 5%);
+    color: hsl(210 40% 96%);
+    padding: 20px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+
+  .card {
+    background: hsl(223 39% 10%);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 18px 20px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .card-wide { grid-column: span 2; }
+
+  .top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.11em;
+    color: rgba(255,255,255,0.38);
+  }
+
+  .icon {
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .value {
+    font-family: 'BebasNeue', 'Geist', sans-serif;
+    font-size: 34px;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .desc {
+    font-size: 11px;
+    color: rgba(255,255,255,0.38);
+    line-height: 1.4;
+  }
+
+  .track {
+    height: 2px;
+    background: rgba(255,255,255,0.07);
+    border-radius: 9999px;
+    overflow: hidden;
+    margin-top: 2px;
+  }
+  .fill { height: 100%; border-radius: 9999px; }
+
+  .delta {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    padding: 2px 7px;
+    border-radius: 9999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    width: fit-content;
+  }
+
+  .divider {
+    height: 1px;
+    background: rgba(255,255,255,0.07);
+    margin: 2px 0;
+  }
+
+  .meta-row {
+    display: flex;
+    gap: 18px;
+  }
+  .meta-item { display: flex; flex-direction: column; gap: 2px; }
+  .meta-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.28); }
+  .meta-val   { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+<div class="grid">
+
+  <!-- Saldo (wide) -->
+  <div class="card card-wide">
+    <div class="top">
+      <span class="label">Saldo atual</span>
+      <div class="icon" style="background:rgba(96,165,250,0.12)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="hsl(213 94% 68%)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V22H4V12"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7"/></svg>
+      </div>
+    </div>
+    <div class="value" style="font-size:40px;color:hsl(213 94% 68%)">R$ 3.170,00</div>
+    <div class="track"><div class="fill" style="width:62%;background:hsl(217 91% 60%)"></div></div>
+    <div class="divider"></div>
+    <div class="meta-row">
+      <div class="meta-item">
+        <span class="meta-label">Renda</span>
+        <span class="meta-val" style="color:hsl(142 71% 60%)">R$ 8.400,00</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Gastos</span>
+        <span class="meta-val" style="color:hsl(351 95% 71%)">R$ 5.230,00</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Utilizado</span>
+        <span class="meta-val" style="color:rgba(255,255,255,0.65)">62%</span>
+      </div>
+      <div class="meta-item" style="margin-left:auto">
+        <span class="meta-label">Mês</span>
+        <span class="meta-val" style="color:rgba(255,255,255,0.50)">maio 2025</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Renda total -->
+  <div class="card">
+    <div class="top">
+      <span class="label">Renda total</span>
+      <div class="icon" style="background:rgba(34,197,94,0.10)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="hsl(142 71% 60%)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+      </div>
+    </div>
+    <div class="value" style="color:hsl(142 71% 60%)">R$ 8.400</div>
+    <div class="desc">Entradas em maio</div>
+    <div class="delta" style="background:rgba(34,197,94,0.10);color:hsl(142 71% 60%)">↑ +7.6% vs abr</div>
+  </div>
+
+  <!-- Gastos total -->
+  <div class="card">
+    <div class="top">
+      <span class="label">Gastos total</span>
+      <div class="icon" style="background:rgba(244,63,94,0.10)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="hsl(351 95% 71%)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>
+      </div>
+    </div>
+    <div class="value" style="color:hsl(351 95% 71%)">R$ 5.230</div>
+    <div class="desc">62% da renda no mês</div>
+    <div class="delta" style="background:rgba(34,197,94,0.10);color:hsl(142 71% 60%)">↓ −6.4% vs abr</div>
+  </div>
+
+  <!-- Parcelas pendentes -->
+  <div class="card">
+    <div class="top">
+      <span class="label">Parcelas pendentes</span>
+      <div class="icon" style="background:rgba(245,158,11,0.10)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="hsl(38 92% 67%)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </div>
+    </div>
+    <div class="value" style="color:hsl(38 92% 67%)">R$ 1.200</div>
+    <div class="desc">3 parcela(s) em aberto</div>
+    <div class="track"><div class="fill" style="width:45%;background:hsl(38 92% 67%)"></div></div>
+  </div>
+
+  <!-- Taxa de poupança -->
+  <div class="card">
+    <div class="top">
+      <span class="label">Taxa de poupança</span>
+      <div class="icon" style="background:rgba(139,92,246,0.10)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="hsl(263 78% 72%)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+      </div>
+    </div>
+    <div class="value" style="color:hsl(263 78% 72%)">37.7%</div>
+    <div class="desc">Meta saudável (&gt;20%)</div>
+    <div class="delta" style="background:rgba(139,92,246,0.10);color:hsl(263 78% 72%)">+4.2pp vs mês ant.</div>
+  </div>
+
+  <!-- Gasto médio diário -->
+  <div class="card">
+    <div class="top">
+      <span class="label">Gasto médio diário</span>
+      <div class="icon" style="background:rgba(96,165,250,0.10)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="hsl(213 94% 68%)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M13.73 21a10 10 0 1 1-3.46 0"/></svg>
+      </div>
+    </div>
+    <div class="value" style="color:hsl(213 94% 68%)">R$ 174</div>
+    <div class="desc">Baseado em 30 dias de maio</div>
+  </div>
+
+  <!-- Categoria dominante -->
+  <div class="card">
+    <div class="top">
+      <span class="label">Categoria dominante</span>
+      <div class="icon" style="background:rgba(251,146,60,0.10)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="hsl(27 96% 66%)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+      </div>
+    </div>
+    <div style="font-size:20px;font-weight:700;color:hsl(27 96% 66%);line-height:1.1;margin-top:2px">Alimentação</div>
+    <div class="desc">R$ 1.850,00 · 35,4% dos gastos</div>
+    <div class="track"><div class="fill" style="width:35%;background:hsl(27 96% 66%)"></div></div>
+  </div>
+
+</div>
+</body>
+</html>

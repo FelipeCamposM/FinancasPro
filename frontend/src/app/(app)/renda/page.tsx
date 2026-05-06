@@ -57,6 +57,7 @@ import {
 import { RendaDialog } from "./RendaDialog";
 import { PageShell } from "@/components/ui/page-shell";
 import { SectionHeader } from "@/components/ui/section-header";
+import { Badge } from "@/components/ui/badge";
 
 interface Renda {
   id: string;
@@ -89,13 +90,13 @@ const TIPO_LABELS: Record<string, string> = {
   outro: "Outro",
 };
 
-const TIPO_COLORS: Record<string, string> = {
-  salario: "bg-blue-100 text-blue-800",
-  freelance: "bg-violet-100 text-violet-800",
-  investimento: "bg-blue-100 text-blue-800",
-  aluguel: "bg-orange-100 text-orange-800",
-  bonus: "bg-yellow-100 text-yellow-800",
-  outro: "bg-gray-100 text-gray-700",
+const TIPO_VARIANTS: Record<string, "blue" | "violet" | "green" | "amber" | "slate"> = {
+  salario:      "blue",
+  freelance:    "violet",
+  investimento: "green",
+  aluguel:      "amber",
+  bonus:        "amber",
+  outro:        "slate",
 };
 
 const TIPO_ICONS: Record<string, React.ReactNode> = {
@@ -284,14 +285,15 @@ export default function RendaPage() {
     : 0;
 
   return (
-    <PageShell contentClassName="space-y-6">
+    <PageShell contentClassName="space-y-5">
       {/* Header */}
       <SectionHeader
         title="Renda"
+        titleColor="text-blue-400"
         description={`${total} ${total === 1 ? "registro" : "registros"}`}
         actions={
           <Button
-            className="bg-blue-500/20 border border-blue-400/40 text-blue-300 hover:bg-blue-500/30 hover:text-blue-200 backdrop-blur"
+            variant="default"
             onClick={() => {
               setSelectedRenda(null);
               setDialogOpen(true);
@@ -306,7 +308,7 @@ export default function RendaPage() {
       {/* Cards de sumário do período */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 ui-stagger">
         {/* Total Gastos */}
-        <Card className="border-rose-400/30 bg-rose-500/10 backdrop-blur-xl">
+        <Card className="rounded-xl border border-white/[0.09] bg-white/[0.04] backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5">
           <CardContent className="flex items-center gap-4 p-5">
             <div className="rounded-lg bg-rose-500/20 p-2.5 shrink-0">
               <TrendingDown className="h-5 w-5 text-rose-400" />
@@ -327,7 +329,7 @@ export default function RendaPage() {
         </Card>
 
         {/* Total Renda */}
-        <Card className="border-blue-400/30 bg-blue-500/10 backdrop-blur-xl">
+        <Card className="rounded-xl border border-white/[0.09] bg-white/[0.04] backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5">
           <CardContent className="flex items-center gap-4 p-5">
             <div className="rounded-lg bg-blue-500/20 p-2.5 shrink-0">
               <TrendingUp className="h-5 w-5 text-blue-400" />
@@ -351,8 +353,8 @@ export default function RendaPage() {
         <Card
           className={
             (summary?.diferenca ?? 0) >= 0
-              ? "border-blue-400/30 bg-blue-500/10 backdrop-blur-xl"
-              : "border-orange-400/30 bg-orange-500/10 backdrop-blur-xl"
+              ? "rounded-xl border border-white/[0.09] bg-white/[0.04] backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5"
+              : "rounded-xl border border-white/[0.09] bg-white/[0.04] backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5"
           }
         >
           <CardContent className="flex items-center gap-4 p-5">
@@ -394,7 +396,8 @@ export default function RendaPage() {
       </div>
 
       {/* Filtros */}
-      <div className="flex flex-wrap items-center gap-3">
+        <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3 backdrop-blur-xl">
+        <div className="flex flex-wrap items-center gap-3">
         <div className="relative min-w-[200px] max-w-xs flex-1">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-white/40" />
           <Input
@@ -403,6 +406,7 @@ export default function RendaPage() {
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
           />
+        </div>
         </div>
 
         <Select value={filterTipo} onValueChange={setFilterTipo}>
@@ -511,7 +515,7 @@ export default function RendaPage() {
 
       {!loading && !loadError && displayedRendas.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 ui-stagger">
-          <Card className="border-white/15 bg-white/[0.06] backdrop-blur-xl">
+          <Card className="rounded-lg border border-white/[0.07] bg-white/[0.03] backdrop-blur-xl">
             <CardContent className="p-4">
               <p className="text-[11px] uppercase tracking-wider text-white/45 font-semibold">
                 Exibição atual
@@ -523,7 +527,7 @@ export default function RendaPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-blue-400/25 bg-blue-500/10 backdrop-blur-xl">
+          <Card className="rounded-lg border border-white/[0.07] bg-white/[0.03] backdrop-blur-xl">
             <CardContent className="p-4">
               <p className="text-[11px] uppercase tracking-wider text-blue-300/80 font-semibold">
                 Valor total exibido
@@ -537,7 +541,7 @@ export default function RendaPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-indigo-400/25 bg-indigo-500/10 backdrop-blur-xl">
+          <Card className="rounded-lg border border-white/[0.07] bg-white/[0.03] backdrop-blur-xl">
             <CardContent className="p-4">
               <p className="text-[11px] uppercase tracking-wider text-indigo-300/80 font-semibold">
                 Recorrentes
@@ -557,32 +561,32 @@ export default function RendaPage() {
 
       {/* Table */}
       {loading ? (
-        <div className="rounded-lg border border-white/10 bg-white/[0.06] backdrop-blur-xl shadow-md overflow-hidden">
+        <div className="overflow-hidden rounded-xl border border-white/[0.09] bg-white/[0.03] backdrop-blur-xl">
           <Table>
             <TableHeader>
-              <TableRow className="bg-blue-500/10 hover:bg-blue-500/10 border-b border-white/10">
-                <TableHead className="text-blue-300 font-semibold">
+              <TableRow className="border-b border-white/[0.07] hover:bg-transparent">
+                <TableHead className="text-xs font-semibold uppercase tracking-[0.08em] text-white/30">
                   Descrição
                 </TableHead>
-                <TableHead className="text-blue-300 font-semibold">
+                <TableHead className="text-xs font-semibold uppercase tracking-[0.08em] text-white/30">
                   Origem
                 </TableHead>
-                <TableHead className="text-blue-300 font-semibold">
+                <TableHead className="text-xs font-semibold uppercase tracking-[0.08em] text-white/30">
                   Tipo
                 </TableHead>
-                <TableHead className="text-blue-300 font-semibold">
+                <TableHead className="text-xs font-semibold uppercase tracking-[0.08em] text-white/30">
                   Recorrência
                 </TableHead>
-                <TableHead className="text-blue-300 font-semibold">
+                <TableHead className="text-xs font-semibold uppercase tracking-[0.08em] text-white/30">
                   Mês ref.
                 </TableHead>
-                <TableHead className="text-blue-300 font-semibold">
+                <TableHead className="text-xs font-semibold uppercase tracking-[0.08em] text-white/30">
                   Recebimento
                 </TableHead>
-                <TableHead className="text-right text-blue-300 font-semibold">
+                <TableHead className="text-right text-xs font-semibold uppercase tracking-[0.08em] text-white/30">
                   Valor
                 </TableHead>
-                <TableHead className="w-28 text-center text-blue-300 font-semibold">
+                <TableHead className="w-28 text-center text-xs font-semibold uppercase tracking-[0.08em] text-white/30">
                   Ações
                 </TableHead>
               </TableRow>
@@ -616,32 +620,32 @@ export default function RendaPage() {
           description="Ajuste os filtros ou cadastre uma nova renda para continuar."
         />
       ) : (
-        <div className="rounded-lg border border-white/10 bg-white/[0.06] backdrop-blur-xl shadow-md overflow-hidden">
+        <div className="overflow-hidden rounded-xl border border-white/[0.09] bg-white/[0.03] backdrop-blur-xl">
           <Table>
             <TableHeader>
-              <TableRow className="bg-blue-500/10 hover:bg-blue-500/10 border-b border-white/10">
-                <TableHead className="text-blue-300 font-semibold">
+              <TableRow className="border-b border-white/[0.07] hover:bg-transparent">
+                <TableHead className="text-xs font-semibold uppercase tracking-[0.08em] text-white/30">
                   Descrição
                 </TableHead>
-                <TableHead className="text-blue-300 font-semibold">
+                <TableHead className="text-xs font-semibold uppercase tracking-[0.08em] text-white/30">
                   Origem
                 </TableHead>
-                <TableHead className="text-blue-300 font-semibold">
+                <TableHead className="text-xs font-semibold uppercase tracking-[0.08em] text-white/30">
                   Tipo
                 </TableHead>
-                <TableHead className="text-blue-300 font-semibold">
+                <TableHead className="text-xs font-semibold uppercase tracking-[0.08em] text-white/30">
                   Recorrência
                 </TableHead>
-                <TableHead className="text-blue-300 font-semibold">
+                <TableHead className="text-xs font-semibold uppercase tracking-[0.08em] text-white/30">
                   Mês ref.
                 </TableHead>
-                <TableHead className="text-blue-300 font-semibold">
+                <TableHead className="text-xs font-semibold uppercase tracking-[0.08em] text-white/30">
                   Recebimento
                 </TableHead>
-                <TableHead className="text-right text-blue-300 font-semibold">
+                <TableHead className="text-right text-xs font-semibold uppercase tracking-[0.08em] text-white/30">
                   Valor
                 </TableHead>
-                <TableHead className="w-28 text-center text-blue-300 font-semibold">
+                <TableHead className="w-28 text-center text-xs font-semibold uppercase tracking-[0.08em] text-white/30">
                   Ações
                 </TableHead>
               </TableRow>
@@ -650,7 +654,7 @@ export default function RendaPage() {
               {displayedRendas.map((renda) => (
                 <TableRow
                   key={renda.id}
-                  className="hover:bg-white/[0.04] border-white/5"
+                  className="border-b border-white/[0.04] transition-colors hover:bg-white/[0.03]"
                 >
                   <TableCell className="font-medium text-white">
                     {renda.descricao}
@@ -659,24 +663,24 @@ export default function RendaPage() {
                     {renda.origem}
                   </TableCell>
                   <TableCell>
-                    <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium bg-white/[0.08] text-white/70 border border-white/10">
+                    <Badge variant={TIPO_VARIANTS[renda.tipo] ?? "slate"}>
                       {TIPO_ICONS[renda.tipo]}
                       {TIPO_LABELS[renda.tipo] ?? renda.tipo}
-                    </span>
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     {renda.recorrente ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-indigo-500/20 border border-indigo-400/30 px-2 py-0.5 text-xs font-medium text-indigo-300">
+                      <Badge variant="violet">
                         <Repeat className="h-3 w-3" />
                         {renda.frequencia_recorrencia
                           ? FREQUENCIA_LABELS[renda.frequencia_recorrencia]
                           : "Recorrente"}
-                      </span>
+                      </Badge>
                     ) : renda.renda_origem_id ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-cyan-500/20 border border-cyan-400/30 px-2 py-0.5 text-xs font-medium text-cyan-300">
+                      <Badge variant="blue">
                         <CalendarCheck className="h-3 w-3" />
                         Instância
-                      </span>
+                      </Badge>
                     ) : (
                       <span className="text-xs text-white/30">–</span>
                     )}

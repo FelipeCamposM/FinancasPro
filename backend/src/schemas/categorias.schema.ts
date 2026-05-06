@@ -12,5 +12,10 @@ export const createCategoriaSchema = z.object({
 
 export const updateCategoriaSchema = createCategoriaSchema.partial();
 
+export const importCategoriasSchema = z.object({
+  categorias: z.array(createCategoriaSchema).min(1).max(200),
+});
+
 export type CreateCategoriaInput = z.infer<typeof createCategoriaSchema>;
 export type UpdateCategoriaInput = z.infer<typeof updateCategoriaSchema>;
+export type ImportCategoriasInput = z.infer<typeof importCategoriasSchema>;

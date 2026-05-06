@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Geist',sans-serif;background:hsl(222 47% 5%);color:hsl(210 40% 96%);padding:20px;}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start;margin-bottom:12px;}
+  .badge{display:inline-flex;align-items:center;gap:5px;border-radius:9999px;font-size:11px;font-weight:600;padding:3px 10px;border:1px solid;}
+  .label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;opacity:0.4;margin-bottom:6px;}
+  .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+</style>
+</head>
+<body>
+<div class="label">Status</div>
+<div class="row">
+  <span class="badge" style="background:rgba(245,158,11,0.10);border-color:rgba(251,191,36,0.40);color:hsl(43 96% 76%)">
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    Pendente
+  </span>
+  <span class="badge" style="background:rgba(59,130,246,0.10);border-color:rgba(96,165,250,0.40);color:hsl(213 94% 68%)">
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    Pago
+  </span>
+  <span class="badge" style="background:rgba(244,63,94,0.10);border-color:rgba(251,113,133,0.40);color:hsl(353 96% 80%)">
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+    Cancelado
+  </span>
+  <span class="badge" style="background:rgba(239,68,68,0.10);border-color:rgba(248,113,113,0.40);color:hsl(0 91% 77%)">Vencido</span>
+</div>
+<div class="label">Module</div>
+<div class="row">
+  <span class="badge" style="background:rgba(59,130,246,0.10);border-color:rgba(96,165,250,0.30);color:hsl(213 94% 68%)">Renda</span>
+  <span class="badge" style="background:rgba(244,63,94,0.10);border-color:rgba(251,113,133,0.30);color:hsl(353 96% 80%)">Gasto</span>
+  <span class="badge" style="background:rgba(139,92,246,0.10);border-color:rgba(167,139,250,0.40);color:hsl(267 84% 81%)">
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+    Ativa
+  </span>
+  <span class="badge" style="background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.20);color:rgba(255,255,255,0.4)">
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+    Cancelada
+  </span>
+</div>
+<div class="label">Payment + Category</div>
+<div class="row">
+  <span class="badge" style="background:rgba(245,158,11,0.15);border-color:rgba(251,191,36,0.30);color:hsl(38 92% 67%)">
+    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+    1 / 6
+  </span>
+  <span class="badge" style="background:rgba(96,165,250,0.08);border-color:rgba(96,165,250,0.20);color:rgba(255,255,255,0.5)">À vista</span>
+  <span class="badge" style="background:rgba(139,92,246,0.08);border-color:rgba(139,92,246,0.20);color:hsl(267 84% 81%)">Alimentação</span>
+  <span class="badge" style="background:rgba(244,63,94,0.08);border-color:rgba(244,63,94,0.20);color:hsl(351 95% 71%)">Lazer</span>
+  <span class="badge" style="background:rgba(59,130,246,0.08);border-color:rgba(59,130,246,0.20);color:hsl(213 94% 68%)">Pix</span>
+</div>
+</body>
+</html>

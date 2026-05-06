@@ -6,7 +6,7 @@ import {
   updateCartao,
   deleteCartao,
 } from "../controllers/cartoes.controller";
-import { authenticate } from "../middlewares/auth.middleware";
+import { authenticateAny } from "../middlewares/auth.middleware";
 import { paginate } from "../middlewares/pagination.middleware";
 import { validate } from "../middlewares/validate.middleware";
 import {
@@ -73,8 +73,8 @@ const router = Router();
  *             schema: { $ref: '#/components/schemas/Cartao' }
  *       422: { description: Dados inválidos }
  */
-router.get("/", authenticate, paginate, listCartoes);
-router.post("/", authenticate, validate(createCartaoSchema), createCartao);
+router.get("/", authenticateAny, paginate, listCartoes);
+router.post("/", authenticateAny, validate(createCartaoSchema), createCartao);
 
 /**
  * @swagger
@@ -131,8 +131,8 @@ router.post("/", authenticate, validate(createCartaoSchema), createCartao);
  *     responses:
  *       204: { description: Removido }
  */
-router.get("/:id", authenticate, getCartao);
-router.put("/:id", authenticate, validate(updateCartaoSchema), updateCartao);
-router.delete("/:id", authenticate, deleteCartao);
+router.get("/:id", authenticateAny, getCartao);
+router.put("/:id", authenticateAny, validate(updateCartaoSchema), updateCartao);
+router.delete("/:id", authenticateAny, deleteCartao);
 
 export default router;

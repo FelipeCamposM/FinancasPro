@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Geist',sans-serif;background:hsl(222 47% 5%);color:hsl(210 40% 96%);padding:20px;}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start;}
+  .btn{display:inline-flex;align-items:center;gap:8px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;transition:all 200ms;border:none;padding:0 16px;height:40px;white-space:nowrap;}
+  .label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;opacity:0.4;margin-bottom:8px;}
+  .section{margin-bottom:16px;}
+</style>
+</head>
+<body>
+<div class="section">
+  <div class="label">Variant</div>
+  <div class="row">
+    <button class="btn" style="background:rgba(59,130,246,0.85);color:#fff;box-shadow:0 8px 24px rgba(37,99,235,0.28)">Default</button>
+    <button class="btn" style="background:rgba(244,63,94,0.85);color:#fff;box-shadow:0 8px 24px rgba(244,63,94,0.28)">Destructive</button>
+    <button class="btn" style="background:rgba(59,130,246,0.15);color:hsl(213 94% 68%)">Secondary</button>
+    <button class="btn" style="background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.8);border:1px solid rgba(255,255,255,0.20)">Outline</button>
+    <button class="btn" style="background:transparent;color:rgba(255,255,255,0.8)">Ghost</button>
+    <button class="btn" style="background:transparent;color:hsl(213 94% 68%);text-decoration:underline;text-underline-offset:4px">Link</button>
+    <button class="btn" style="background:rgba(59,130,246,0.85);color:#fff;opacity:0.5;cursor:not-allowed">Disabled</button>
+  </div>
+</div>
+<div class="section">
+  <div class="label">Module CTAs</div>
+  <div class="row">
+    <button class="btn" style="background:rgba(244,63,94,0.20);border:1px solid rgba(251,113,133,0.40);color:hsl(353 96% 80%)">+ Novo Gasto</button>
+    <button class="btn" style="background:rgba(59,130,246,0.20);border:1px solid rgba(96,165,250,0.40);color:hsl(212 96% 78%)">+ Nova Renda</button>
+    <button class="btn" style="background:rgba(139,92,246,0.20);border:1px solid rgba(167,139,250,0.40);color:hsl(267 84% 81%)">+ Nova Assinatura</button>
+    <button class="btn" style="background:rgba(59,130,246,0.20);border:1px solid rgba(96,165,250,0.40);color:hsl(213 94% 68%)">+ Novo Cartão</button>
+  </div>
+</div>
+<div class="section">
+  <div class="label">Size</div>
+  <div class="row" style="align-items:center">
+    <button class="btn" style="background:rgba(59,130,246,0.85);color:#fff;height:44px;padding:0 32px;font-size:14px">Large</button>
+    <button class="btn" style="background:rgba(59,130,246,0.85);color:#fff">Default</button>
+    <button class="btn" style="background:rgba(59,130,246,0.85);color:#fff;height:36px;font-size:12px;padding:0 12px">Small</button>
+    <button class="btn" style="background:rgba(59,130,246,0.85);color:#fff;height:40px;width:40px;padding:0;justify-content:center">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+  </div>
+</div>
+</body>
+</html>

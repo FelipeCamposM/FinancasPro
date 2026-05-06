@@ -206,7 +206,7 @@ export const updateAssinatura = async (
     const values: unknown[] = [];
     let idx = 1;
 
-    const updatable = ["descricao", "valor", "categoria_id", "observacoes"];
+    const updatable = ["descricao", "valor", "categoria_id", "observacoes", "dia_cobranca"];
     const typedBody = body as Record<string, unknown>;
     for (const key of updatable) {
       if (key in typedBody) {
@@ -225,33 +225,73 @@ export const updateAssinatura = async (
       `UPDATE assinaturas SET ${fields.join(", ")} WHERE id = $${idx} RETURNING *`,
       values,
     );
+    const updated = rows[0];
 
-    // Propaga descricao e valor para gastos futuros pendentes (somente se ativa)
-    const today = new Date().toISOString().split("T")[0];
-    if (existing[0].ativa && (body.descricao || body.valor !== undefined)) {
-      const gastoFields: string[] = [];
-      const gastoValues: unknown[] = [];
-      let gi = 1;
-      if (body.descricao) {
-        gastoFields.push(`descricao = $${gi++}`);
-        gastoValues.push(body.descricao);
-      }
-      if (body.valor !== undefined) {
-        gastoFields.push(`valor_total = $${gi++}`);
-        gastoValues.push(body.valor);
-      }
-      if (gastoFields.length) {
-        gastoValues.push(id, today);
+    const today = new Date();
+    const todayStr = today.toISOString().split("T")[0];
+
+    if (existing[0].ativa) {
+      if (body.dia_cobranca !== undefined) {
+        // dia_cobranca mudou: apaga pendentes futuros e regenera com novo dia
         await client.query(
-          `UPDATE gastos SET ${gastoFields.join(", ")}
-           WHERE assinatura_id = $${gi++} AND data_gasto >= $${gi++} AND status = 'pendente'`,
-          gastoValues,
+          `DELETE FROM gastos WHERE assinatura_id = $1 AND data_gasto >= $2 AND status = 'pendente'`,
+          [id, todayStr],
         );
+
+        const anoBase = today.getFullYear();
+        const mesBase = today.getMonth() + 1;
+
+        for (let i = 0; i < MESES_ANTECIPADOS; i++) {
+          const totalMeses = mesBase - 1 + i;
+          const ano = anoBase + Math.floor(totalMeses / 12);
+          const mes = (totalMeses % 12) + 1;
+          const dataStr = dataParaDia(ano, mes, updated.dia_cobranca);
+
+          await client.query(
+            `INSERT INTO gastos
+               (user_id, descricao, valor_total, categoria_id, forma_pagamento, cartao_id,
+                tipo_pagamento, quantidade_parcelas, data_gasto, observacoes, status,
+                assinatura_id, numero_parcela)
+             VALUES ($1,$2,$3,$4,$5,$6,'a_vista',1,$7,$8,'pendente',$9,1)`,
+            [
+              userId,
+              updated.descricao,
+              updated.valor,
+              updated.categoria_id ?? null,
+              updated.forma_pagamento,
+              updated.cartao_id ?? null,
+              dataStr,
+              updated.observacoes ?? null,
+              id,
+            ],
+          );
+        }
+      } else if (body.descricao || body.valor !== undefined) {
+        // Apenas descricao/valor: atualiza in-place nos gastos pendentes
+        const gastoFields: string[] = [];
+        const gastoValues: unknown[] = [];
+        let gi = 1;
+        if (body.descricao) {
+          gastoFields.push(`descricao = $${gi++}`);
+          gastoValues.push(body.descricao);
+        }
+        if (body.valor !== undefined) {
+          gastoFields.push(`valor_total = $${gi++}`);
+          gastoValues.push(body.valor);
+        }
+        if (gastoFields.length) {
+          gastoValues.push(id, todayStr);
+          await client.query(
+            `UPDATE gastos SET ${gastoFields.join(", ")}
+             WHERE assinatura_id = $${gi++} AND data_gasto >= $${gi++} AND status = 'pendente'`,
+            gastoValues,
+          );
+        }
       }
     }
 
     await client.query("COMMIT");
-    res.json(rows[0]);
+    res.json(updated);
   } catch (err) {
     await client.query("ROLLBACK");
     next(err);

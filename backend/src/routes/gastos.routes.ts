@@ -8,7 +8,6 @@ import {
   createGastoAtalho,
 } from "../controllers/gastos.controller";
 import { listParcelasByGasto } from "../controllers/parcelas.controller";
-import { authenticate } from "../middlewares/auth.middleware";
 import { authenticateAny } from "../middlewares/auth.middleware";
 import { paginate } from "../middlewares/pagination.middleware";
 import { validate } from "../middlewares/validate.middleware";
@@ -95,8 +94,8 @@ const router = Router();
  *             schema: { $ref: '#/components/schemas/Gasto' }
  *       422: { description: Dados inválidos }
  */
-router.get("/", authenticate, paginate, listGastos);
-router.post("/", authenticate, validate(createGastoSchema), createGasto);
+router.get("/", authenticateAny, paginate, listGastos);
+router.post("/", authenticateAny, validate(createGastoSchema), createGasto);
 
 /**
  * @swagger
@@ -221,9 +220,9 @@ router.post("/atalho", authenticateAny, createGastoAtalho);
  *     responses:
  *       204: { description: Removido }
  */
-router.get("/:id", authenticate, getGasto);
-router.put("/:id", authenticate, validate(updateGastoSchema), updateGasto);
-router.delete("/:id", authenticate, deleteGasto);
+router.get("/:id", authenticateAny, getGasto);
+router.put("/:id", authenticateAny, validate(updateGastoSchema), updateGasto);
+router.delete("/:id", authenticateAny, deleteGasto);
 
 /**
  * @swagger
@@ -252,6 +251,6 @@ router.delete("/:id", authenticate, deleteGasto);
  *                 data:       { type: array, items: { $ref: '#/components/schemas/Parcela' } }
  *                 pagination: { $ref: '#/components/schemas/Pagination' }
  */
-router.get("/:gastoId/parcelas", authenticate, paginate, listParcelasByGasto);
+router.get("/:gastoId/parcelas", authenticateAny, paginate, listParcelasByGasto);
 
 export default router;

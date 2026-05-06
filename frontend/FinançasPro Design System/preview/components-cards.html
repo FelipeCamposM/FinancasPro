@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Geist',sans-serif;background:hsl(222 47% 5%);color:hsl(210 40% 96%);padding:20px;}
+  .label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;opacity:0.40;margin-bottom:8px;}
+  .cards-row{display:flex;gap:10px;flex-wrap:wrap;}
+  .glass-card{border:1px solid rgba(255,255,255,0.14);border-radius:14px;background:linear-gradient(165deg,rgba(255,255,255,0.10),rgba(255,255,255,0.04));box-shadow:0 10px 26px rgba(2,6,23,0.26);backdrop-filter:blur(18px);padding:16px 18px;min-width:160px;}
+  .glass-card-strong{border:1px solid rgba(255,255,255,0.18);border-radius:14px;background:linear-gradient(165deg,rgba(255,255,255,0.14),rgba(255,255,255,0.05));box-shadow:0 16px 40px rgba(2,6,23,0.42);backdrop-filter:blur(20px);padding:16px 18px;min-width:160px;}
+  .flat-card{border:1px solid rgba(255,255,255,0.10);border-radius:14px;background:hsl(223 39% 12%);padding:16px 18px;min-width:160px;}
+  .card-name{font-size:10px;font-weight:700;opacity:0.45;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;}
+  .card-val{font-size:18px;font-weight:700;color:hsl(213 94% 68%);font-variant-numeric:tabular-nums;}
+  .card-sub{font-size:10px;opacity:0.45;margin-top:3px;}
+</style>
+</head>
+<body>
+<div class="label">Card Surfaces</div>
+<div class="cards-row">
+  <div class="flat-card">
+    <div class="card-name">Flat Card</div>
+    <div class="card-val">R$ 3.200,00</div>
+    <div class="card-sub">bg: hsl(223 39% 12%)</div>
+  </div>
+  <div class="glass-card">
+    <div class="card-name">Glass Soft</div>
+    <div class="card-val">R$ 3.200,00</div>
+    <div class="card-sub">blur(18px) / 0.10 → 0.04</div>
+  </div>
+  <div class="glass-card-strong">
+    <div class="card-name">Glass Strong</div>
+    <div class="card-val">R$ 3.200,00</div>
+    <div class="card-sub">blur(20px) / 0.14 → 0.05</div>
+  </div>
+  <div style="border:1px solid rgba(244,63,94,0.30);border-radius:14px;background:rgba(244,63,94,0.10);backdrop-filter:blur(18px);padding:16px 18px;min-width:160px;">
+    <div class="card-name" style="color:rgba(253,164,175,0.7)">Tinted — Gastos</div>
+    <div class="card-val" style="color:hsl(353 96% 80%)">R$ 5.230,00</div>
+    <div class="card-sub">rose-500/10 border-rose-400/30</div>
+  </div>
+  <div style="border:1px solid rgba(139,92,246,0.30);border-radius:14px;background:rgba(139,92,246,0.10);backdrop-filter:blur(18px);padding:16px 18px;min-width:160px;">
+    <div class="card-name" style="color:rgba(196,181,253,0.7)">Tinted — Assinaturas</div>
+    <div class="card-val" style="color:hsl(267 84% 81%)">R$ 340,00</div>
+    <div class="card-sub">violet-500/10 border-violet-400/30</div>
+  </div>
+</div>
+</body>
+</html>

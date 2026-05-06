@@ -46,6 +46,7 @@ export const updateAssinaturaSchema = z.object({
   valor: z.number().positive().optional(),
   categoria_id: z.number().int().positive().nullable().optional(),
   observacoes: z.string().max(1000).nullable().optional(),
+  dia_cobranca: z.number().int().min(1).max(31).optional(),
 });
 
 export type CreateAssinaturaInput = z.infer<typeof createAssinaturaSchema>;

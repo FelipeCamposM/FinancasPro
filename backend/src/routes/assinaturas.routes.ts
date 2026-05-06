@@ -8,7 +8,7 @@ import {
   reativarAssinatura,
   deleteAssinatura,
 } from "../controllers/assinaturas.controller";
-import { authenticate } from "../middlewares/auth.middleware";
+import { authenticateAny } from "../middlewares/auth.middleware";
 import { validate } from "../middlewares/validate.middleware";
 import {
   createAssinaturaSchema,
@@ -18,7 +18,7 @@ import {
 
 const router = Router();
 
-router.use(authenticate);
+router.use(authenticateAny);
 
 /**
  * @swagger

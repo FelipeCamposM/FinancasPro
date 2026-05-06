@@ -30,7 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { CreditCard, Loader2 } from "lucide-react";
 
 // ── Schemas ──────────────────────────────────────────────────────────────────
 
@@ -233,7 +233,10 @@ export function CartaoDialog({ open, onClose, onSuccess, cartao }: Props) {
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{isEdit ? "Editar Cartão" : "Novo Cartão"}</DialogTitle>
+          <DialogTitle className="flex items-center gap-2 text-base">
+            <CreditCard className="h-5 w-5 text-blue-300" />
+            {isEdit ? "Editar Cartão" : "Novo Cartão"}
+          </DialogTitle>
         </DialogHeader>
 
         {isEdit ? (

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Geist',sans-serif;background:hsl(222 47% 5%);color:hsl(210 40% 96%);padding:20px;}
+  .row{display:flex;gap:14px;flex-wrap:wrap;}
+  .cc{border-radius:16px;padding:18px;width:200px;height:120px;position:relative;flex-shrink:0;box-shadow:0 8px 24px rgba(2,6,23,0.4);}
+  .cc-bank{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;opacity:0.7;}
+  .cc-name{font-size:11px;font-weight:600;margin-top:2px;}
+  .cc-num{font-family:'Geist Mono',monospace;font-size:13px;letter-spacing:0.15em;margin-top:14px;}
+  .cc-bottom{position:absolute;bottom:14px;left:18px;right:18px;display:flex;justify-content:space-between;align-items:flex-end;}
+  .cc-type{font-size:9px;opacity:0.6;text-transform:uppercase;letter-spacing:0.1em;}
+  .cc-brand{font-size:11px;font-weight:600;}
+  .wifi{position:absolute;top:18px;right:18px;opacity:0.6;}
+  .label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;opacity:0.4;margin-bottom:8px;}
+</style>
+</head>
+<body>
+<div class="label">Credit Card Visual Component</div>
+<div class="row">
+  <!-- Blue card -->
+  <div class="cc" style="background:#1a56db;color:#fff">
+    <div class="wifi"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" transform="rotate(90)"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg></div>
+    <div class="cc-bank">Nubank</div>
+    <div class="cc-name">Meu Cartão</div>
+    <div class="cc-num">•••• •••• •••• 4242</div>
+    <div class="cc-bottom">
+      <div><div class="cc-type">Crédito</div><div class="cc-brand">Visa</div></div>
+      <img src="assets/brand_cardlogos/visa.svg" style="height:20px;width:auto;filter:brightness(0) invert(1);opacity:0.85" />
+    </div>
+  </div>
+  <!-- Dark card -->
+  <div class="cc" style="background:#111827;color:#fff">
+    <div class="wifi"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" transform="rotate(90)"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg></div>
+    <div class="cc-bank">Itaú</div>
+    <div class="cc-name">Black</div>
+    <div class="cc-num">•••• •••• •••• 9999</div>
+    <div class="cc-bottom">
+      <div><div class="cc-type">Créd/Déb</div><div class="cc-brand">Mastercard</div></div>
+      <img src="assets/brand_cardlogos/mastercard.svg" style="height:24px;width:auto;filter:brightness(0) invert(1);opacity:0.85" />
+    </div>
+  </div>
+  <!-- Light card (auto contrast) -->
+  <div class="cc" style="background:#f5f0e8;color:#1a1a1a">
+    <div class="wifi" style="color:#1a1a1a"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" transform="rotate(90)"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg></div>
+    <div class="cc-bank">Banco do Brasil</div>
+    <div class="cc-name">Clássico</div>
+    <div class="cc-num" style="color:#1a1a1a">•••• •••• •••• 0101</div>
+    <div class="cc-bottom" style="color:#1a1a1a">
+      <div><div class="cc-type" style="opacity:0.5">Débito</div><div class="cc-brand">Elo</div></div>
+      <img src="assets/brand_cardlogos/elo.svg" style="height:20px;width:auto;" />
+    </div>
+  </div>
+</div>
+</body>
+</html>

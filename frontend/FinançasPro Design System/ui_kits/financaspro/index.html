@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FinançasPro — UI Kit</title>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+  @font-face {
+    font-family: 'BebasNeue';
+    src: url('../../fonts/BebasNeue-Regular.ttf') format('truetype');
+    font-display: swap;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body, #root { height: 100%; }
+  body {
+    font-family: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #070d1c;
+    color: #e8edf8;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+
+  /* Animated background canvas */
+  #bg-canvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+  }
+  #root {
+    position: relative;
+    z-index: 1;
+  }
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.10); border-radius: 3px; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .anim { opacity: 1; }
+  .d1,.d2,.d3,.d4,.d5,.d6 { opacity: 1; }
+</style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+<div id="root"></div>
+
+<script>
+// Subtle animated background — slow drifting orbs
+(function() {
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+
+  // Orb definitions — positions as fractions of canvas size
+  const orbs = [
+    { xf: 0.15, yf: 0.20, r: 0.42, hue: 217, speed: 0.00018, phase: 0.0,  opacity: 0.22 },
+    { xf: 0.82, yf: 0.12, r: 0.30, hue: 258, speed: 0.00013, phase: 1.8,  opacity: 0.18 },
+    { xf: 0.65, yf: 0.78, r: 0.34, hue: 200, speed: 0.00015, phase: 3.5,  opacity: 0.16 },
+    { xf: 0.08, yf: 0.82, r: 0.24, hue: 230, speed: 0.00020, phase: 5.1,  opacity: 0.14 },
+    { xf: 0.52, yf: 0.48, r: 0.20, hue: 217, speed: 0.00012, phase: 2.4,  opacity: 0.10 },
+  ];
+
+  function resize() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  let t = 0;
+  function draw() {
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    // Base dark background
+    ctx.fillStyle = '#070d1c';
+    ctx.fillRect(0, 0, W, H);
+
+    orbs.forEach(o => {
+      // Gentle drift — each orb moves in a slow Lissajous path
+      const drift = 0.055; // fraction of canvas
+      const cx = (o.xf + Math.sin(t * o.speed * 1.3 + o.phase) * drift) * W;
+      const cy = (o.yf + Math.cos(t * o.speed + o.phase + 1) * drift) * H;
+      const radius = o.r * Math.min(W, H);
+
+      // Slow breathe in opacity
+      const breathe = 1 + 0.18 * Math.sin(t * o.speed * 2.5 + o.phase);
+      const alpha = o.opacity * breathe;
+
+      const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+      grad.addColorStop(0,   `hsla(${o.hue},75%,62%,${alpha})`);
+      grad.addColorStop(0.5, `hsla(${o.hue},70%,50%,${alpha * 0.4})`);
+      grad.addColorStop(1,   `hsla(${o.hue},65%,40%,0)`);
+
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.fillStyle = grad;
+      ctx.fill();
+    });
+
+    // Subtle vignette to keep edges dark
+    const vignette = ctx.createRadialGradient(W/2, H/2, H*0.3, W/2, H/2, H*0.9);
+    vignette.addColorStop(0, 'rgba(0,0,0,0)');
+    vignette.addColorStop(1, 'rgba(3,6,20,0.65)');
+    ctx.fillStyle = vignette;
+    ctx.fillRect(0, 0, W, H);
+
+    t++;
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+</script>
+
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+/* ─── Tokens ──────────────────────────────────────────────── */
+const T = {
+  bgBase:    'transparent',
+  bgEl:      'rgba(6,10,28,0.78)',
+  bgCard:    'rgba(14,22,50,0.88)',
+  bgCard2:   'rgba(18,28,58,0.94)',
+  sidebar:   'rgba(6,10,28,0.92)',
+  border:    'rgba(255,255,255,0.09)',
+  borderMd:  'rgba(255,255,255,0.13)',
+  fg:        '#e8edf8',
+  fgMuted:   'rgba(255,255,255,0.45)',
+  fgDim:     'rgba(255,255,255,0.28)',
+  blue:      '#3b82f6',
+  blue4:     '#60a5fa',
+  blue3:     '#93c5fd',
+  rose4:     '#fb7185',
+  rose3:     '#fda4af',
+  amber4:    '#fbbf24',
+  amber3:    '#fcd34d',
+  violet4:   '#a78bfa',
+  green5:    '#4ade80',
+};
+
+/* ─── Helpers ─────────────────────────────────────────────── */
+const brl = v => Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+
+/* ─── SVG Icons ───────────────────────────────────────────── */
+const I = {
+  Dashboard: ({s=16,c='currentColor'}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>,
+  TrendDown: ({s=16,c='currentColor'}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>,
+  TrendUp:   ({s=16,c='currentColor'}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>,
+  Card:      ({s=16,c='currentColor'}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>,
+  Repeat:    ({s=16,c='currentColor'}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>,
+  Wallet:    ({s=16,c='currentColor'}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M20 12V22H4V12"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7"/></svg>,
+  Clock:     ({s=16,c='currentColor'}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
+  Plus:      ({s=16,c='currentColor'}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+  ChevL:     ({s=14,c='currentColor'}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>,
+  ChevR:     ({s=14,c='currentColor'}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>,
+  ChevD:     ({s=13,c='currentColor'}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>,
+  Search:    ({s=14,c='currentColor'}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
+  User:      ({s=14,c='currentColor'}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+  LogOut:    ({s=14,c='currentColor'}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
+  Target:    ({s=14,c='currentColor'}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>,
+  Flame:     ({s=14,c='currentColor'}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>,
+  Bar:       ({s=14,c='currentColor'}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>,
+  Piggy:     ({s=14,c='currentColor'}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8 0 3 2 4.5V20h4v-2h3v2h4v-4c1-.8 1.7-1.8 2-3h1v-4h-1c0-1-.5-1.5-1-2z"/><path d="M2 9v1a2 2 0 0 0 2 2h1"/><path d="M16 11h.01"/></svg>,
+  Pencil:    ({s=13,c='currentColor'}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
+  Trash:     ({s=13,c='currentColor'}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6m4-6v6"/></svg>,
+  Wifi:      ({s=14,c='currentColor'}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>,
+  Filter:    ({s=13,c='currentColor'}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>,
+};
+
+/* ─── Shared small components ─────────────────────────────── */
+function Badge({children, color='blue'}) {
+  const p = {
+    blue:   ['rgba(59,130,246,0.14)', 'rgba(96,165,250,0.30)',  T.blue4],
+    rose:   ['rgba(244,63,94,0.14)',  'rgba(251,113,133,0.30)', T.rose3],
+    amber:  ['rgba(245,158,11,0.14)', 'rgba(251,191,36,0.30)',  T.amber3],
+    violet: ['rgba(139,92,246,0.14)', 'rgba(167,139,250,0.30)', T.violet4],
+    green:  ['rgba(34,197,94,0.14)',  'rgba(74,222,128,0.30)',  T.green5],
+    slate:  ['rgba(255,255,255,0.07)','rgba(255,255,255,0.15)', 'rgba(255,255,255,0.50)'],
+  }[color]||['rgba(255,255,255,0.07)','rgba(255,255,255,0.15)','rgba(255,255,255,0.50)'];
+  return <span style={{display:'inline-flex',alignItems:'center',gap:4,borderRadius:9999,fontSize:10,fontWeight:600,padding:'2px 8px',background:p[0],border:`1px solid ${p[1]}`,color:p[2]}}>{children}</span>;
+}
+
+function Btn({children, variant='default', onClick, style:s={}}) {
+  const v = {
+    default:   {bg:'#3b82f6',      color:'#fff',              border:'none',                           shadow:'0 4px 16px rgba(37,99,235,0.30)'},
+    ghost:     {bg:'transparent',            color:'rgba(255,255,255,0.70)',border:'none',                      shadow:'none'},
+    rose:      {bg:'rgba(244,63,94,0.16)',   color:T.rose3,             border:'1px solid rgba(251,113,133,0.35)',shadow:'none'},
+    violet:    {bg:'rgba(139,92,246,0.16)',  color:T.violet4,           border:'1px solid rgba(167,139,250,0.35)',shadow:'none'},
+    blue_soft: {bg:'rgba(59,130,246,0.14)',  color:T.blue3,             border:'1px solid rgba(96,165,250,0.30)', shadow:'none'},
+    outline:   {bg:'rgba(255,255,255,0.05)', color:'rgba(255,255,255,0.75)',border:`1px solid ${T.border}`,     shadow:'none'},
+  }[variant]||{bg:'#3b82f6',color:'#fff',border:'none',shadow:'none'};
+  return (
+    <button onClick={onClick} style={{
+      display:'inline-flex',alignItems:'center',gap:6,
+      height:36,padding:'0 14px',borderRadius:9,fontFamily:'inherit',
+      fontSize:12,fontWeight:600,cursor:'pointer',transition:'all 150ms',
+      background:v.bg,color:v.color,border:v.border,boxShadow:v.shadow,...s
+    }}>{children}</button>
+  );
+}
+
+function KpiCard({label, value, desc, icon, color='blue', wide=false, extra}) {
+  const cols = {
+    blue:   {val:T.blue4,   icon:'rgba(59,130,246,0.16)',  iconC:T.blue4,   bar:'#3b82f6',  track:'rgba(59,130,246,0.15)'},
+    rose:   {val:T.rose4,   icon:'rgba(244,63,94,0.16)',   iconC:T.rose4,   bar:'#f43f5e',    track:'rgba(244,63,94,0.15)'},
+    amber:  {val:T.amber4,  icon:'rgba(245,158,11,0.16)',  iconC:T.amber4,  bar:'#fbbf24',   track:'rgba(245,158,11,0.15)'},
+    violet: {val:T.violet4, icon:'rgba(139,92,246,0.16)',  iconC:T.violet4, bar:'#8b5cf6',  track:'rgba(139,92,246,0.15)'},
+    green:  {val:T.green5,  icon:'rgba(34,197,94,0.16)',   iconC:T.green5,  bar:'#22c55e',  track:'rgba(34,197,94,0.15)'},
+  }[color]||{val:T.blue4,icon:'rgba(59,130,246,0.16)',iconC:T.blue4,bar:'#3b82f6',track:'rgba(59,130,246,0.15)'};
+
+  return (
+    <div style={{
+      background:T.bgCard, border:`1px solid ${T.border}`,
+      borderRadius:14, padding:'18px 20px',
+      gridColumn: wide?'span 2':'span 1',
+      display:'flex', flexDirection:'column', gap:12,
+      backdropFilter:'blur(20px)',WebkitBackdropFilter:'blur(20px)',
+    }}>
+      <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:8}}>
+        <span style={{fontSize:10,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.11em',color:T.fgDim}}>{label}</span>
+        <div style={{width:32,height:32,borderRadius:9,background:cols.icon,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,color:cols.iconC}}>
+          {icon}
+        </div>
+      </div>
+      <div style={{fontFamily:'BebasNeue,Geist,sans-serif',fontSize:wide?42:32,letterSpacing:'0.02em',lineHeight:1,fontVariantNumeric:'tabular-nums',color:cols.val}}>{value}</div>
+      {desc && <div style={{fontSize:11,color:T.fgMuted}}>{desc}</div>}
+      {extra}
+    </div>
+  );
+}
+
+/* ─── Mock data ───────────────────────────────────────────── */
+const GASTOS = [
+  {id:'1',desc:'Netflix',            val:55.90,  date:'01/05',cat:'Assinaturas',catC:'#818cf8',forma:'Crédito',  status:'pago',     parcela:null},
+  {id:'2',desc:'Supermercado Extra', val:312.40, date:'03/05',cat:'Alimentação', catC:'#fb923c',forma:'Pix',      status:'pendente', parcela:null},
+  {id:'3',desc:'iPhone 15 Pro',      val:599.92, date:'10/04',cat:'Tecnologia',  catC:'#60a5fa',forma:'Crédito',  status:'pago',     parcela:{n:3,t:12}},
+  {id:'4',desc:'Uber',               val:38.50,  date:'05/05',cat:'Transporte',  catC:'#4ade80',forma:'Pix',      status:'pago',     parcela:null},
+  {id:'5',desc:'Academia Smart Fit', val:89.90,  date:'01/05',cat:'Saúde',       catC:'#f472b6',forma:'Débito',   status:'pendente', parcela:null},
+  {id:'6',desc:'Spotify',            val:21.90,  date:'02/05',cat:'Assinaturas', catC:'#818cf8',forma:'Crédito',  status:'pago',     parcela:null},
+];
+const CARTOES = [
+  {id:'1',apelido:'Nubank',      banco:'Nubank',          bandeira:'visa',       tipo:'Crédito',   num:'4242',nome:'FELIPE M',limite:8000, fecha:3,  vence:10, cor:'#7c3aed',ativo:true},
+  {id:'2',apelido:'Itaú Black',  banco:'Itaú',            bandeira:'mastercard', tipo:'Créd/Déb',  num:'9999',nome:'FELIPE M',limite:15000,fecha:25, vence:2,  cor:'#0f172a',ativo:true},
+  {id:'3',apelido:'BB Clássico', banco:'Banco do Brasil', bandeira:'elo',        tipo:'Débito',    num:'0101',nome:'FELIPE M',limite:3000, fecha:null,vence:null,cor:'#f1f5e8',ativo:false},
+];
+const ASSINATURAS = [
+  {id:'1',desc:'Netflix',    val:55.90, forma:'Crédito',dia:1, ativa:true, cat:'Streaming'},
+  {id:'2',desc:'Spotify',    val:21.90, forma:'Crédito',dia:2, ativa:true, cat:'Música'},
+  {id:'3',desc:'GitHub Pro', val:19.90, forma:'Crédito',dia:5, ativa:true, cat:'Tecnologia'},
+  {id:'4',desc:'Adobe CC',   val:349.90,forma:'Crédito',dia:10,ativa:true, cat:'Tecnologia'},
+  {id:'5',desc:'HBO Max',    val:34.90, forma:'Débito', dia:15,ativa:false,cat:'Streaming'},
+];
+const RENDAS = [
+  {id:'1',desc:'Salário',          val:7000, tipo:'Salário',      data:'05/05',rec:true},
+  {id:'2',desc:'Freelance Design', val:1200, tipo:'Freelance',    data:'10/05',rec:false},
+  {id:'3',desc:'Dividendos',       val:200,  tipo:'Investimento', data:'15/05',rec:false},
+];
+const CATS = [
+  {nome:'Alimentação',cor:'#fb923c',pct:35.4,total:1850},
+  {nome:'Moradia',    cor:'#60a5fa',pct:28.6,total:1497},
+  {nome:'Transporte', cor:'#4ade80',pct:11.1,total:580},
+  {nome:'Lazer',      cor:'#f472b6',pct:11.1,total:580},
+  {nome:'Assinaturas',cor:'#818cf8',pct:6.5, total:340},
+  {nome:'Outros',     cor:'#94a3b8',pct:7.3, total:383},
+];
+const RVG = [4800,5900,6200,4800,5600,5230];
+const RENDA_DATA = [6200,7800,8100,7400,8900,8400];
+const MES_LABELS = ['dez','jan','fev','mar','abr','mai'];
+
+/* ─── Mini area chart ─────────────────────────────────────── */
+function Sparkline({data, color, h=72}) {
+  if (!data||data.length<2) return null;
+  const max=Math.max(...data), min=Math.min(...data)*0.85;
+  const W=240;
+  const pts = data.map((v,i) => {
+    const x = (i/(data.length-1))*W;
+    const y = h - ((v-min)/(max-min||1)) * h * 0.82 - h*0.06;
+    return [x,y];
+  });
+  const line = pts.map((p,i)=>`${i===0?'M':'L'}${p[0]},${p[1]}`).join(' ');
+  const area = `${line} L${W},${h} L0,${h} Z`;
+  const id = `g${color.replace(/[^a-z0-9]/gi,'')}`;
+  return (
+    <svg width="100%" viewBox={`0 0 ${W} ${h}`} preserveAspectRatio="none" style={{display:'block'}}>
+      <defs>
+        <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.28"/>
+          <stop offset="100%" stopColor={color} stopOpacity="0.02"/>
+        </linearGradient>
+      </defs>
+      <path d={area} fill={`url(#${id})`}/>
+      <path d={line} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      {pts.map(([x,y],i) => i===pts.length-1 && (
+        <circle key={i} cx={x} cy={y} r="3.5" fill={color} stroke="rgba(0,0,0,0.5)" strokeWidth="1.5"/>
+      ))}
+    </svg>
+  );
+}
+
+/* ─── Sidebar ─────────────────────────────────────────────── */
+const NAV = [
+  {id:'dashboard',  Icon:I.Dashboard, label:'Dashboard'  },
+  {id:'gastos',     Icon:I.TrendDown, label:'Gastos'     },
+  {id:'renda',      Icon:I.TrendUp,   label:'Renda'      },
+  {id:'cartoes',    Icon:I.Card,      label:'Cartões'    },
+  {id:'assinaturas',Icon:I.Repeat,    label:'Assinaturas'},
+];
+function Sidebar({active, onNav}) {
+  return (
+    <div style={{width:220,background:T.sidebar,borderRight:`1px solid ${T.border}`,display:'flex',flexDirection:'column',flexShrink:0,height:'100vh',backdropFilter:'blur(28px)',WebkitBackdropFilter:'blur(28px)'}}>
+      {/* Logo */}
+      <div style={{padding:'18px 16px 16px',borderBottom:`1px solid ${T.border}`,display:'flex',alignItems:'center',gap:11}}>
+        <div style={{width:34,height:34,background:T.blue,borderRadius:9,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:'0 4px 14px rgba(37,99,235,0.35)'}}>
+          <I.Card s={17} c="white"/>
+        </div>
+        <div>
+          <div style={{fontSize:14,fontWeight:700,letterSpacing:'-0.01em'}}>FinançasPro</div>
+          <div style={{fontSize:10,color:T.fgDim,marginTop:1}}>Controle financeiro</div>
+        </div>
+      </div>
+      {/* Nav */}
+      <div style={{padding:'10px 10px',flex:1}}>
+        <div style={{fontSize:9,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.14em',color:T.fgDim,padding:'6px 8px 8px',opacity:0.7}}>Navegação</div>
+        {NAV.map(({id,Icon,label}) => {
+          const isActive = active===id;
+          return (
+            <div key={id} onClick={()=>onNav(id)}
+              style={{display:'flex',alignItems:'center',gap:10,padding:'9px 10px',borderRadius:9,fontSize:13,fontWeight:500,cursor:'pointer',marginBottom:1,
+                color:isActive?T.blue4:'rgba(255,255,255,0.52)',
+                background:isActive?'rgba(59,130,246,0.12)':'transparent',
+                position:'relative',transition:'all 140ms',
+              }}
+              onMouseEnter={e=>{if(!isActive){e.currentTarget.style.background='rgba(255,255,255,0.05)';e.currentTarget.style.color='rgba(255,255,255,0.85)';}}}
+              onMouseLeave={e=>{if(!isActive){e.currentTarget.style.background='transparent';e.currentTarget.style.color='rgba(255,255,255,0.52)';}}}
+            >
+              {isActive && <div style={{position:'absolute',left:0,top:'50%',transform:'translateY(-50%)',width:3,height:18,background:T.blue,borderRadius:'0 3px 3px 0'}}/>}
+              <Icon s={15} c="currentColor"/>
+              <span>{label}</span>
+            </div>
+          );
+        })}
+      </div>
+      {/* User */}
+      <div style={{padding:'12px 14px',borderTop:`1px solid ${T.border}`,display:'flex',alignItems:'center',gap:10,cursor:'pointer'}}
+        onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.04)'}
+        onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+        <div style={{width:30,height:30,borderRadius:'50%',background:T.blue,display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:700,flexShrink:0,boxShadow:'0 2px 8px rgba(37,99,235,0.30)'}}>FM</div>
+        <div>
+          <div style={{fontSize:12,fontWeight:600}}>Felipe M.</div>
+          <div style={{fontSize:10,color:T.fgDim}}>felipe@email.com</div>
+        </div>
+        <I.ChevD s={13} c={T.fgDim}/>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Topbar ──────────────────────────────────────────────── */
+function Topbar() {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{height:52,display:'flex',alignItems:'center',gap:12,padding:'0 24px',borderBottom:`1px solid ${T.border}`,background:'rgba(255,255,255,0.03)',backdropFilter:'blur(20px)',flexShrink:0}}>
+      <div style={{display:'flex',alignItems:'center',gap:8,background:'rgba(255,255,255,0.05)',border:`1px solid ${T.border}`,borderRadius:9,padding:'7px 12px',flex:1,maxWidth:300,cursor:'text'}}>
+        <I.Search s={13} c={T.fgDim}/>
+        <span style={{fontSize:12,color:T.fgDim}}>Pesquisar…</span>
+        <kbd style={{marginLeft:'auto',fontSize:9,background:'rgba(255,255,255,0.07)',border:`1px solid ${T.border}`,borderRadius:4,padding:'1px 5px',color:T.fgDim}}>/</kbd>
+      </div>
+      <div style={{marginLeft:'auto',position:'relative'}}>
+        <button onClick={()=>setOpen(o=>!o)} style={{display:'flex',alignItems:'center',gap:8,background:'transparent',border:'none',cursor:'pointer',padding:'5px 8px',borderRadius:9,color:T.fg,transition:'background 140ms'}}
+          onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.06)'}
+          onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+          <div style={{width:28,height:28,borderRadius:'50%',background:T.blue,display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,fontWeight:700,boxShadow:'0 2px 8px rgba(37,99,235,0.30)'}}>FM</div>
+          <span style={{fontSize:12,fontWeight:500,color:'rgba(255,255,255,0.78)'}}>Felipe M</span>
+          <I.ChevD s={12} c={T.fgDim}/>
+        </button>
+        {open && (
+          <div onClick={()=>setOpen(false)} style={{position:'absolute',top:'calc(100%+6px)',right:0,background:T.bgCard2,border:`1px solid ${T.borderMd}`,borderRadius:11,padding:6,minWidth:176,boxShadow:'0 16px 48px rgba(2,6,23,0.60)',zIndex:200}}>
+            <div style={{padding:'8px 10px',marginBottom:4,borderBottom:`1px solid ${T.border}`}}>
+              <div style={{fontSize:12,fontWeight:600}}>Felipe Campos</div>
+              <div style={{fontSize:10,color:T.fgMuted}}>felipe@email.com</div>
+            </div>
+            {[{icon:<I.User/>,label:'Ver perfil'},{icon:<I.LogOut/>,label:'Sair',danger:true}].map(item=>(
+              <div key={item.label} style={{display:'flex',alignItems:'center',gap:8,padding:'7px 10px',borderRadius:7,cursor:'pointer',fontSize:12,color:item.danger?T.rose3:'rgba(255,255,255,0.72)',transition:'background 140ms'}}
+                onMouseEnter={e=>e.currentTarget.style.background=item.danger?'rgba(244,63,94,0.10)':'rgba(255,255,255,0.06)'}
+                onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                {item.icon}{item.label}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Screens ─────────────────────────────────────────────── */
+function Dashboard() {
+  const pct = Math.round((5230/8400)*100);
+  return (
+    <div style={{display:'flex',flexDirection:'column',gap:22}}>
+      {/* Header */}
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:10}}>
+        <div>
+          <h1 style={{fontSize:22,fontWeight:700,letterSpacing:'-0.01em',textTransform:'capitalize'}}>maio de 2025</h1>
+          <p style={{fontSize:12,color:T.fgMuted,marginTop:2}}>Visão geral das suas finanças</p>
+        </div>
+        <div style={{display:'flex',alignItems:'center',gap:8}}>
+          {[<I.ChevL/>,null,<I.ChevR/>].map((ic,i)=>
+            ic ? <button key={i} style={{width:32,height:32,borderRadius:8,background:T.bgCard,border:`1px solid ${T.border}`,cursor:'pointer',color:T.fgMuted,display:'flex',alignItems:'center',justifyContent:'center'}}>{ic}</button>
+               : <div key={i} style={{padding:'6px 14px',background:T.bgCard,border:`1px solid ${T.border}`,borderRadius:8,fontSize:12,color:'rgba(255,255,255,0.70)'}}>maio de 2025</div>
+          )}
+        </div>
+      </div>
+
+      {/* Section label */}
+      <div style={{display:'flex',flexDirection:'column',gap:1}}>
+        <p style={{fontSize:9,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.14em',color:T.fgDim}}>Indicadores principais</p>
+        <p style={{fontSize:11,color:T.fgMuted}}>O que mais importa no mês selecionado</p>
+      </div>
+
+      {/* KPI row */}
+      <div className="anim d1" style={{display:'grid',gridTemplateColumns:'2fr 1fr 1fr 1fr',gap:10}}>
+        <KpiCard label="Saldo atual" value={brl(3170)} desc="Balanço positivo em maio" icon={<I.Wallet s={15}/>} color="blue" wide
+          extra={
+            <div style={{display:'flex',gap:16}}>
+              {[{l:'Renda',v:brl(8400),c:T.green5},{l:'Gastos',v:brl(5230),c:T.rose4}].map(m=>(
+                <div key={m.l}>
+                  <div style={{fontSize:9,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.1em',color:T.fgDim,marginBottom:3}}>{m.l}</div>
+                  <div style={{fontSize:12,fontWeight:600,fontVariantNumeric:'tabular-nums',color:m.c}}>{m.v}</div>
+                </div>
+              ))}
+            </div>
+          }
+        />
+        <KpiCard label="Renda total"         value={brl(8400)}  desc="Entradas em maio"       icon={<I.TrendUp s={15}/>}  color="green" />
+        <KpiCard label="Gastos total"         value={brl(5230)}  desc="62% da renda"           icon={<I.TrendDown s={15}/>} color="rose" />
+        <KpiCard label="Parcelas pendentes"   value={brl(1200)}  desc="3 parcela(s) em aberto" icon={<I.Clock s={15}/>}    color="amber"/>
+      </div>
+
+      {/* Budget bar */}
+      <div className="anim d2" style={{background:T.bgCard,border:`1px solid ${T.border}`,borderRadius:14,padding:'16px 20px'}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
+          <div style={{display:'flex',alignItems:'center',gap:8}}>
+            <div style={{width:28,height:28,borderRadius:8,background:'rgba(139,92,246,0.16)',display:'flex',alignItems:'center',justifyContent:'center',color:T.violet4}}><I.Piggy s={13}/></div>
+            <span style={{fontSize:12,fontWeight:600}}>Orçamento do mês</span>
+          </div>
+          <span style={{fontSize:11,fontWeight:700,color:T.blue4}}>{pct}% utilizado</span>
+        </div>
+        <div style={{height:6,background:'rgba(255,255,255,0.07)',borderRadius:9999,overflow:'hidden'}}>
+          <div style={{width:`${pct}%`,height:'100%',background:'#3b82f6',borderRadius:9999}}/>
+        </div>
+        <div style={{display:'flex',gap:20,marginTop:10,fontSize:10,color:T.fgDim}}>
+          {[['Gastos',brl(5230),'rgba(255,255,255,0.75)'],['Renda',brl(8400),'rgba(255,255,255,0.75)'],['Disponível',brl(3170),T.blue4]].map(([l,v,c])=>(
+            <span key={l}>{l}: <b style={{color:c,fontVariantNumeric:'tabular-nums'}}>{v}</b></span>
+          ))}
+        </div>
+      </div>
+
+      {/* Charts + categories */}
+      <div className="anim d3" style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+        {/* Renda vs gastos */}
+        <div style={{background:T.bgCard,border:`1px solid ${T.border}`,borderRadius:14,padding:'16px 18px'}}>
+          <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:14}}>
+            <div style={{width:26,height:26,borderRadius:7,background:'rgba(59,130,246,0.14)',display:'flex',alignItems:'center',justifyContent:'center',color:T.blue4}}><I.Bar s={13}/></div>
+            <span style={{fontSize:12,fontWeight:600}}>Renda × Gastos — 6 meses</span>
+          </div>
+          <div style={{position:'relative',height:72}}>
+            <div style={{position:'absolute',inset:0}}><Sparkline data={RENDA_DATA} color="#22c55e" h={72}/></div>
+            <div style={{position:'absolute',inset:0}}><Sparkline data={RVG} color="#f43f5e" h={72}/></div>
+          </div>
+          <div style={{display:'flex',justifyContent:'space-between',marginTop:6,fontSize:9,color:T.fgDim}}>
+            {MES_LABELS.map(m=><span key={m}>{m}</span>)}
+          </div>
+          <div style={{display:'flex',gap:14,marginTop:10,fontSize:10}}>
+            {[['Renda','#22c55e'],['Gastos','#f43f5e']].map(([l,c])=>(
+              <span key={l} style={{display:'flex',alignItems:'center',gap:5,color:'rgba(255,255,255,0.55)'}}>
+                <span style={{width:7,height:7,borderRadius:'50%',background:c,display:'inline-block'}}/>{l}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Categories */}
+        <div style={{background:T.bgCard,border:`1px solid ${T.border}`,borderRadius:14,padding:'16px 18px'}}>
+          <span style={{fontSize:12,fontWeight:600,display:'block',marginBottom:14}}>Gastos por categoria</span>
+          <div style={{display:'flex',flexDirection:'column',gap:9}}>
+            {CATS.map(cat=>(
+              <div key={cat.nome} style={{display:'flex',alignItems:'center',gap:9}}>
+                <div style={{width:7,height:7,borderRadius:'50%',background:cat.cor,flexShrink:0}}/>
+                <span style={{fontSize:11,color:'rgba(255,255,255,0.65)',flex:1,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{cat.nome}</span>
+                <div style={{flex:'0 0 72px',height:3,background:'rgba(255,255,255,0.07)',borderRadius:9999,overflow:'hidden'}}>
+                  <div style={{width:`${cat.pct}%`,height:'100%',background:cat.cor,borderRadius:9999}}/>
+                </div>
+                <span style={{fontSize:10,fontWeight:600,color:T.fgMuted,minWidth:32,textAlign:'right'}}>{cat.pct}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Gastos() {
+  const [search, setSearch] = useState('');
+  const list = search ? GASTOS.filter(g=>g.desc.toLowerCase().includes(search.toLowerCase())) : GASTOS;
+  const stCfg = {pago:{l:'Pago',c:'blue'},pendente:{l:'Pendente',c:'amber'},cancelado:{l:'Cancelado',c:'rose'}};
+  return (
+    <div style={{display:'flex',flexDirection:'column',gap:18}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:10}}>
+        <div>
+          <h1 style={{fontSize:22,fontWeight:700,color:T.rose4,letterSpacing:'-0.01em'}}>Gastos</h1>
+          <p style={{fontSize:12,color:T.fgMuted,marginTop:2}}>{list.length} registros em maio</p>
+        </div>
+        <Btn variant="rose"><I.Plus s={13}/> Novo Gasto</Btn>
+      </div>
+
+      {/* Summary */}
+      <div className="anim d1" style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:10}}>
+        {[
+          {l:'Total Gastos', v:brl(5230),  c:T.rose4,   bg:'rgba(244,63,94,0.10)',  bd:'rgba(251,113,133,0.22)'},
+          {l:'Total Renda',  v:brl(8400),  c:T.blue3,   bg:'rgba(59,130,246,0.10)', bd:'rgba(96,165,250,0.22)'},
+          {l:'Saldo',        v:brl(3170),  c:T.blue4,   bg:T.bgCard,               bd:T.border},
+        ].map(c=>(
+          <div key={c.l} style={{background:c.bg,border:`1px solid ${c.bd}`,borderRadius:12,padding:'14px 16px'}}>
+            <p style={{fontSize:9,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.11em',color:T.fgDim}}>{c.l}</p>
+            <p style={{fontSize:20,fontWeight:700,fontVariantNumeric:'tabular-nums',color:c.c,marginTop:5,fontFamily:'BebasNeue,sans-serif',fontSize:28,letterSpacing:'0.02em'}}>{c.v}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Filters */}
+      <div style={{background:T.bgCard,border:`1px solid ${T.border}`,borderRadius:13,overflow:'hidden'}}>
+        <div style={{display:'flex',alignItems:'center',gap:8,padding:'9px 16px',borderBottom:`1px solid ${T.border}`,background:'rgba(244,63,94,0.05)'}}>
+          <div style={{width:24,height:24,borderRadius:7,background:'rgba(244,63,94,0.14)',display:'flex',alignItems:'center',justifyContent:'center'}}><I.Filter s={12} c={T.rose4}/></div>
+          <span style={{fontSize:12,fontWeight:600}}>Filtros</span>
+        </div>
+        <div style={{padding:'12px 14px',display:'flex',gap:10,alignItems:'center',flexWrap:'wrap'}}>
+          <div style={{position:'relative',flex:1,minWidth:180,maxWidth:280}}>
+            <div style={{position:'absolute',left:10,top:'50%',transform:'translateY(-50%)'}}><I.Search s={12} c={T.fgDim}/></div>
+            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar por descrição…"
+              style={{width:'100%',background:'rgba(255,255,255,0.06)',border:`1px solid ${T.border}`,borderRadius:8,padding:'7px 12px 7px 30px',fontSize:12,color:T.fg,outline:'none',fontFamily:'inherit'}}/>
+          </div>
+          {['Categoria','Pagamento','Status'].map(f=>(
+            <div key={f} style={{display:'flex',alignItems:'center',gap:5,background:'rgba(255,255,255,0.05)',border:`1px solid ${T.border}`,borderRadius:8,padding:'6px 11px',fontSize:12,color:T.fgMuted,cursor:'pointer'}}>
+              {f}<I.ChevD s={11} c={T.fgDim}/>
+            </div>
+          ))}
+          <div style={{display:'flex',alignItems:'center',background:'rgba(251,113,133,0.07)',border:'1px solid rgba(251,113,133,0.20)',borderRadius:9,overflow:'hidden'}}>
+            <button style={{width:30,height:30,display:'flex',alignItems:'center',justifyContent:'center',background:'transparent',border:'none',cursor:'pointer',borderRight:'1px solid rgba(251,113,133,0.15)',color:T.rose4}}><I.ChevL s={12}/></button>
+            <div style={{padding:'0 12px',fontSize:13,fontWeight:700,color:T.rose4}}>maio</div>
+            <button style={{width:30,height:30,display:'flex',alignItems:'center',justifyContent:'center',background:'transparent',border:'none',cursor:'pointer',borderLeft:'1px solid rgba(251,113,133,0.15)',color:T.rose4}}><I.ChevR s={12}/></button>
+          </div>
+        </div>
+      </div>
+
+      {/* Context mini-cards */}
+      <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8}}>
+        {[
+          {l:'Exibição atual',    v:list.length,   s:`de ${GASTOS.length} no período`,                  c:'rgba(255,255,255,0.85)', bg:T.bgCard,  bd:T.border},
+          {l:'Valor exibido',     v:brl(list.reduce((a,g)=>a+g.val,0)), s:`Ticket médio de ${brl(list.reduce((a,g)=>a+g.val,0)/Math.max(list.length,1))}`, c:T.rose3, bg:'rgba(244,63,94,0.08)', bd:'rgba(251,113,133,0.18)'},
+          {l:'Pendências',        v:list.filter(g=>g.status==='pendente').length, s:'Itens ainda não pagos', c:T.amber3, bg:'rgba(245,158,11,0.08)', bd:'rgba(251,191,36,0.18)'},
+        ].map(c=>(
+          <div key={c.l} style={{background:c.bg,border:`1px solid ${c.bd}`,borderRadius:11,padding:'11px 14px'}}>
+            <p style={{fontSize:9,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.11em',color:T.fgDim}}>{c.l}</p>
+            <p style={{fontSize:18,fontWeight:700,color:c.c,marginTop:4,fontVariantNumeric:'tabular-nums'}}>{c.v}</p>
+            <p style={{fontSize:10,color:T.fgDim,marginTop:2}}>{c.s}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Table */}
+      <div className="anim d2" style={{background:T.bgCard,border:`1px solid ${T.border}`,borderRadius:13,overflow:'hidden'}}>
+        <table style={{width:'100%',borderCollapse:'collapse'}}>
+          <thead>
+            <tr style={{borderBottom:`1px solid ${T.border}`,background:'rgba(244,63,94,0.04)'}}>
+              {['Descrição','Data','Categoria','Pagamento','Status','Valor',''].map((h,i)=>(
+                <th key={h+i} style={{padding:'9px 14px',textAlign:i===5?'right':i===6?'center':'left',fontSize:9,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.09em',color:'rgba(251,113,133,0.70)',whiteSpace:'nowrap'}}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {list.map((g,i)=>{
+              const st = stCfg[g.status]||{l:g.status,c:'slate'};
+              return (
+                <tr key={g.id} style={{borderBottom:`1px solid rgba(255,255,255,0.04)`}}
+                  onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.02)'}
+                  onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                  <td style={{padding:'10px 14px',fontWeight:500,fontSize:12,maxWidth:160,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{g.desc}</td>
+                  <td style={{padding:'10px 14px',fontSize:11,color:T.fgMuted,whiteSpace:'nowrap'}}>{g.date}</td>
+                  <td style={{padding:'10px 14px'}}>
+                    <div style={{display:'flex',alignItems:'center',gap:7}}>
+                      <div style={{width:20,height:20,borderRadius:5,background:`${g.catC}22`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                        <div style={{width:7,height:7,borderRadius:'50%',background:g.catC}}/>
+                      </div>
+                      <span style={{fontSize:11,color:'rgba(255,255,255,0.60)'}}>{g.cat}</span>
+                    </div>
+                  </td>
+                  <td style={{padding:'10px 14px'}}>
+                    <div style={{display:'flex',flexDirection:'column',gap:3}}>
+                      <span style={{fontSize:11,color:T.fgMuted}}>{g.forma}</span>
+                      {g.parcela && (
+                        <span style={{display:'inline-flex',width:'fit-content',alignItems:'center',gap:2,background:'rgba(251,146,60,0.12)',border:'1px solid rgba(251,146,60,0.28)',borderRadius:9999,padding:'1px 6px',fontSize:9}}>
+                          <b style={{color:T.amber3}}>{g.parcela.n}</b><span style={{color:'rgba(251,146,60,0.45)',margin:'0 1px'}}>/</span><span style={{color:T.amber4}}>{g.parcela.t}</span>
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td style={{padding:'10px 14px'}}><Badge color={st.c}>{st.l}</Badge></td>
+                  <td style={{padding:'10px 14px',textAlign:'right',fontWeight:600,fontVariantNumeric:'tabular-nums',fontSize:12,color:T.rose4}}>{brl(g.val)}</td>
+                  <td style={{padding:'10px 14px'}}>
+                    <div style={{display:'flex',justifyContent:'center',gap:3}}>
+                      {[[I.Pencil,'rgba(59,130,246,0.12)',T.blue4],[I.Trash,'rgba(244,63,94,0.12)',T.rose4]].map(([Ic,hbg,hc],j)=>(
+                        <button key={j} style={{width:27,height:27,borderRadius:6,border:'none',cursor:'pointer',background:'transparent',color:'rgba(255,255,255,0.25)',display:'flex',alignItems:'center',justifyContent:'center',transition:'all 130ms'}}
+                          onMouseEnter={e=>{e.currentTarget.style.background=hbg;e.currentTarget.style.color=hc;}}
+                          onMouseLeave={e=>{e.currentTarget.style.background='transparent';e.currentTarget.style.color='rgba(255,255,255,0.25)';}}>
+                          <Ic s={12}/>
+                        </button>
+                      ))}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function Cartoes() {
+  const LOGOS = {
+    visa:'../../assets/brand_cardlogos/visa.svg',
+    mastercard:'../../assets/brand_cardlogos/mastercard.svg',
+    elo:'../../assets/brand_cardlogos/elo.svg',
+  };
+  function contrast(hex) {
+    const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+    return (0.299*r+0.587*g+0.114*b)>140?'#1a1a1a':'#ffffff';
+  }
+  const ativos = CARTOES.filter(c=>c.ativo).length;
+  const limiteTotal = CARTOES.reduce((a,c)=>a+c.limite,0);
+  return (
+    <div style={{display:'flex',flexDirection:'column',gap:18}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:10}}>
+        <div>
+          <h1 style={{fontSize:22,fontWeight:700,letterSpacing:'-0.01em'}}>Cartões</h1>
+          <p style={{fontSize:12,color:T.fgMuted,marginTop:2}}>{CARTOES.length} cartões cadastrados</p>
+        </div>
+        <Btn variant="blue_soft"><I.Plus s={13}/> Novo Cartão</Btn>
+      </div>
+
+      <div className="anim d1" style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:10}}>
+        {[
+          {l:'Ativos',             v:ativos,           c:T.blue4,   bg:'rgba(59,130,246,0.10)',  bd:'rgba(96,165,250,0.22)'},
+          {l:'Inativos',           v:CARTOES.length-ativos, c:'rgba(255,255,255,0.70)', bg:T.bgCard,  bd:T.border},
+          {l:'Limite consolidado', v:brl(limiteTotal), c:T.violet4, bg:'rgba(139,92,246,0.10)', bd:'rgba(167,139,250,0.22)'},
+        ].map(c=>(
+          <div key={c.l} style={{background:c.bg,border:`1px solid ${c.bd}`,borderRadius:12,padding:'14px 16px'}}>
+            <p style={{fontSize:9,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.11em',color:T.fgDim}}>{c.l}</p>
+            <p style={{fontSize:22,fontWeight:700,color:c.c,marginTop:5,fontVariantNumeric:'tabular-nums'}}>{c.v}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="anim d2" style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:14}}>
+        {CARTOES.map(c=>{
+          const tc = contrast(c.cor);
+          const isLight = tc==='#1a1a1a';
+          const logo = LOGOS[c.bandeira];
+          return (
+            <div key={c.id} style={{background:T.bgCard,border:`1px solid ${T.border}`,borderRadius:16,padding:14,display:'flex',flexDirection:'column',gap:12}}>
+              {/* Card face */}
+              <div style={{position:'relative',height:148,background:c.cor,borderRadius:12,padding:'14px 16px',color:tc,boxShadow:'0 8px 24px rgba(2,6,23,0.45)',transition:'transform 180ms',cursor:'default'}}
+                onMouseEnter={e=>e.currentTarget.style.transform='translateY(-3px)'}
+                onMouseLeave={e=>e.currentTarget.style.transform='none'}>
+                <div style={{position:'absolute',top:14,right:14,opacity:0.55}}>
+                  <I.Wifi s={14} c={tc}/>
+                </div>
+                <div style={{fontSize:9,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.15em',opacity:0.65}}>{c.banco}</div>
+                <div style={{fontSize:11,fontWeight:600,marginTop:2}}>{c.apelido}</div>
+                <div style={{display:'flex',alignItems:'center',gap:10,marginTop:16}}>
+                  {logo
+                    ? <img src={logo} alt={c.bandeira} style={{height:20,width:'auto',maxWidth:48,objectFit:'contain',filter:isLight?'none':'brightness(0) invert(1)',opacity:0.85}}/>
+                    : <div style={{height:20,width:34,borderRadius:4,background:isLight?'rgba(0,0,0,0.15)':'rgba(255,255,255,0.25)'}}/>
+                  }
+                  <span style={{fontFamily:'monospace',fontSize:12,letterSpacing:'0.15em'}}>•••• {c.num}</span>
+                </div>
+                <div style={{position:'absolute',bottom:12,left:16,right:16,display:'flex',justifyContent:'space-between',alignItems:'flex-end'}}>
+                  <div>
+                    <div style={{fontSize:8,textTransform:'uppercase',letterSpacing:'0.1em',opacity:0.5}}>Titular</div>
+                    <div style={{fontSize:10,fontWeight:600,textTransform:'uppercase'}}>{c.nome}</div>
+                  </div>
+                  <div style={{textAlign:'right'}}>
+                    <div style={{fontSize:8,textTransform:'uppercase',letterSpacing:'0.1em',opacity:0.5}}>{c.tipo}</div>
+                    <div style={{fontSize:10,fontWeight:600,textTransform:'capitalize'}}>{c.bandeira}</div>
+                  </div>
+                </div>
+                {!c.ativo && (
+                  <div style={{position:'absolute',inset:0,borderRadius:12,background:'rgba(0,0,0,0.50)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                    <Badge color="slate">Inativo</Badge>
+                  </div>
+                )}
+              </div>
+              {/* Info */}
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                <div>
+                  <p style={{fontSize:11,color:T.fgMuted}}>Limite: <b style={{color:'rgba(255,255,255,0.78)',fontVariantNumeric:'tabular-nums'}}>{brl(c.limite)}</b></p>
+                  {c.fecha && <p style={{fontSize:10,color:T.fgDim,marginTop:1}}>Fecha {c.fecha} · Vence {c.vence}</p>}
+                </div>
+                <div style={{display:'flex',gap:3}}>
+                  {[[I.Pencil,'rgba(59,130,246,0.12)',T.blue4],[I.Trash,'rgba(244,63,94,0.12)',T.rose4]].map(([Ic,hbg,hc],j)=>(
+                    <button key={j} style={{width:27,height:27,borderRadius:6,border:'none',cursor:'pointer',background:'transparent',color:'rgba(255,255,255,0.25)',display:'flex',alignItems:'center',justifyContent:'center',transition:'all 130ms'}}
+                      onMouseEnter={e=>{e.currentTarget.style.background=hbg;e.currentTarget.style.color=hc;}}
+                      onMouseLeave={e=>{e.currentTarget.style.background='transparent';e.currentTarget.style.color='rgba(255,255,255,0.25)';}}>
+                      <Ic s={12}/>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function Assinaturas() {
+  const [showInactive, setShowInactive] = useState(false);
+  const list = ASSINATURAS.filter(a=>showInactive?!a.ativa:a.ativa);
+  const ativas = ASSINATURAS.filter(a=>a.ativa);
+  const totalMes = ativas.reduce((a,s)=>a+s.val,0);
+  return (
+    <div style={{display:'flex',flexDirection:'column',gap:18}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:10}}>
+        <div>
+          <h1 style={{fontSize:22,fontWeight:700,letterSpacing:'-0.01em'}}>Assinaturas</h1>
+          <p style={{fontSize:12,color:T.fgMuted,marginTop:2}}>Cobranças recorrentes mensais</p>
+        </div>
+        <div style={{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}}>
+          <div style={{border:'1px solid rgba(167,139,250,0.28)',background:'rgba(139,92,246,0.10)',borderRadius:9,padding:'6px 14px',textAlign:'right'}}>
+            <p style={{fontSize:9,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.1em',color:'rgba(196,181,253,0.65)'}}>Total mensal</p>
+            <p style={{fontSize:16,fontWeight:700,color:T.violet4,fontVariantNumeric:'tabular-nums'}}>{brl(totalMes)}</p>
+          </div>
+          <label style={{display:'flex',alignItems:'center',gap:8,cursor:'pointer',fontSize:12,color:T.fgMuted}}>
+            <div onClick={()=>setShowInactive(v=>!v)} style={{width:34,height:19,borderRadius:9999,background:showInactive?T.blue:'rgba(255,255,255,0.14)',transition:'background 200ms',position:'relative',cursor:'pointer',flexShrink:0}}>
+              <div style={{position:'absolute',top:2,left:showInactive?17:2,width:15,height:15,borderRadius:'50%',background:'#fff',transition:'left 200ms',boxShadow:'0 1px 3px rgba(0,0,0,0.30)'}}/>
+            </div>
+            Inativas
+          </label>
+          <Btn variant="violet"><I.Plus s={13}/> Nova</Btn>
+        </div>
+      </div>
+
+      <div className="anim d1" style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:10}}>
+        {[
+          {l:'Ativas',             v:ativas.length,    c:T.violet4, bg:'rgba(139,92,246,0.10)', bd:'rgba(167,139,250,0.22)'},
+          {l:'Inativas',           v:ASSINATURAS.length-ativas.length, c:'rgba(255,255,255,0.65)', bg:T.bgCard, bd:T.border},
+          {l:'Custo anual estimado',v:brl(totalMes*12),c:T.blue4, bg:'rgba(59,130,246,0.10)', bd:'rgba(96,165,250,0.22)'},
+        ].map(c=>(
+          <div key={c.l} style={{background:c.bg,border:`1px solid ${c.bd}`,borderRadius:12,padding:'14px 16px'}}>
+            <p style={{fontSize:9,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.11em',color:T.fgDim}}>{c.l}</p>
+            <p style={{fontSize:22,fontWeight:700,color:c.c,marginTop:5,fontVariantNumeric:'tabular-nums'}}>{c.v}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="anim d2" style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12}}>
+        {list.map(a=>(
+          <div key={a.id} style={{
+            border:a.ativa?'1px solid rgba(167,139,250,0.22)':'1px solid rgba(255,255,255,0.07)',
+            background:a.ativa?'rgba(139,92,246,0.08)':T.bgCard,
+            borderRadius:14, padding:18, opacity:a.ativa?1:0.6,
+            position:'relative', transition:'all 180ms',
+          }}>
+            <div style={{position:'absolute',top:14,right:14}}>
+              <Badge color={a.ativa?'violet':'slate'}>{a.ativa?'✓ Ativa':'✗ Inativa'}</Badge>
+            </div>
+            <div style={{paddingRight:72,marginBottom:10}}>
+              <p style={{fontSize:14,fontWeight:600}}>{a.desc}</p>
+              <p style={{fontFamily:'BebasNeue,sans-serif',fontSize:28,letterSpacing:'0.02em',color:T.violet4,marginTop:4,fontVariantNumeric:'tabular-nums'}}>
+                {brl(a.val)}<span style={{fontSize:11,color:T.fgDim,fontFamily:'Geist,sans-serif',letterSpacing:'normal',fontWeight:400,marginLeft:3}}>/mês</span>
+              </p>
+            </div>
+            <div style={{display:'flex',flexDirection:'column',gap:4,fontSize:11,color:T.fgMuted,marginBottom:14}}>
+              <span>Todo dia <b style={{color:'rgba(255,255,255,0.75)'}}>{a.dia}</b> · {a.forma}</span>
+              <span style={{color:T.fgDim}}>{a.cat}</span>
+            </div>
+            <div style={{borderTop:`1px solid rgba(255,255,255,0.07)`,paddingTop:10,display:'flex',gap:6}}>
+              <button style={{flex:1,height:28,fontSize:11,fontFamily:'inherit',fontWeight:500,borderRadius:7,border:'none',cursor:'pointer',background:'rgba(139,92,246,0.12)',color:T.violet4,transition:'background 140ms'}}
+                onMouseEnter={e=>e.currentTarget.style.background='rgba(139,92,246,0.22)'}
+                onMouseLeave={e=>e.currentTarget.style.background='rgba(139,92,246,0.12)'}>
+                Editar
+              </button>
+              {a.ativa
+                ? <button style={{flex:1,height:28,fontSize:11,fontFamily:'inherit',fontWeight:500,borderRadius:7,border:'none',cursor:'pointer',background:'rgba(244,63,94,0.10)',color:T.rose3,transition:'background 140ms'}}
+                    onMouseEnter={e=>e.currentTarget.style.background='rgba(244,63,94,0.20)'}
+                    onMouseLeave={e=>e.currentTarget.style.background='rgba(244,63,94,0.10)'}>
+                    Cancelar
+                  </button>
+                : <button style={{flex:1,height:28,fontSize:11,fontFamily:'inherit',fontWeight:500,borderRadius:7,border:'none',cursor:'pointer',background:'rgba(59,130,246,0.10)',color:T.blue3,transition:'background 140ms'}}
+                    onMouseEnter={e=>e.currentTarget.style.background='rgba(59,130,246,0.20)'}
+                    onMouseLeave={e=>e.currentTarget.style.background='rgba(59,130,246,0.10)'}>
+                    Reativar
+                  </button>
+              }
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Renda() {
+  const tipoC = {Salário:'blue',Freelance:'violet',Investimento:'green'};
+  return (
+    <div style={{display:'flex',flexDirection:'column',gap:18}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:10}}>
+        <div>
+          <h1 style={{fontSize:22,fontWeight:700,color:T.blue4,letterSpacing:'-0.01em'}}>Renda</h1>
+          <p style={{fontSize:12,color:T.fgMuted,marginTop:2}}>{RENDAS.length} lançamentos em maio</p>
+        </div>
+        <Btn variant="blue_soft"><I.Plus s={13}/> Nova Renda</Btn>
+      </div>
+      <div className="anim d1" style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:10}}>
+        {[
+          {l:'Total Renda',     v:brl(8400), c:T.green5,  bg:'rgba(34,197,94,0.10)',  bd:'rgba(74,222,128,0.22)'},
+          {l:'Lançamentos',     v:RENDAS.length,c:'rgba(255,255,255,0.80)',bg:T.bgCard,bd:T.border},
+          {l:'Recorrentes',     v:RENDAS.filter(r=>r.rec).length, c:T.violet4, bg:'rgba(139,92,246,0.10)', bd:'rgba(167,139,250,0.22)'},
+        ].map(c=>(
+          <div key={c.l} style={{background:c.bg,border:`1px solid ${c.bd}`,borderRadius:12,padding:'14px 16px'}}>
+            <p style={{fontSize:9,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.11em',color:T.fgDim}}>{c.l}</p>
+            <p style={{fontSize:22,fontWeight:700,color:c.c,marginTop:5,fontVariantNumeric:'tabular-nums'}}>{c.v}</p>
+          </div>
+        ))}
+      </div>
+      <div className="anim d2" style={{background:T.bgCard,border:`1px solid ${T.border}`,borderRadius:13,overflow:'hidden'}}>
+        <table style={{width:'100%',borderCollapse:'collapse'}}>
+          <thead>
+            <tr style={{borderBottom:`1px solid ${T.border}`,background:'rgba(59,130,246,0.04)'}}>
+              {['Descrição','Tipo','Recorrente','Data','Valor',''].map((h,i)=>(
+                <th key={h+i} style={{padding:'9px 14px',textAlign:i===4?'right':i===5?'center':'left',fontSize:9,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.09em',color:'rgba(96,165,250,0.70)'}}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {RENDAS.map(r=>(
+              <tr key={r.id} style={{borderBottom:`1px solid rgba(255,255,255,0.04)`}}
+                onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.02)'}
+                onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                <td style={{padding:'10px 14px',fontWeight:500,fontSize:12}}>{r.desc}</td>
+                <td style={{padding:'10px 14px'}}><Badge color={tipoC[r.tipo]||'slate'}>{r.tipo}</Badge></td>
+                <td style={{padding:'10px 14px'}}><Badge color={r.rec?'violet':'slate'}>{r.rec?'Sim':'Não'}</Badge></td>
+                <td style={{padding:'10px 14px',fontSize:11,color:T.fgMuted}}>{r.data}</td>
+                <td style={{padding:'10px 14px',textAlign:'right',fontWeight:600,fontVariantNumeric:'tabular-nums',fontSize:12,color:T.green5}}>{brl(r.val)}</td>
+                <td style={{padding:'10px 14px'}}>
+                  <div style={{display:'flex',justifyContent:'center',gap:3}}>
+                    {[[I.Pencil,'rgba(59,130,246,0.12)',T.blue4],[I.Trash,'rgba(244,63,94,0.12)',T.rose4]].map(([Ic,hbg,hc],j)=>(
+                      <button key={j} style={{width:27,height:27,borderRadius:6,border:'none',cursor:'pointer',background:'transparent',color:'rgba(255,255,255,0.25)',display:'flex',alignItems:'center',justifyContent:'center',transition:'all 130ms'}}
+                        onMouseEnter={e=>{e.currentTarget.style.background=hbg;e.currentTarget.style.color=hc;}}
+                        onMouseLeave={e=>{e.currentTarget.style.background='transparent';e.currentTarget.style.color='rgba(255,255,255,0.25)';}}>
+                        <Ic s={12}/>
+                      </button>
+                    ))}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/* ─── App ─────────────────────────────────────────────────── */
+const SCREENS = {dashboard:Dashboard, gastos:Gastos, renda:Renda, cartoes:Cartoes, assinaturas:Assinaturas};
+
+function App() {
+  const [route, setRoute] = useState('dashboard');
+  const Screen = SCREENS[route]||Dashboard;
+  return (
+    <div style={{display:'flex',height:'100vh',overflow:'hidden',fontFamily:"'Geist',sans-serif"}}>
+      <Sidebar active={route} onNav={r=>{setRoute(r);}} />
+      <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:T.bgEl,backdropFilter:'blur(2px)',WebkitBackdropFilter:'blur(2px)'}}>
+        <Topbar/>
+        <main key={route} style={{flex:1,overflowY:'auto',padding:'26px 30px'}}>
+          <Screen/>
+        </main>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

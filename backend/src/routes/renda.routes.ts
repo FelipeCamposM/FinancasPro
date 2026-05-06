@@ -7,7 +7,7 @@ import {
   deleteRenda,
   autoLancarMes,
 } from "../controllers/renda.controller";
-import { authenticate } from "../middlewares/auth.middleware";
+import { authenticateAny } from "../middlewares/auth.middleware";
 import { paginate } from "../middlewares/pagination.middleware";
 import { validate } from "../middlewares/validate.middleware";
 import { createRendaSchema, updateRendaSchema } from "../schemas/renda.schema";
@@ -88,12 +88,12 @@ const router = Router();
  *             schema: { $ref: '#/components/schemas/Renda' }
  *       422: { description: Dados inválidos }
  */
-router.get("/", authenticate, paginate, listRenda);
-router.post("/", authenticate, validate(createRendaSchema), createRenda);
-router.post("/auto-lancar-mes", authenticate, autoLancarMes);
+router.get("/", authenticateAny, paginate, listRenda);
+router.post("/", authenticateAny, validate(createRendaSchema), createRenda);
+router.post("/auto-lancar-mes", authenticateAny, autoLancarMes);
 
-router.get("/:id", authenticate, getRenda);
-router.put("/:id", authenticate, validate(updateRendaSchema), updateRenda);
-router.delete("/:id", authenticate, deleteRenda);
+router.get("/:id", authenticateAny, getRenda);
+router.put("/:id", authenticateAny, validate(updateRendaSchema), updateRenda);
+router.delete("/:id", authenticateAny, deleteRenda);
 
 export default router;

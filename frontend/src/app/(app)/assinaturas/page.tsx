@@ -93,6 +93,7 @@ export default function AssinaturasPage() {
   const [editTarget, setEditTarget] = useState<Assinatura | null>(null);
   const [editDescricao, setEditDescricao] = useState("");
   const [editValor, setEditValor] = useState("");
+  const [editDiaCobranca, setEditDiaCobranca] = useState("");
   const [salvandoEdit, setSalvandoEdit] = useState(false);
 
   const [reativarTarget, setReativarTarget] = useState<Assinatura | null>(null);
@@ -139,6 +140,7 @@ export default function AssinaturasPage() {
   function openEdit(a: Assinatura) {
     setEditDescricao(a.descricao);
     setEditValor(String(a.valor));
+    setEditDiaCobranca(String(a.dia_cobranca));
     setEditTarget(a);
   }
 
@@ -149,11 +151,17 @@ export default function AssinaturasPage() {
       toast.error("Valor inválido");
       return;
     }
+    const dia = parseInt(editDiaCobranca, 10);
+    if (isNaN(dia) || dia < 1 || dia > 31) {
+      toast.error("Dia de cobrança inválido (1–31)");
+      return;
+    }
     setSalvandoEdit(true);
     try {
       await api.put(`/assinaturas/${editTarget.id}`, {
         descricao: editDescricao.trim() || undefined,
         valor,
+        dia_cobranca: dia,
       });
       toast.success("Assinatura atualizada");
       setEditTarget(null);
@@ -186,15 +194,16 @@ export default function AssinaturasPage() {
   const totalAnual = totalMensal * 12;
 
   return (
-    <PageShell contentClassName="space-y-6">
+    <PageShell contentClassName="space-y-5">
       {/* Cabeçalho */}
       <SectionHeader
         title="Assinaturas"
+        titleColor="text-violet-400"
         description="Cobranças recorrentes mensais"
         actions={
           <div className="flex items-center gap-3 flex-wrap justify-end">
             {!loading && ativas.length > 0 && (
-              <div className="rounded-xl border border-violet-400/30 bg-violet-500/10 backdrop-blur px-4 py-2 text-right">
+              <div className="rounded-xl border border-white/[0.09] bg-white/[0.04] px-4 py-2 text-right backdrop-blur-xl">
                 <p className="text-xs text-violet-300/70 font-medium uppercase tracking-wider">
                   Total mensal
                 </p>
@@ -220,9 +229,9 @@ export default function AssinaturasPage() {
 
             <Button
               onClick={() => setDialogOpen(true)}
-              className="gap-2 bg-violet-500/20 border border-violet-400/40 text-violet-300 hover:bg-violet-500/30 hover:text-violet-200 backdrop-blur"
+              variant="default"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="mr-2 h-4 w-4" />
               Nova assinatura
             </Button>
           </div>
@@ -231,7 +240,7 @@ export default function AssinaturasPage() {
 
       {!loading && !loadError && assinaturas.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 ui-stagger">
-          <div className="rounded-xl border border-violet-400/25 bg-violet-500/10 backdrop-blur-xl p-4">
+          <div className="rounded-xl border border-white/[0.09] bg-white/[0.04] p-4 backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5">
             <p className="text-[11px] uppercase tracking-wider text-violet-300/80 font-semibold">
               Assinaturas ativas
             </p>
@@ -241,7 +250,7 @@ export default function AssinaturasPage() {
             <p className="text-xs text-white/55">Cobranças em ciclo atual</p>
           </div>
 
-          <div className="rounded-xl border border-white/20 bg-white/[0.06] backdrop-blur-xl p-4">
+          <div className="rounded-xl border border-white/[0.09] bg-white/[0.04] p-4 backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5">
             <p className="text-[11px] uppercase tracking-wider text-white/70 font-semibold">
               Assinaturas inativas
             </p>
@@ -251,7 +260,7 @@ export default function AssinaturasPage() {
             <p className="text-xs text-white/55">Histórico pausado/cancelado</p>
           </div>
 
-          <div className="rounded-xl border border-blue-400/25 bg-blue-500/10 backdrop-blur-xl p-4">
+          <div className="rounded-xl border border-white/[0.09] bg-white/[0.04] p-4 backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5">
             <p className="text-[11px] uppercase tracking-wider text-blue-300/80 font-semibold">
               Custo anual estimado
             </p>
@@ -305,25 +314,19 @@ export default function AssinaturasPage() {
                 key={a.id}
                 className={`relative rounded-xl border p-5 flex flex-col gap-3 transition-all backdrop-blur-xl ${
                   a.ativa
-                    ? "border-violet-400/30 bg-violet-500/10 hover:border-violet-400/50 hover:bg-violet-500/15"
-                    : "border-white/10 bg-white/[0.04] opacity-60"
+                    ? "border-white/[0.09] bg-white/[0.03] hover:border-violet-400/35 hover:bg-white/[0.05]"
+                    : "border-white/[0.07] bg-white/[0.025] opacity-60"
                 }`}
               >
                 {/* Status badge */}
                 <div className="absolute top-4 right-4">
                   {a.ativa ? (
-                    <Badge
-                      variant="outline"
-                      className="text-violet-300 border-violet-400/40 bg-violet-500/10 text-[10px] gap-1"
-                    >
+                    <Badge variant="violet">
                       <CheckCircle2 className="h-3 w-3" />
                       Ativa
                     </Badge>
                   ) : (
-                    <Badge
-                      variant="outline"
-                      className="text-white/40 border-white/20 text-[10px] gap-1"
-                    >
+                    <Badge variant="slate">
                       <XCircle className="h-3 w-3" />
                       Cancelada
                     </Badge>
@@ -435,8 +438,8 @@ export default function AssinaturasPage() {
               Editar assinatura
             </DialogTitle>
             <DialogDescription className="text-white/50">
-              Altere a descrição e/ou o valor. Para assinaturas ativas, os
-              lançamentos futuros pendentes serão atualizados automaticamente.
+              Se o dia de cobrança for alterado, os lançamentos pendentes serão
+              removidos e recriados com a nova data.
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-4 py-2">
@@ -459,6 +462,19 @@ export default function AssinaturasPage() {
                 value={editValor}
                 onChange={(e) => setEditValor(e.target.value)}
                 placeholder="0,00"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="edit-dia">Dia de cobrança</Label>
+              <Input
+                id="edit-dia"
+                type="number"
+                min="1"
+                max="31"
+                step="1"
+                value={editDiaCobranca}
+                onChange={(e) => setEditDiaCobranca(e.target.value)}
+                placeholder="1–31"
               />
             </div>
           </div>

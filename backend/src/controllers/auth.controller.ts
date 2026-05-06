@@ -19,13 +19,14 @@ export const register = async (
   try {
     const { name, email, password, avatar, user_level }: RegisterInput =
       req.body;
+    const normalizedEmail = email.trim().toLowerCase();
     const hash = await bcrypt.hash(password, 12);
 
     const { rows } = await pool.query(
       `INSERT INTO users (name, email, password_hash, avatar, user_level)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING id, name, email, avatar, user_level, created_at`,
-      [name, email, hash, avatar ?? null, user_level ?? "free"],
+      [name, normalizedEmail, hash, avatar ?? null, user_level ?? "free"],
     );
 
     const user = rows[0];
@@ -48,10 +49,12 @@ export const login = async (
 ): Promise<void> => {
   try {
     const { email, password }: LoginInput = req.body;
+    const normalizedEmail = email.trim().toLowerCase();
 
-    const { rows } = await pool.query("SELECT * FROM users WHERE email = $1", [
-      email,
-    ]);
+    const { rows } = await pool.query(
+      "SELECT * FROM users WHERE lower(email) = $1",
+      [normalizedEmail],
+    );
     const user = rows[0];
 
     if (!user || !(await bcrypt.compare(password, user.password_hash))) {

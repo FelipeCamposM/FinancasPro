@@ -37,9 +37,12 @@ import {
 } from "@/components/ui/form";
 import {
   Camera,
+  Copy,
+  KeyRound,
   Loader2,
   UserCircle,
   Lock,
+  RefreshCw,
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
@@ -129,6 +132,9 @@ export default function PerfilPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [avatarLoading, setAvatarLoading] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [apiKey, setApiKey] = useState("");
+  const [apiKeyLoading, setApiKeyLoading] = useState(false);
+  const [apiKeyRotating, setApiKeyRotating] = useState(false);
 
   // Crop dialog
   const [cropDialogOpen, setCropDialogOpen] = useState(false);
@@ -164,6 +170,30 @@ export default function PerfilPage() {
       setAvatarPreview(user.avatar ?? null);
     }
   }, [user, profileForm]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    let active = true;
+    async function loadApiKey() {
+      setApiKeyLoading(true);
+      try {
+        const { data } = await api.get<{ api_key: string }>(
+          "/users/me/api-key",
+        );
+        if (active) setApiKey(data.api_key);
+      } catch {
+        if (active) toast.error("Erro ao carregar API Key");
+      } finally {
+        if (active) setApiKeyLoading(false);
+      }
+    }
+
+    loadApiKey();
+    return () => {
+      active = false;
+    };
+  }, [user]);
 
   // ── Avatar upload ────────────────────────────────────────────────────────────
 
@@ -240,12 +270,40 @@ export default function PerfilPage() {
     }
   }
 
+  async function handleCopyApiKey() {
+    if (!apiKey) return;
+
+    try {
+      await navigator.clipboard.writeText(apiKey);
+      toast.success("API Key copiada");
+    } catch {
+      toast.error("Nao foi possivel copiar a API Key");
+    }
+  }
+
+  async function handleRotateApiKey() {
+    setApiKeyRotating(true);
+    try {
+      const { data } = await api.post<{ api_key: string }>(
+        "/users/me/api-key/rotate",
+      );
+      setApiKey(data.api_key);
+      toast.success("API Key renovada");
+    } catch {
+      toast.error("Erro ao renovar API Key");
+    } finally {
+      setApiKeyRotating(false);
+    }
+  }
+
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Perfil</h1>
-        <p className="text-sm text-muted-foreground">
+      <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl">
+        <h1 className="font-display text-4xl uppercase leading-none tracking-wide text-white sm:text-5xl">
+          Perfil
+        </h1>
+        <p className="mt-0.5 text-[12px] text-white/40">
           Gerencie suas informações pessoais e senha
         </p>
       </div>
@@ -377,6 +435,64 @@ export default function PerfilPage() {
               </div>
             </form>
           </Form>
+        </CardContent>
+      </Card>
+
+      {/* API Key Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <KeyRound className="h-4 w-4 text-primary" />
+            Token de API
+          </CardTitle>
+          <CardDescription>
+            Use este token em atalhos do iPhone e integrações externas.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium leading-none">
+              API Key
+            </label>
+            <div className="flex gap-2">
+              <Input
+                value={
+                  apiKeyLoading
+                    ? "Carregando..."
+                    : apiKey || "Nenhuma API Key encontrada"
+                }
+                readOnly
+                className="font-mono text-xs"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={handleCopyApiKey}
+                disabled={!apiKey || apiKeyLoading}
+                title="Copiar API Key"
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={handleRotateApiKey}
+                disabled={apiKeyLoading || apiKeyRotating}
+                title="Renovar API Key"
+              >
+                {apiKeyRotating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Ao renovar, o token anterior deixa de funcionar imediatamente.
+            </p>
+          </div>
         </CardContent>
       </Card>
 

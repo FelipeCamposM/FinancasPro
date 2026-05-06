@@ -3,7 +3,7 @@ import {
   listMinhasParcelas,
   updateParcela,
 } from "../controllers/parcelas.controller";
-import { authenticate } from "../middlewares/auth.middleware";
+import { authenticateAny } from "../middlewares/auth.middleware";
 import { paginate } from "../middlewares/pagination.middleware";
 import { validate } from "../middlewares/validate.middleware";
 import { updateParcelaSchema } from "../schemas/parcelas.schema";
@@ -52,7 +52,7 @@ const router = Router();
  *                 data:       { type: array, items: { $ref: '#/components/schemas/Parcela' } }
  *                 pagination: { $ref: '#/components/schemas/Pagination' }
  */
-router.get("/", authenticate, paginate, listMinhasParcelas);
+router.get("/", authenticateAny, paginate, listMinhasParcelas);
 
 /**
  * @swagger
@@ -83,7 +83,7 @@ router.get("/", authenticate, paginate, listMinhasParcelas);
  */
 router.patch(
   "/:id",
-  authenticate,
+  authenticateAny,
   validate(updateParcelaSchema),
   updateParcela,
 );

@@ -22,7 +22,7 @@ const router = Router();
  * @swagger
  * tags:
  *   name: Users
- *   description: Gestão de usuários (admin)
+ *   description: Gestao de usuarios
  */
 
 /**
@@ -30,7 +30,7 @@ const router = Router();
  * /users:
  *   get:
  *     tags: [Users]
- *     summary: Listar todos os usuários (admin)
+ *     summary: Listar todos os usuarios (admin)
  *     parameters:
  *       - in: query
  *         name: page
@@ -40,7 +40,7 @@ const router = Router();
  *         schema: { type: integer, default: 10 }
  *     responses:
  *       200:
- *         description: Lista paginada de usuários
+ *         description: Lista paginada de usuarios
  *         content:
  *           application/json:
  *             schema:
@@ -54,10 +54,47 @@ router.get("/", authenticate, paginate, listUsers);
 
 /**
  * @swagger
+ * /users/me/api-key:
+ *   get:
+ *     tags: [Users]
+ *     summary: Obter API Key permanente do usuario logado
+ *     description: Retorna a API Key usada em integracoes externas, como iPhone Shortcuts.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 api_key: { type: string, format: uuid }
+ *
+ * /users/me/api-key/rotate:
+ *   post:
+ *     tags: [Users]
+ *     summary: Rotacionar API Key
+ *     description: Gera uma nova API Key, invalidando imediatamente a anterior.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 api_key: { type: string, format: uuid }
+ */
+router.get("/me/api-key", authenticate, getApiKey);
+router.post("/me/api-key/rotate", authenticate, rotateApiKey);
+
+/**
+ * @swagger
  * /users/{id}:
  *   get:
  *     tags: [Users]
- *     summary: Obter usuário por ID
+ *     summary: Obter usuario por ID
  *     parameters:
  *       - in: path
  *         name: id
@@ -68,7 +105,7 @@ router.get("/", authenticate, paginate, listUsers);
  *         content:
  *           application/json:
  *             schema: { $ref: '#/components/schemas/User' }
- *       404: { description: Não encontrado }
+ *       404: { description: Nao encontrado }
  *   put:
  *     tags: [Users]
  *     summary: Atualizar nome ou avatar
@@ -92,7 +129,7 @@ router.get("/", authenticate, paginate, listUsers);
  *             schema: { $ref: '#/components/schemas/User' }
  *   delete:
  *     tags: [Users]
- *     summary: Remover usuário
+ *     summary: Remover usuario
  *     parameters:
  *       - in: path
  *         name: id
@@ -100,7 +137,7 @@ router.get("/", authenticate, paginate, listUsers);
  *         schema: { type: string, format: uuid }
  *     responses:
  *       204: { description: Removido }
- *       404: { description: Não encontrado }
+ *       404: { description: Nao encontrado }
  */
 router.get("/:id", authenticate, getUser);
 router.put("/:id", authenticate, validate(updateUserSchema), updateUser);
@@ -137,42 +174,5 @@ router.patch(
   validate(updatePasswordSchema),
   updatePassword,
 );
-
-/**
- * @swagger
- * /users/me/api-key:
- *   get:
- *     tags: [Users]
- *     summary: Obter API Key permanente do usuário logado
- *     description: Retorna a API Key usada no endpoint /gastos/atalho (iPhone Shortcuts).
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 api_key: { type: string, format: uuid }
- *
- * /users/me/api-key/rotate:
- *   post:
- *     tags: [Users]
- *     summary: Rotacionar API Key
- *     description: Gera uma nova API Key, invalidando imediatamente a anterior.
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 api_key: { type: string, format: uuid }
- */
-router.get("/me/api-key", authenticate, getApiKey);
-router.post("/me/api-key/rotate", authenticate, rotateApiKey);
 
 export default router;

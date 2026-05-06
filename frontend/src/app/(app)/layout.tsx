@@ -21,11 +21,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <UserProvider>
       <SidebarProvider>
-        <div className="flex min-h-screen w-full">
+        <div className="flex h-screen w-full overflow-hidden">
           <AppSidebar />
           <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
             <TopNavbar />
-            <main className="flex-1 overflow-auto p-6">{children}</main>
+            <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6">{children}</main>
           </div>
         </div>
         <Toaster richColors position="top-right" />

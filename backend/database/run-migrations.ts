@@ -5,7 +5,15 @@ import * as dotenv from "dotenv";
 
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const isSupabase = process.env.DATABASE_URL?.includes("supabase.com");
+const connectionString = isSupabase
+  ? process.env.DATABASE_URL?.replace(/[?&]sslmode=[^&]+/, "").replace(/\?$/, "")
+  : process.env.DATABASE_URL;
+
+const pool = new Pool({
+  connectionString,
+  ssl: isSupabase ? { rejectUnauthorized: false } : false,
+});
 
 const MIGRATIONS_DIR = path.join(__dirname, "migrations");
 

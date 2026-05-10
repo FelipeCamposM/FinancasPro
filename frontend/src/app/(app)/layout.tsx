@@ -7,6 +7,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
 import AppSidebar from "@/components/nav/AppSidebar";
 import TopNavbar from "@/components/nav/TopNavbar";
+import BottomNav from "@/components/nav/BottomNav";
 import { UserProvider } from "@/contexts/UserContext";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -21,14 +22,20 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <UserProvider>
       <SidebarProvider>
-        <div className="flex h-screen w-full overflow-hidden">
+        <div aria-hidden="true" className="ui-bg-blobs">
+          <div className="ui-blob ui-blob-1" />
+          <div className="ui-blob ui-blob-2" />
+          <div className="ui-blob ui-blob-3" />
+        </div>
+        <div className="relative z-[1] flex h-screen w-full overflow-hidden">
           <AppSidebar />
           <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
             <TopNavbar />
-            <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6">{children}</main>
+            <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 pb-24 sm:p-6 sm:pb-6">{children}</main>
           </div>
         </div>
-        <Toaster richColors position="top-right" />
+        <BottomNav />
+        <Toaster richColors position="bottom-right" />
       </SidebarProvider>
     </UserProvider>
   );

@@ -153,3 +153,31 @@ export const deleteCartao = async (
     next(err);
   }
 };
+
+export const listFormasPagamentoIphone = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const userId = req.user!.userId;
+    const { rows: cartoes } = await pool.query(
+      "SELECT id, apelido, tipo FROM cartoes WHERE user_id = $1 AND ativo = true ORDER BY apelido",
+      [userId],
+    );
+
+    const data: { label: string; forma_pagamento: string; cartao_id: string | null }[] = [
+      { label: "Pix", forma_pagamento: "pix", cartao_id: null },
+      { label: "Dinheiro", forma_pagamento: "dinheiro", cartao_id: null },
+    ];
+
+    for (const c of cartoes) {
+      const forma_pagamento = c.tipo === "debito" ? "cartao_debito" : "cartao_credito";
+      data.push({ label: c.apelido, forma_pagamento, cartao_id: c.id });
+    }
+
+    res.json({ data });
+  } catch (err) {
+    next(err);
+  }
+};

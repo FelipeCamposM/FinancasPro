@@ -26,6 +26,7 @@ import {
   Search,
   LogOut,
   User,
+  Settings,
   LayoutDashboard,
   TrendingDown,
   TrendingUp,
@@ -86,9 +87,9 @@ export default function TopNavbar() {
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              className="flex items-center gap-2 h-9 px-2 rounded-full hover:bg-white/[0.10] text-white"
+              className="flex items-center gap-2 h-9 px-2 rounded-full hover:bg-white/[0.10] text-white transition-colors"
             >
-              <Avatar className="h-8 w-8">
+              <Avatar className="h-8 w-8 ring-2 ring-white/10">
                 {user?.avatar && (
                   <AvatarImage src={user.avatar} alt={user.name} />
                 )}
@@ -99,32 +100,49 @@ export default function TopNavbar() {
               <span className="hidden sm:block text-sm font-medium max-w-[120px] truncate">
                 {user?.name ?? "Carregando..."}
               </span>
-              <ChevronDown className="hidden sm:block h-3.5 w-3.5 text-muted-foreground" />
+              <ChevronDown className="hidden sm:block h-3.5 w-3.5 text-white/40 transition-transform [[data-state=open]_&]:rotate-180" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56" align="end" forceMount>
-            <DropdownMenuLabel className="font-normal">
-              <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none truncate">
+
+          <DropdownMenuContent className="w-64" align="end" forceMount>
+            {/* User header */}
+            <div className="flex items-center gap-3 rounded-lg bg-white/[0.05] px-3 py-3 mb-1.5">
+              <Avatar className="h-10 w-10 shrink-0 ring-2 ring-white/10">
+                {user?.avatar && (
+                  <AvatarImage src={user.avatar} alt={user.name} />
+                )}
+                <AvatarFallback className="bg-primary text-primary-foreground text-sm font-bold">
+                  {getInitials(user?.name)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-white truncate leading-tight">
                   {user?.name ?? "—"}
                 </p>
-                <p className="text-xs leading-none text-muted-foreground truncate">
+                <p className="text-xs text-white/40 truncate mt-0.5">
                   {user?.email ?? "—"}
                 </p>
               </div>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push("/perfil")} className="cursor-pointer">
-              <User className="mr-2 h-4 w-4" />
+            </div>
+
+            <DropdownMenuItem onClick={() => router.push("/perfil")}>
+              <User className="text-white/50" />
               Ver perfil
             </DropdownMenuItem>
+
+            <DropdownMenuItem onClick={() => router.push("/configuracoes")}>
+              <Settings className="text-white/50" />
+              Configurações
+            </DropdownMenuItem>
+
             <DropdownMenuSeparator />
+
             <DropdownMenuItem
-              className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer"
               onClick={handleLogout}
+              className="text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 focus:text-rose-300 focus:bg-rose-500/10"
             >
-              <LogOut className="mr-2 h-4 w-4" />
-              Sair
+              <LogOut className="text-rose-400" />
+              Sair da conta
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

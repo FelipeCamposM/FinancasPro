@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useState, useRef, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { api } from "@/lib/api";
@@ -86,8 +87,14 @@ import {
   Zap,
   CalendarDays,
   AlertTriangle,
+  Repeat,
 } from "lucide-react";
 import { PageShell } from "@/components/ui/page-shell";
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+} from "@/components/ui/sheet";
 
 interface Gasto {
   id: string;
@@ -105,6 +112,10 @@ interface Gasto {
   quantidade_parcelas: number;
   numero_parcela?: number;
   gasto_origem_id?: string;
+  cartao_apelido?: string;
+  cartao_bandeira?: string;
+  cartao_cor?: string;
+  cartao_ultimos_4_digitos?: string;
 }
 
 interface Categoria {
@@ -202,6 +213,80 @@ function getCategoryIcon(nome: string) {
   return icons[nome] ?? <Tag className="h-3.5 w-3.5" />;
 }
 
+const BANDEIRA_LOGOS: Record<string, string> = {
+  visa:       "/brand_cardlogos/visa.svg",
+  mastercard: "/brand_cardlogos/mastercard.svg",
+  elo:        "/brand_cardlogos/elo.svg",
+  amex:       "/brand_cardlogos/amex.svg",
+  hipercard:  "/brand_cardlogos/hipercard.svg",
+  alelo:      "/brand_cardlogos/alelo.svg",
+  paypal:     "/brand_cardlogos/paypal.svg",
+};
+
+function getContrastColor(hex: string): string {
+  if (!hex || !hex.startsWith("#")) return "#ffffff";
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return 0.299 * r + 0.587 * g + 0.114 * b > 140 ? "#1a1a1a" : "#ffffff";
+}
+
+function CartaoChip({ apelido, bandeira, cor }: { apelido: string; bandeira?: string; cor?: string }) {
+  const logo = bandeira ? BANDEIRA_LOGOS[bandeira.toLowerCase()] : undefined;
+  const dot = cor ?? "#64748b";
+
+  return (
+    <span className="inline-flex items-center gap-1 text-[10px] text-white/35">
+      <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: dot }} />
+      {logo && (
+        <img
+          src={logo}
+          alt={bandeira}
+          className="h-2.5 w-auto max-w-[14px] object-contain shrink-0 opacity-50"
+        />
+      )}
+      <span className="truncate max-w-[72px]">{apelido}</span>
+    </span>
+  );
+}
+
+function CartaoMiniDetail({
+  apelido, bandeira, cor, ultimos4,
+}: { apelido: string; bandeira?: string; cor?: string; ultimos4?: string }) {
+  const bg = cor ?? "#334155";
+  const textColor = getContrastColor(bg);
+  const isLight = textColor === "#1a1a1a";
+  const logo = bandeira ? BANDEIRA_LOGOS[bandeira.toLowerCase()] : undefined;
+
+  return (
+    <div
+      className="relative h-[72px] w-32 shrink-0 rounded-xl p-3 select-none"
+      style={{ background: bg, color: textColor }}
+    >
+      <div className="flex items-center justify-between">
+        <p className="text-[10px] font-semibold truncate max-w-[68px]" style={{ color: textColor, opacity: 0.85 }}>
+          {apelido}
+        </p>
+        {logo ? (
+          <img
+            src={logo}
+            alt={bandeira}
+            className="h-4 w-auto max-w-[28px] object-contain shrink-0"
+            style={isLight ? {} : { filter: "brightness(0) invert(1)" }}
+          />
+        ) : (
+          <div className={`h-3.5 w-5 rounded shrink-0 ${isLight ? "bg-black/20" : "bg-white/30"}`} />
+        )}
+      </div>
+      {ultimos4 && (
+        <p className="mt-auto pt-2 font-mono text-[10px] tracking-widest" style={{ color: textColor, opacity: 0.7 }}>
+          •••• {ultimos4}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function formatBRL(value: number) {
   return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
@@ -215,6 +300,14 @@ function formatDate(date: string) {
 }
 
 export default function GastosPage() {
+  return (
+    <Suspense>
+      <GastosPageInner />
+    </Suspense>
+  );
+}
+
+function GastosPageInner() {
   const [gastos, setGastos] = useState<Gasto[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -259,6 +352,19 @@ export default function GastosPage() {
   // Dialog
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingGasto, setEditingGasto] = useState<Gasto | null>(null);
+
+  // Detail sheet
+  const [detailGasto, setDetailGasto] = useState<Gasto | null>(null);
+
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  useEffect(() => {
+    if (searchParams.get("new") === "1") {
+      setEditingGasto(null);
+      setDialogOpen(true);
+      router.replace("/gastos");
+    }
+  }, [searchParams, router]);
 
   // Delete
   const [deleteTarget, setDeleteTarget] = useState<Gasto | null>(null);
@@ -771,119 +877,150 @@ export default function GastosPage() {
         </div>
       )}
 
-      {/* ── Table ───────────────────────────────────────────── */}
+      {/* ── Table / List ───────────────────────────────────── */}
       {loading ? (
-        <div className="rounded-xl border border-white/[0.09] bg-white/[0.03] backdrop-blur-xl overflow-hidden">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-b border-white/[0.07] hover:bg-transparent">
-                  {["Descrição","Data","Categoria","Pagamento","Status","Valor",""].map((h, i) => (
-                    <TableHead key={i} className="text-xs font-semibold text-white/30 uppercase tracking-[0.08em]">{h}</TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {Array.from({ length: 8 }).map((_, i) => (
-                  <TableRow key={i} className="border-b border-white/[0.04]">
-                    {Array.from({ length: 7 }).map((__, j) => (
-                      <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
+        <>
+          {/* mobile skeleton */}
+          <div className="sm:hidden space-y-2">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-[72px] rounded-xl" />
+            ))}
+          </div>
+          {/* desktop skeleton */}
+          <div className="hidden sm:block rounded-xl border border-white/[0.09] bg-white/[0.03] backdrop-blur-xl overflow-hidden">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b border-white/[0.07] hover:bg-transparent">
+                    {["Descrição","Data","Categoria","Pagamento","Status","Valor",""].map((h, i) => (
+                      <TableHead key={i} className="text-xs font-semibold text-white/30 uppercase tracking-[0.08em]">{h}</TableHead>
                     ))}
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <TableRow key={i} className="border-b border-white/[0.04]">
+                      {Array.from({ length: 7 }).map((__, j) => (
+                        <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </div>
-        </div>
+        </>
       ) : loadError ? (
         <PageDataState mode="error" icon={AlertTriangle} title="Não foi possível carregar os gastos" description="Verifique sua conexão e tente novamente." onAction={fetchGastos} />
       ) : displayedGastos.length === 0 ? (
         <PageDataState mode="empty" icon={Receipt} title="Nenhum gasto encontrado" description="Ajuste os filtros ou cadastre um novo gasto." />
       ) : (
-        <div className="rounded-xl border border-white/[0.09] bg-white/[0.03] backdrop-blur-xl overflow-hidden">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-b border-white/[0.07] hover:bg-transparent">
-                  <TableHead className="text-xs font-semibold text-white/30 uppercase tracking-[0.08em]">Descrição</TableHead>
-                  <TableHead className="text-xs font-semibold text-white/30 uppercase tracking-[0.08em]">Data</TableHead>
-                  <TableHead className="hidden md:table-cell text-xs font-semibold text-white/30 uppercase tracking-[0.08em]">Categoria</TableHead>
-                  <TableHead className="hidden sm:table-cell text-xs font-semibold text-white/30 uppercase tracking-[0.08em]">Pagamento</TableHead>
-                  <TableHead className="text-xs font-semibold text-white/30 uppercase tracking-[0.08em]">Status</TableHead>
-                  <TableHead className="text-right text-xs font-semibold text-white/30 uppercase tracking-[0.08em]">Valor</TableHead>
-                  <TableHead className="w-20" />
-                </TableRow>
-              </TableHeader>
-              <TableBody className="ui-stagger-rows">
-                {displayedGastos.map((g) => {
-                  const statusInfo = statusConfig[g.status] ?? { label: g.status, variant: "slate" as const };
-                  return (
-                    <TableRow key={g.id} className="border-b border-white/[0.04] transition-colors hover:bg-white/[0.03]">
-                      <TableCell className="max-w-[180px]">
-                        <span className="block truncate font-medium text-white/90">{g.descricao}</span>
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap text-sm text-white/40">
-                        {formatDate(g.data_gasto)}
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        {g.categoria_nome ? (
-                          <div className="flex items-center gap-2">
-                            <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: g.categoria_cor ?? "#94a3b8" }} />
-                            <span className="text-sm text-white/55">{g.categoria_nome}</span>
-                          </div>
-                        ) : (
-                          <span className="text-white/25">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="hidden sm:table-cell">
-                        <div className="flex flex-col gap-0.5">
-                          <div className="flex items-center gap-1.5 text-sm text-white/50">
-                            {getFormaIcon(g.forma_pagamento, "h-3 w-3")}
-                            <span>{formaPagtoLabel(g.forma_pagamento, g.tipo_pagamento)}</span>
-                          </div>
-                          {g.tipo_pagamento === "parcelado" && (
-                            <span className="inline-flex w-fit items-center gap-px rounded-full border border-white/10 bg-white/[0.06] px-2 py-px text-[10px] text-white/50">
-                              <span className="font-semibold text-white/70">{g.numero_parcela ?? 1}</span>
-                              <span className="mx-px text-white/25">/</span>
-                              <span>{g.quantidade_parcelas}</span>
-                            </span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={statusInfo.variant}>
-                          {getStatusIcon(g.status, "h-3 w-3")}
-                          {statusInfo.label}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right font-semibold tabular-nums text-rose-400/90">
-                        {formatBRL(Number(g.valor_total))}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center justify-end gap-0.5">
-                          <Button
-                            variant="ghost" size="icon"
-                            className="h-8 w-8 text-white/25 hover:text-white/80 hover:bg-white/[0.06]"
-                            onClick={() => { setEditingGasto(g); setDialogOpen(true); }}
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost" size="icon"
-                            className="h-8 w-8 text-white/25 hover:text-rose-400 hover:bg-rose-500/10"
-                            onClick={() => setDeleteTarget(g)}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+        <>
+          {/* ── Mobile list ── */}
+          <div className="sm:hidden space-y-2">
+            {displayedGastos.map((g) => (
+              <GastoMobileCard
+                key={g.id}
+                gasto={g}
+                onEdit={() => setDetailGasto(g)}
+                onDelete={() => setDeleteTarget(g)}
+              />
+            ))}
           </div>
-        </div>
+
+          {/* ── Desktop table ── */}
+          <div className="hidden sm:block rounded-xl border border-white/[0.09] bg-white/[0.03] backdrop-blur-xl overflow-hidden">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b border-white/[0.07] hover:bg-transparent">
+                    <TableHead className="text-xs font-semibold text-white/30 uppercase tracking-[0.08em]">Descrição</TableHead>
+                    <TableHead className="text-xs font-semibold text-white/30 uppercase tracking-[0.08em]">Data</TableHead>
+                    <TableHead className="hidden md:table-cell text-xs font-semibold text-white/30 uppercase tracking-[0.08em]">Categoria</TableHead>
+                    <TableHead className="hidden sm:table-cell text-xs font-semibold text-white/30 uppercase tracking-[0.08em]">Pagamento</TableHead>
+                    <TableHead className="text-xs font-semibold text-white/30 uppercase tracking-[0.08em]">Status</TableHead>
+                    <TableHead className="text-right text-xs font-semibold text-white/30 uppercase tracking-[0.08em]">Valor</TableHead>
+                    <TableHead className="w-20" />
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="ui-stagger-rows">
+                  {displayedGastos.map((g) => {
+                    const statusInfo = statusConfig[g.status] ?? { label: g.status, variant: "slate" as const };
+                    return (
+                      <TableRow key={g.id} className="border-b border-white/[0.04] transition-colors hover:bg-white/[0.03] cursor-pointer" onClick={() => setDetailGasto(g)}>
+                        <TableCell className="max-w-[180px]">
+                          <span className="block truncate font-medium text-white/90">{g.descricao}</span>
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-sm text-white/40">
+                          {formatDate(g.data_gasto)}
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          {g.categoria_nome ? (
+                            <div className="flex items-center gap-2">
+                              <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: g.categoria_cor ?? "#94a3b8" }} />
+                              <span className="text-sm text-white/55">{g.categoria_nome}</span>
+                            </div>
+                          ) : (
+                            <span className="text-white/25">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="hidden sm:table-cell">
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-1.5 text-sm text-white/50">
+                              {getFormaIcon(g.forma_pagamento, "h-3 w-3")}
+                              <span>{formaPagtoLabel(g.forma_pagamento, g.tipo_pagamento)}</span>
+                            </div>
+                            {g.cartao_apelido && (
+                              <CartaoChip
+                                apelido={g.cartao_apelido}
+                                bandeira={g.cartao_bandeira}
+                                cor={g.cartao_cor}
+                              />
+                            )}
+                            {g.tipo_pagamento === "parcelado" && (
+                              <span className="inline-flex w-fit items-center gap-px rounded-full border border-white/10 bg-white/[0.06] px-2 py-px text-[10px] text-white/50">
+                                <span className="font-semibold text-white/70">{g.numero_parcela ?? 1}</span>
+                                <span className="mx-px text-white/25">/</span>
+                                <span>{g.quantidade_parcelas}</span>
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={statusInfo.variant}>
+                            {getStatusIcon(g.status, "h-3 w-3")}
+                            {statusInfo.label}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right font-semibold tabular-nums text-rose-400/90">
+                          {formatBRL(Number(g.valor_total))}
+                        </TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-end gap-0.5">
+                            <Button
+                              variant="ghost" size="icon"
+                              className="h-8 w-8 text-white/25 hover:text-white/80 hover:bg-white/[0.06]"
+                              onClick={(e) => { e.stopPropagation(); setEditingGasto(g); setDialogOpen(true); }}
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost" size="icon"
+                              className="h-8 w-8 text-white/25 hover:text-rose-400 hover:bg-rose-500/10"
+                              onClick={(e) => { e.stopPropagation(); setDeleteTarget(g); }}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        </>
       )}
 
       {/* ── Pagination ──────────────────────────────────────── */}
@@ -904,6 +1041,14 @@ export default function GastosPage() {
           </div>
         </div>
       )}
+
+      {/* Detail sheet */}
+      <GastoDetailSheet
+        gasto={detailGasto}
+        onClose={() => setDetailGasto(null)}
+        onEdit={(g) => { setDetailGasto(null); setEditingGasto(g); setDialogOpen(true); }}
+        onDelete={(g) => { setDetailGasto(null); setDeleteTarget(g); }}
+      />
 
       {/* Dialogs */}
       <GastoDialog
@@ -931,5 +1076,275 @@ export default function GastosPage() {
         </AlertDialogContent>
       </AlertDialog>
     </PageShell>
+  );
+}
+
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/30 mb-1.5">{label}</p>
+      {children}
+    </div>
+  );
+}
+
+function GastoDetailSheet({
+  gasto: g,
+  onClose,
+  onEdit,
+  onDelete,
+}: {
+  gasto: Gasto | null;
+  onClose: () => void;
+  onEdit: (g: Gasto) => void;
+  onDelete: (g: Gasto) => void;
+}) {
+  if (!g) return null;
+  const statusInfo = statusConfig[g.status] ?? { label: g.status, variant: "slate" as const };
+  const isCard = g.forma_pagamento === "cartao_credito" || g.forma_pagamento === "cartao_debito";
+
+  return (
+    <Sheet open={!!g} onOpenChange={(v) => !v && onClose()}>
+      <SheetContent
+        side="right"
+        className="ui-glass-surface-strong w-full sm:max-w-sm border-l border-white/[0.08] p-0 flex flex-col gap-0"
+      >
+        {/* Header */}
+        <div className="px-5 pt-6 pb-4 border-b border-white/[0.07]">
+          <div className="flex items-start gap-3 pr-6">
+            {g.categoria_cor && (
+              <div className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: g.categoria_cor }} />
+            )}
+            <div className="min-w-0">
+              <SheetTitle className="text-base font-semibold text-white leading-snug">
+                {g.descricao}
+              </SheetTitle>
+              <p className="mt-0.5 text-xs text-white/40">{formatDate(g.data_gasto)}</p>
+            </div>
+          </div>
+
+          {/* Valor grande */}
+          <p className="mt-4 text-4xl font-bold tabular-nums text-rose-400 leading-none">
+            {formatBRL(Number(g.valor_total))}
+          </p>
+
+          {/* Status badge */}
+          <div className="mt-3">
+            <Badge variant={statusInfo.variant} className="text-xs px-2.5 py-1">
+              {getStatusIcon(g.status, "h-3.5 w-3.5")}
+              {statusInfo.label}
+            </Badge>
+          </div>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5">
+
+          {/* Cartão visual */}
+          {isCard && g.cartao_apelido && (
+            <Row label="Cartão">
+              <CartaoMiniDetail
+                apelido={g.cartao_apelido}
+                bandeira={g.cartao_bandeira}
+                cor={g.cartao_cor}
+                ultimos4={g.cartao_ultimos_4_digitos}
+              />
+            </Row>
+          )}
+
+          {/* Forma de pagamento */}
+          <Row label="Forma de pagamento">
+            <div className="flex items-center gap-2 text-sm text-white/60">
+              {getFormaIcon(g.forma_pagamento, "h-4 w-4")}
+              <span>{formaPagtoLabel(g.forma_pagamento, g.tipo_pagamento)}</span>
+            </div>
+          </Row>
+
+          {/* Parcelamento */}
+          {g.tipo_pagamento === "parcelado" && (
+            <Row label="Parcelamento">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-lg border border-amber-400/20 bg-amber-500/[0.08] px-3 py-1.5 text-sm text-amber-300">
+                  <Zap className="h-3.5 w-3.5" />
+                  Parcela <strong>{g.numero_parcela ?? 1}</strong> de <strong>{g.quantidade_parcelas}</strong>
+                </span>
+              </div>
+            </Row>
+          )}
+
+          {/* Categoria */}
+          {g.categoria_nome && (
+            <Row label="Categoria">
+              <div className="flex items-center gap-2">
+                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: g.categoria_cor ?? "#94a3b8" }} />
+                <span className="text-sm text-white/60">
+                  {g.categoria_icone ? `${g.categoria_icone} ` : ""}{g.categoria_nome}
+                </span>
+              </div>
+            </Row>
+          )}
+
+          {/* Observações */}
+          {g.observacoes && (
+            <Row label="Observações">
+              <p className="text-sm text-white/50 leading-relaxed whitespace-pre-wrap rounded-lg border border-white/[0.07] bg-white/[0.03] px-3 py-2.5">
+                {g.observacoes}
+              </p>
+            </Row>
+          )}
+
+          {/* Instância recorrente */}
+          {g.gasto_origem_id && (
+            <div className="flex items-center gap-2 rounded-lg border border-indigo-400/20 bg-indigo-500/[0.06] px-3 py-2.5">
+              <Repeat className="h-3.5 w-3.5 text-indigo-400 shrink-0" />
+              <p className="text-xs text-indigo-300/80">Gerado automaticamente por assinatura recorrente</p>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center gap-2 border-t border-white/[0.07] bg-white/[0.03] px-5 py-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-rose-400/70 hover:text-rose-400 hover:bg-rose-500/10 flex-1"
+            onClick={() => onDelete(g)}
+          >
+            <Trash2 className="h-4 w-4 mr-1.5" />
+            Excluir
+          </Button>
+          <Button
+            size="sm"
+            className="flex-1"
+            onClick={() => onEdit(g)}
+          >
+            <Pencil className="h-4 w-4 mr-1.5" />
+            Editar
+          </Button>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function GastoMobileCard({
+  gasto: g,
+  onEdit,
+  onDelete,
+}: {
+  gasto: Gasto;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const [offsetX, setOffsetX] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const startX = useRef(0);
+  const moved = useRef(false);
+  const THRESHOLD = 72;
+
+  const statusInfo = statusConfig[g.status] ?? { label: g.status, variant: "slate" as const };
+  const revealRatio = Math.min(1, Math.abs(offsetX) / THRESHOLD);
+
+  function onTouchStart(e: React.TouchEvent) {
+    startX.current = e.touches[0].clientX;
+    moved.current = false;
+    setDragging(true);
+  }
+
+  function onTouchMove(e: React.TouchEvent) {
+    const delta = e.touches[0].clientX - startX.current;
+    if (delta < 0) {
+      moved.current = true;
+      setOffsetX(Math.max(delta, -110));
+    }
+  }
+
+  function onTouchEnd() {
+    setDragging(false);
+    if (offsetX < -THRESHOLD) {
+      onDelete();
+    }
+    setOffsetX(0);
+  }
+
+  function handleClick() {
+    if (moved.current) return;
+    onEdit();
+  }
+
+  return (
+    <div className="relative overflow-hidden rounded-xl">
+      {/* delete strip revealed on swipe */}
+      <div
+        className="absolute inset-y-0 right-0 flex items-center justify-center gap-1.5 bg-rose-500"
+        style={{ width: `${Math.abs(offsetX)}px`, opacity: revealRatio }}
+      >
+        <Trash2 className="h-4 w-4 shrink-0 text-white" />
+        {Math.abs(offsetX) > 52 && (
+          <span className="text-xs font-semibold text-white whitespace-nowrap">Excluir</span>
+        )}
+      </div>
+
+      {/* swipeable card */}
+      <div
+        className="relative z-10 flex items-center gap-3 rounded-xl border border-white/[0.09] bg-white/[0.04] px-4 py-3.5 backdrop-blur-xl active:bg-white/[0.07] select-none"
+        style={{
+          transform: `translateX(${offsetX}px)`,
+          transition: dragging ? "none" : "transform 0.22s cubic-bezier(0.22,1,0.36,1)",
+        }}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        onClick={handleClick}
+      >
+        {/* categoria color bar */}
+        <div
+          className="h-9 w-1 shrink-0 rounded-full"
+          style={{ backgroundColor: g.categoria_cor ?? "#94a3b8" }}
+        />
+
+        {/* main info */}
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-white/90">{g.descricao}</p>
+          <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-white/40">
+            <span>{formatDate(g.data_gasto)}</span>
+            <span className="text-white/20">·</span>
+            <span className="flex items-center gap-1">
+              {getFormaIcon(g.forma_pagamento, "h-3 w-3")}
+              {formaPagtoLabel(g.forma_pagamento, g.tipo_pagamento)}
+            </span>
+            {g.tipo_pagamento === "parcelado" && g.quantidade_parcelas && (
+              <span className="rounded-full border border-white/10 bg-white/[0.06] px-1.5 py-px text-[10px]">
+                {g.numero_parcela ?? 1}/{g.quantidade_parcelas}x
+              </span>
+            )}
+            {g.cartao_apelido && (
+              <CartaoChip
+                apelido={g.cartao_apelido}
+                bandeira={g.cartao_bandeira}
+                cor={g.cartao_cor}
+              />
+            )}
+            {g.categoria_nome && (
+              <>
+                <span className="text-white/20">·</span>
+                <span>{g.categoria_nome}</span>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* valor + status */}
+        <div className="shrink-0 flex flex-col items-end gap-1.5">
+          <span className="font-bold tabular-nums text-rose-400 text-sm leading-none">
+            {formatBRL(Number(g.valor_total))}
+          </span>
+          <Badge variant={statusInfo.variant} className="text-[10px] px-1.5 py-0">
+            {getStatusIcon(g.status, "h-2.5 w-2.5")}
+            {statusInfo.label}
+          </Badge>
+        </div>
+      </div>
+    </div>
   );
 }

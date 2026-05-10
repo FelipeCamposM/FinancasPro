@@ -289,15 +289,15 @@ export default function RendaPage() {
       {/* Header */}
       <SectionHeader
         title="Renda"
-        titleColor="text-blue-400"
+        titleColor="text-emerald-400"
         description={`${total} ${total === 1 ? "registro" : "registros"}`}
         actions={
           <Button
-            variant="default"
             onClick={() => {
               setSelectedRenda(null);
               setDialogOpen(true);
             }}
+            className="bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 hover:bg-emerald-500/30 hover:text-emerald-200"
           >
             <Plus className="mr-2 h-4 w-4" />
             Nova Renda
@@ -329,10 +329,10 @@ export default function RendaPage() {
         </Card>
 
         {/* Total Renda */}
-        <Card className="rounded-xl border border-white/[0.09] bg-white/[0.04] backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5">
+        <Card className="rounded-xl border border-emerald-400/10 bg-emerald-500/[0.05] backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5">
           <CardContent className="flex items-center gap-4 p-5">
-            <div className="rounded-lg bg-blue-500/20 p-2.5 shrink-0">
-              <TrendingUp className="h-5 w-5 text-blue-400" />
+            <div className="rounded-lg bg-emerald-500/20 p-2.5 shrink-0">
+              <TrendingUp className="h-5 w-5 text-emerald-400" />
             </div>
             <div className="min-w-0">
               <p className="text-xs font-medium text-white/50 uppercase tracking-wide">
@@ -341,7 +341,7 @@ export default function RendaPage() {
               {loadingSummary ? (
                 <Skeleton className="mt-1 h-6 w-28" />
               ) : (
-                <p className="text-xl font-bold text-blue-300 tabular-nums">
+                <p className="text-xl font-bold text-emerald-300 tabular-nums">
                   {formatCurrency(summary?.total_renda ?? 0)}
                 </p>
               )}
@@ -350,25 +350,19 @@ export default function RendaPage() {
         </Card>
 
         {/* Saldo */}
-        <Card
-          className={
-            (summary?.diferenca ?? 0) >= 0
-              ? "rounded-xl border border-white/[0.09] bg-white/[0.04] backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5"
-              : "rounded-xl border border-white/[0.09] bg-white/[0.04] backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5"
-          }
-        >
+        <Card className="rounded-xl border border-white/[0.09] bg-white/[0.04] backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5">
           <CardContent className="flex items-center gap-4 p-5">
             <div
               className={`rounded-lg p-2.5 shrink-0 ${
                 (summary?.diferenca ?? 0) >= 0
-                  ? "bg-blue-500/20"
+                  ? "bg-emerald-500/20"
                   : "bg-orange-500/20"
               }`}
             >
               <Wallet
                 className={`h-5 w-5 ${
                   (summary?.diferenca ?? 0) >= 0
-                    ? "text-blue-400"
+                    ? "text-emerald-400"
                     : "text-orange-400"
                 }`}
               />
@@ -383,7 +377,7 @@ export default function RendaPage() {
                 <p
                   className={`text-xl font-bold tabular-nums ${
                     (summary?.diferenca ?? 0) >= 0
-                      ? "text-blue-300"
+                      ? "text-emerald-300"
                       : "text-orange-300"
                   }`}
                 >
@@ -406,7 +400,6 @@ export default function RendaPage() {
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
           />
-        </div>
         </div>
 
         <Select value={filterTipo} onValueChange={setFilterTipo}>
@@ -445,7 +438,7 @@ export default function RendaPage() {
               onClick={() =>
                 setPeriodoMode((prev) => (prev === "todos" ? "mes" : "todos"))
               }
-              className="px-5 h-10 min-w-[200px] text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60"
+              className="px-5 h-10 min-w-[200px] text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60"
               aria-label="Alternar período entre mês atual e todos os meses"
             >
               {periodoMode === "todos" ? (
@@ -454,10 +447,10 @@ export default function RendaPage() {
                 </span>
               ) : (
                 <span className="flex flex-col items-center leading-tight">
-                  <span className="text-[11px] font-semibold uppercase tracking-widest text-blue-400/70">
+                  <span className="text-[11px] font-semibold uppercase tracking-widest text-emerald-400/70">
                     {format(mesAtual, "yyyy")}
                   </span>
-                  <span className="text-base font-bold capitalize text-blue-300">
+                  <span className="text-base font-bold capitalize text-emerald-300">
                     {format(mesAtual, "MMMM", { locale: ptBR })}
                   </span>
                 </span>
@@ -483,7 +476,7 @@ export default function RendaPage() {
             size="sm"
             className={`h-9 text-xs border backdrop-blur ${
               periodoMode === "custom"
-                ? "bg-blue-500/20 border-blue-400/40 text-blue-300"
+                ? "bg-emerald-500/20 border-emerald-400/40 text-emerald-300"
                 : "bg-white/[0.06] border-white/10 text-white/60 hover:bg-white/10 hover:text-white/90"
             }`}
             onClick={() =>
@@ -511,6 +504,7 @@ export default function RendaPage() {
             </div>
           )}
         </div>
+        </div>
       </div>
 
       {!loading && !loadError && displayedRendas.length > 0 && (
@@ -527,12 +521,12 @@ export default function RendaPage() {
             </CardContent>
           </Card>
 
-          <Card className="rounded-lg border border-white/[0.07] bg-white/[0.03] backdrop-blur-xl">
+          <Card className="rounded-lg border border-emerald-400/10 bg-emerald-500/[0.04] backdrop-blur-xl">
             <CardContent className="p-4">
-              <p className="text-[11px] uppercase tracking-wider text-blue-300/80 font-semibold">
+              <p className="text-[11px] uppercase tracking-wider text-emerald-300/80 font-semibold">
                 Valor total exibido
               </p>
-              <p className="mt-1 text-lg font-bold text-blue-300 tabular-nums">
+              <p className="mt-1 text-lg font-bold text-emerald-300 tabular-nums">
                 {formatCurrency(totalExibido)}
               </p>
               <p className="text-xs text-white/55">
@@ -677,7 +671,7 @@ export default function RendaPage() {
                           : "Recorrente"}
                       </Badge>
                     ) : renda.renda_origem_id ? (
-                      <Badge variant="blue">
+                      <Badge variant="green">
                         <CalendarCheck className="h-3 w-3" />
                         Instância
                       </Badge>
@@ -691,7 +685,7 @@ export default function RendaPage() {
                   <TableCell className="text-white/50">
                     {formatDate(renda.data_recebimento)}
                   </TableCell>
-                  <TableCell className="text-right font-semibold text-blue-300">
+                  <TableCell className="text-right font-semibold text-emerald-300">
                     {formatCurrency(Number(renda.valor))}
                   </TableCell>
                   <TableCell>
@@ -699,7 +693,7 @@ export default function RendaPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 text-white/40 hover:text-blue-400 hover:bg-blue-500/10"
+                        className="h-8 w-8 text-white/40 hover:text-emerald-400 hover:bg-emerald-500/10"
                         aria-label={`Editar renda ${renda.descricao}`}
                         onClick={() => {
                           setSelectedRenda(renda);

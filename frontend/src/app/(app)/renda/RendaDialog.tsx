@@ -11,7 +11,6 @@ import { Input } from "@/components/ui/input";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
   DialogContent,
@@ -70,42 +69,42 @@ const TIPOS = [
     label: "Salário",
     icon: Briefcase,
     idle: "bg-blue-500/10 border-blue-400/30 text-blue-300 hover:bg-blue-500/20",
-    active: "bg-blue-500/30 border-blue-400/60 text-blue-200",
+    active: "bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/25",
   },
   {
     value: "freelance",
     label: "Freelance",
     icon: Zap,
     idle: "bg-violet-500/10 border-violet-400/30 text-violet-300 hover:bg-violet-500/20",
-    active: "bg-violet-500/30 border-violet-400/60 text-violet-200",
+    active: "bg-violet-600 border-violet-500 text-white shadow-lg shadow-violet-500/25",
   },
   {
     value: "investimento",
     label: "Investimento",
     icon: TrendingUp,
-    idle: "bg-blue-500/10 border-blue-400/30 text-blue-300 hover:bg-blue-500/20",
-    active: "bg-blue-500/30 border-blue-400/60 text-blue-200",
+    idle: "bg-emerald-500/10 border-emerald-400/30 text-emerald-300 hover:bg-emerald-500/20",
+    active: "bg-emerald-600 border-emerald-500 text-white shadow-lg shadow-emerald-500/25",
   },
   {
     value: "aluguel",
     label: "Aluguel",
     icon: Home,
     idle: "bg-orange-500/10 border-orange-400/30 text-orange-300 hover:bg-orange-500/20",
-    active: "bg-orange-500/30 border-orange-400/60 text-orange-200",
+    active: "bg-orange-500 border-orange-400 text-white shadow-lg shadow-orange-500/25",
   },
   {
     value: "bonus",
     label: "Bônus",
     icon: Gift,
     idle: "bg-yellow-500/10 border-yellow-400/30 text-yellow-300 hover:bg-yellow-500/20",
-    active: "bg-yellow-500/30 border-yellow-400/60 text-yellow-200",
+    active: "bg-yellow-500 border-yellow-400 text-white shadow-lg shadow-yellow-500/25",
   },
   {
     value: "outro",
     label: "Outro",
     icon: CircleDollarSign,
     idle: "bg-white/[0.06] border-white/15 text-white/60 hover:bg-white/[0.10]",
-    active: "bg-white/[0.15] border-white/30 text-white",
+    active: "bg-white/20 border-white/30 text-white shadow-lg shadow-black/20",
   },
 ] as const;
 
@@ -166,6 +165,14 @@ interface Props {
   onClose: () => void;
   onSuccess: () => void;
   renda?: Renda | null;
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/35 mb-2">
+      {children}
+    </p>
+  );
 }
 
 export function RendaDialog({ open, onClose, onSuccess, renda }: Props) {
@@ -254,44 +261,41 @@ export function RendaDialog({ open, onClose, onSuccess, renda }: Props) {
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="sm:max-w-lg p-0 overflow-hidden gap-0">
-        {/* Header */}
-        <div className="px-6 py-5 border-b border-white/10 bg-white/[0.06]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-3 text-base">
-              <div className="rounded-xl bg-blue-500/20 p-2.5 shrink-0">
-                {isEdit ? (
-                  <Pencil className="h-5 w-5 text-blue-400" />
-                ) : (
-                  <Plus className="h-5 w-5 text-blue-400" />
-                )}
-              </div>
-              <div className="text-left">
-                <div className="font-semibold text-white">
-                  {isEdit ? "Editar Renda" : "Nova Renda"}
-                </div>
-                <div className="text-xs text-white/50 font-normal mt-0.5">
-                  {isEdit
-                    ? "Atualize os dados da sua renda"
-                    : "Registre uma nova entrada financeira"}
-                </div>
-              </div>
+
+        {/* ── Header ───────────────────────────────────────────── */}
+        <div className="flex items-center gap-3.5 px-5 py-4 border-b border-white/[0.08]">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15">
+            {isEdit ? (
+              <Pencil className="h-4 w-4 text-emerald-400" />
+            ) : (
+              <Plus className="h-4 w-4 text-emerald-400" />
+            )}
+          </div>
+          <DialogHeader className="space-y-0">
+            <DialogTitle className="text-base font-semibold leading-none">
+              {isEdit ? "Editar renda" : "Nova renda"}
             </DialogTitle>
+            <p className="text-xs text-white/40 mt-1">
+              {isEdit
+                ? "Atualize os dados da entrada financeira"
+                : "Registre uma nova entrada financeira"}
+            </p>
           </DialogHeader>
         </div>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
-            <div className="px-6 py-5 space-y-5 max-h-[65vh] overflow-y-auto">
-              {/* Seletor de tipo visual em grade */}
+            {/* ── Scrollable body ──────────────────────────────── */}
+            <div className="px-5 py-5 space-y-5 overflow-y-auto max-h-[calc(100dvh-14rem)] sm:max-h-[62vh]">
+
+              {/* Tipo */}
               <FormField
                 control={form.control}
                 name="tipo"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xs font-semibold uppercase tracking-wider text-white/50">
-                      Tipo de renda
-                    </FormLabel>
-                    <div className="grid grid-cols-3 gap-2 mt-1.5">
+                    <SectionLabel>Tipo de renda</SectionLabel>
+                    <div className="grid grid-cols-3 gap-2">
                       {TIPOS.map((tipo) => {
                         const Icon = tipo.icon;
                         const isSelected = field.value === tipo.value;
@@ -300,7 +304,7 @@ export function RendaDialog({ open, onClose, onSuccess, renda }: Props) {
                             key={tipo.value}
                             type="button"
                             onClick={() => field.onChange(tipo.value)}
-                            className={`flex flex-col items-center gap-1.5 rounded-xl border-2 px-2 py-3 text-xs font-semibold transition-all cursor-pointer ${
+                            className={`flex flex-col items-center gap-1.5 rounded-xl border-2 px-2 py-3 text-xs font-semibold transition-all duration-150 active:scale-95 cursor-pointer ${
                               isSelected ? tipo.active : tipo.idle
                             }`}
                           >
@@ -315,17 +319,13 @@ export function RendaDialog({ open, onClose, onSuccess, renda }: Props) {
                 )}
               />
 
-              <Separator />
-
               {/* Descrição */}
               <FormField
                 control={form.control}
                 name="descricao"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xs font-semibold uppercase tracking-wider text-white/50">
-                      Descrição
-                    </FormLabel>
+                    <SectionLabel>Descrição</SectionLabel>
                     <FormControl>
                       <Input
                         placeholder={
@@ -338,7 +338,6 @@ export function RendaDialog({ open, onClose, onSuccess, renda }: Props) {
                                 : "Descrição da renda"
                         }
                         {...field}
-                        className="mt-1"
                       />
                     </FormControl>
                     <FormMessage />
@@ -353,18 +352,16 @@ export function RendaDialog({ open, onClose, onSuccess, renda }: Props) {
                   name="valor"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs font-semibold uppercase tracking-wider text-white/50">
-                        Valor
-                      </FormLabel>
+                      <SectionLabel>Valor</SectionLabel>
                       <FormControl>
-                        <div className="relative mt-1">
-                          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-white/40 select-none">
+                        <div className="relative">
+                          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-white/35 select-none">
                             R$
                           </span>
                           <CurrencyInput
                             value={field.value}
                             onChange={field.onChange}
-                            className="pl-10"
+                            className="pl-9 h-12 text-lg font-bold tabular-nums text-emerald-300 placeholder:text-white/20"
                           />
                         </div>
                       </FormControl>
@@ -378,14 +375,16 @@ export function RendaDialog({ open, onClose, onSuccess, renda }: Props) {
                   name="origem"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs font-semibold uppercase tracking-wider text-white/50 flex items-center gap-1">
-                        <Building2 className="h-3 w-3" /> Origem
-                      </FormLabel>
+                      <SectionLabel>
+                        <span className="flex items-center gap-1">
+                          <Building2 className="h-2.5 w-2.5" /> Origem
+                        </span>
+                      </SectionLabel>
                       <FormControl>
                         <Input
                           placeholder="Empresa, cliente..."
                           {...field}
-                          className="mt-1"
+                          className="h-12"
                         />
                       </FormControl>
                       <FormMessage />
@@ -401,11 +400,13 @@ export function RendaDialog({ open, onClose, onSuccess, renda }: Props) {
                   name="mes_referencia"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs font-semibold uppercase tracking-wider text-white/50 flex items-center gap-1">
-                        <CalendarDays className="h-3 w-3" /> Mês referência
-                      </FormLabel>
+                      <SectionLabel>
+                        <span className="flex items-center gap-1">
+                          <CalendarDays className="h-2.5 w-2.5" /> Mês referência
+                        </span>
+                      </SectionLabel>
                       <FormControl>
-                        <Input type="month" {...field} className="mt-1" />
+                        <Input type="month" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -417,11 +418,13 @@ export function RendaDialog({ open, onClose, onSuccess, renda }: Props) {
                   name="data_recebimento"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs font-semibold uppercase tracking-wider text-white/50 flex items-center gap-1">
-                        <Calendar className="h-3 w-3" /> Recebimento
-                      </FormLabel>
+                      <SectionLabel>
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-2.5 w-2.5" /> Recebimento
+                        </span>
+                      </SectionLabel>
                       <FormControl>
-                        <Input type="date" {...field} className="mt-1" />
+                        <Input type="date" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -429,12 +432,12 @@ export function RendaDialog({ open, onClose, onSuccess, renda }: Props) {
                 />
               </div>
 
-              {/* Seção de recorrência */}
+              {/* Recorrência */}
               <div
-                className={`rounded-xl border p-4 space-y-3 transition-colors ${
+                className={`rounded-xl border-2 p-4 transition-colors ${
                   recorrente
-                    ? "border-indigo-400/40 bg-indigo-500/10"
-                    : "border-white/10 bg-white/[0.04]"
+                    ? "border-indigo-400/40 bg-indigo-500/[0.08]"
+                    : "border-dashed border-white/10 bg-white/[0.03]"
                 }`}
               >
                 <FormField
@@ -446,30 +449,26 @@ export function RendaDialog({ open, onClose, onSuccess, renda }: Props) {
                         <div className="flex items-center gap-2.5">
                           <div
                             className={`rounded-lg p-2 transition-colors ${
-                              recorrente
-                                ? "bg-indigo-500/20"
-                                : "bg-white/[0.08]"
+                              recorrente ? "bg-indigo-500/20" : "bg-white/[0.06]"
                             }`}
                           >
                             <Repeat
                               className={`h-4 w-4 transition-colors ${
-                                recorrente
-                                  ? "text-indigo-600"
-                                  : "text-muted-foreground"
+                                recorrente ? "text-indigo-300" : "text-white/40"
                               }`}
                             />
                           </div>
                           <div>
                             <FormLabel
                               className={`text-sm font-semibold transition-colors ${
-                                recorrente ? "text-indigo-300" : "text-white"
+                                recorrente ? "text-indigo-300" : "text-white/70"
                               }`}
                             >
                               Renda recorrente
                             </FormLabel>
-                            <p className="text-xs text-white/40 mt-0.5">
+                            <p className="text-xs text-white/35 mt-0.5">
                               {recorrente
-                                ? "Será lançada automaticamente todo mês"
+                                ? "Será lançada automaticamente"
                                 : "Ative para rendas fixas como salário"}
                             </p>
                           </div>
@@ -478,6 +477,7 @@ export function RendaDialog({ open, onClose, onSuccess, renda }: Props) {
                           <Switch
                             checked={field.value}
                             onCheckedChange={field.onChange}
+                            className="data-[state=checked]:bg-indigo-500"
                           />
                         </FormControl>
                       </div>
@@ -487,13 +487,13 @@ export function RendaDialog({ open, onClose, onSuccess, renda }: Props) {
                 />
 
                 {recorrente && (
-                  <div className="grid grid-cols-2 gap-3 pt-2 border-t border-indigo-400/20">
+                  <div className="grid grid-cols-2 gap-3 pt-3 mt-3 border-t border-indigo-400/20">
                     <FormField
                       control={form.control}
                       name="frequencia_recorrencia"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-xs text-indigo-300 font-semibold">
+                          <FormLabel className="text-xs text-indigo-300/80 font-semibold">
                             Frequência *
                           </FormLabel>
                           <Select
@@ -501,7 +501,7 @@ export function RendaDialog({ open, onClose, onSuccess, renda }: Props) {
                             onValueChange={field.onChange}
                           >
                             <FormControl>
-                              <SelectTrigger className="mt-1 border-indigo-400/30">
+                              <SelectTrigger className="mt-1.5 border-indigo-400/30">
                                 <SelectValue placeholder="Selecionar..." />
                               </SelectTrigger>
                             </FormControl>
@@ -523,7 +523,7 @@ export function RendaDialog({ open, onClose, onSuccess, renda }: Props) {
                       name="data_fim_recorrencia"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-xs text-indigo-300 font-semibold flex items-center gap-1">
+                          <FormLabel className="text-xs text-indigo-300/80 font-semibold flex items-center gap-1">
                             Fim da recorrência
                             <Info
                               className="h-3 w-3"
@@ -535,7 +535,7 @@ export function RendaDialog({ open, onClose, onSuccess, renda }: Props) {
                               type="date"
                               {...field}
                               value={field.value ?? ""}
-                              className="mt-1 border-indigo-400/30"
+                              className="mt-1.5 border-indigo-400/30"
                             />
                           </FormControl>
                           <FormMessage />
@@ -546,11 +546,10 @@ export function RendaDialog({ open, onClose, onSuccess, renda }: Props) {
                 )}
 
                 {!recorrente && (
-                  <div className="flex items-start gap-2 rounded-lg bg-white/[0.05] px-3 py-2.5">
-                    <Info className="h-3.5 w-3.5 text-white/40 mt-0.5 shrink-0" />
-                    <p className="text-xs text-white/40">
-                      Renda pontual — ideal para freelances e recebimentos
-                      esporádicos
+                  <div className="flex items-start gap-2 rounded-lg bg-white/[0.04] px-3 py-2.5 mt-3">
+                    <Info className="h-3.5 w-3.5 text-white/35 mt-0.5 shrink-0" />
+                    <p className="text-xs text-white/35">
+                      Renda pontual — ideal para freelances e recebimentos esporádicos
                     </p>
                   </div>
                 )}
@@ -562,13 +561,15 @@ export function RendaDialog({ open, onClose, onSuccess, renda }: Props) {
                 name="observacoes"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xs font-semibold uppercase tracking-wider text-white/50 flex items-center gap-1">
-                      <AlignLeft className="h-3 w-3" /> Observações
-                    </FormLabel>
+                    <SectionLabel>
+                      <span className="flex items-center gap-1">
+                        <AlignLeft className="h-2.5 w-2.5" /> Observações
+                      </span>
+                    </SectionLabel>
                     <FormControl>
                       <Textarea
                         placeholder="Notas adicionais (opcional)..."
-                        className="resize-none mt-1"
+                        className="resize-none"
                         rows={2}
                         {...field}
                       />
@@ -579,29 +580,35 @@ export function RendaDialog({ open, onClose, onSuccess, renda }: Props) {
               />
             </div>
 
-            {/* Footer */}
-            <div className="px-6 py-4 border-t border-white/10 bg-white/[0.04] flex items-center justify-end gap-2">
-              <Button
-                type="button"
-                variant="ghost"
-                className="text-white/60 hover:text-white hover:bg-white/10"
-                onClick={onClose}
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="submit"
-                disabled={form.formState.isSubmitting}
-                className="min-w-28 bg-blue-500/20 border border-blue-400/40 text-blue-300 hover:bg-blue-500/30 hover:text-blue-200"
-              >
-                {form.formState.isSubmitting ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : isEdit ? (
-                  "Salvar alterações"
-                ) : (
-                  "Cadastrar"
-                )}
-              </Button>
+            {/* ── Footer ───────────────────────────────────────── */}
+            <div className="flex items-center justify-between gap-2 border-t border-white/[0.08] bg-white/[0.03] px-5 py-3.5">
+              <p className="text-xs text-white/30 hidden sm:block">
+                {recorrente ? "Renda recorrente" : "Entrada pontual"}
+              </p>
+              <div className="flex items-center gap-2 ml-auto">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={onClose}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={form.formState.isSubmitting}
+                  className="min-w-28 bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 hover:bg-emerald-500/30 hover:text-emerald-200"
+                >
+                  {form.formState.isSubmitting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : isEdit ? (
+                    "Salvar alterações"
+                  ) : (
+                    "Cadastrar renda"
+                  )}
+                </Button>
+              </div>
             </div>
           </form>
         </Form>

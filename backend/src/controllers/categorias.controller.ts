@@ -183,7 +183,7 @@ export const deleteCategoria = async (
   try {
     const userId = req.user!.userId;
     const { rowCount } = await pool.query(
-      "DELETE FROM categorias WHERE id = $1 AND user_id = $2",
+      "DELETE FROM categorias WHERE id = $1 AND (user_id = $2 OR user_id IS NULL)",
       [req.params.id, userId],
     );
     if (!rowCount) {

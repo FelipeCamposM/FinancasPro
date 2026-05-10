@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
+import morgan from "morgan";
 import swaggerUi from "swagger-ui-express";
 import { swaggerSpec } from "./config/swagger";
 import { errorHandler } from "./middlewares/errorHandler.middleware";
@@ -19,6 +20,7 @@ import routeMapRoutes from "./routes/route-map.routes";
 const app = express();
 
 app.use(helmet());
+app.use(morgan("dev"));
 app.use(
   cors({
     origin: process.env.CORS_ORIGIN || "*",

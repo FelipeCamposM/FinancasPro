@@ -20,6 +20,7 @@ import {
   CreditCard,
   Wallet,
   Repeat,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -124,6 +125,46 @@ export default function AppSidebar() {
                 </SidebarMenuItem>
               );
             })}
+          </SidebarMenu>
+        </SidebarGroup>
+
+        <SidebarGroup className="mt-auto">
+          <SidebarGroupLabel className="text-[10px] font-bold uppercase tracking-[0.14em] text-sidebar-foreground/35">
+            Sistema
+          </SidebarGroupLabel>
+          <SidebarMenu>
+            {(() => {
+              const isActive =
+                pathname === "/configuracoes" ||
+                pathname.startsWith("/configuracoes/");
+              return (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive}
+                    tooltip="Configurações"
+                    className={cn(
+                      "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent",
+                      "data-[active=true]:bg-slate-500/10",
+                      "data-[active=true]:text-sidebar-foreground",
+                      "transition-all duration-150",
+                    )}
+                  >
+                    <Link href="/configuracoes">
+                      <Settings
+                        className={cn(
+                          "h-4 w-4 transition-colors",
+                          isActive ? "text-slate-300" : "text-slate-400/70",
+                        )}
+                      />
+                      <span className={cn(isActive && "font-semibold")}>
+                        Configurações
+                      </span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              );
+            })()}
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>

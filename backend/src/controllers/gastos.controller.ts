@@ -56,7 +56,7 @@ export const listGastos = async (
       ),
       pool.query(
         `SELECT g.*, c.nome AS categoria_nome, c.cor AS categoria_cor, c.icone AS categoria_icone,
-                ct.apelido AS cartao_apelido, ct.bandeira AS cartao_bandeira, ct.cor AS cartao_cor
+                ct.apelido AS cartao_apelido, ct.bandeira AS cartao_bandeira, ct.cor AS cartao_cor, ct.ultimos_4_digitos AS cartao_ultimos_4_digitos
          FROM gastos g
          LEFT JOIN categorias c ON c.id = g.categoria_id
          LEFT JOIN cartoes ct ON ct.id = g.cartao_id
@@ -270,6 +270,10 @@ export const deleteGasto = async (
 // ── Schema de validação do endpoint /atalho (formato Notion via iPhone Shortcuts) ──
 const atalhoBodySchema = z.object({
   parent: z.object({ database_id: z.string() }).optional(),
+  forma_pagamento: z
+    .enum(["dinheiro", "cartao_credito", "cartao_debito", "pix", "transferencia", "outro"])
+    .optional(),
+  cartao_id: z.string().uuid().optional(),
   properties: z.object({
     DescricaoGasto: z.object({
       title: z
@@ -295,6 +299,7 @@ export const createGastoAtalho = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
+    console.log("[atalho] body recebido:", JSON.stringify(req.body, null, 2));
     const parsed = atalhoBodySchema.safeParse(req.body);
     if (!parsed.success) {
       const details = parsed.error.errors.map(
@@ -305,11 +310,16 @@ export const createGastoAtalho = async (
     }
 
     const userId = req.user!.userId;
-    const { properties } = parsed.data;
+    const { properties, forma_pagamento, cartao_id } = parsed.data;
 
     const descricao = properties.DescricaoGasto.title[0].text.content;
     const valor_total = properties.ValorGasto.number;
-    const categoriaName = properties.Categoria?.select?.name ?? null;
+    // Remove prefixo "emoji - " caso venha do Shortcuts formatado (ex: "🍕 - Alimentação" → "Alimentação")
+    const rawCategoria = properties.Categoria?.select?.name ?? null;
+    // Remove prefixo "emoji-" ou "emoji - " (ex: "🏠-Moradia" ou "🍕 - Alimentação" → "Moradia" / "Alimentação")
+    const categoriaName = rawCategoria
+      ? rawCategoria.replace(/^[^-]+-/, "").trim()
+      : null;
     // Suporta "2026-03-27" e "2026-03-27T14:30:00" — extrai apenas a data
     const data_gasto = properties.Data.date.start.slice(0, 10);
 
@@ -334,9 +344,9 @@ export const createGastoAtalho = async (
           forma_pagamento, cartao_id,
           tipo_pagamento, quantidade_parcelas,
           recorrente, data_gasto, status, numero_parcela)
-       VALUES ($1,$2,$3,$4,'cartao_credito',NULL,'a_vista',1,false,$5,'pendente',1)
+       VALUES ($1,$2,$3,$4,$5,$6,'a_vista',1,false,$7,'pago',1)
        RETURNING *`,
-      [userId, descricao, valor_total, categoria_id, data_gasto],
+      [userId, descricao, valor_total, categoria_id, forma_pagamento ?? "cartao_credito", cartao_id ?? null, data_gasto],
     );
 
     const g = rows[0];

@@ -5,6 +5,7 @@ import {
   createCartao,
   updateCartao,
   deleteCartao,
+  listFormasPagamentoIphone,
 } from "../controllers/cartoes.controller";
 import { authenticateAny } from "../middlewares/auth.middleware";
 import { paginate } from "../middlewares/pagination.middleware";
@@ -75,6 +76,35 @@ const router = Router();
  */
 router.get("/", authenticateAny, paginate, listCartoes);
 router.post("/", authenticateAny, validate(createCartaoSchema), createCartao);
+/**
+ * @swagger
+ * /cartoes/iphone:
+ *   get:
+ *     tags: [Cartoes]
+ *     summary: Listar formas de pagamento para integração com iPhone
+ *     description: Retorna lista plana com Pix, Dinheiro e cartões ativos do usuário, formatada para uso em atalhos do iPhone. Cartões com tipo credito_debito aparecem como duas entradas separadas.
+ *     security:
+ *       - bearerAuth: []
+ *       - apiKeyAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de formas de pagamento
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       label:            { type: string, example: "Nubank (Crédito)" }
+ *                       forma_pagamento:  { type: string, enum: [pix, dinheiro, cartao_credito, cartao_debito] }
+ *                       cartao_id:        { type: string, format: uuid, nullable: true }
+ *       401: { description: Token não fornecido ou inválido }
+ */
+router.get("/iphone", authenticateAny, listFormasPagamentoIphone);
 
 /**
  * @swagger

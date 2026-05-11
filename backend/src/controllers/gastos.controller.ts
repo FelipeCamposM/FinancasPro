@@ -273,7 +273,11 @@ const atalhoBodySchema = z.object({
   forma_pagamento: z
     .enum(["dinheiro", "cartao_credito", "cartao_debito", "pix", "transferencia", "outro"])
     .optional(),
-  cartao_id: z.string().uuid().optional(),
+  cartao_id: z.preprocess((v) => {
+    if (!v || typeof v !== "string") return null;
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
+    return isUuid ? v : null;
+  }, z.string().uuid().nullable().optional()),
   properties: z.object({
     DescricaoGasto: z.object({
       title: z

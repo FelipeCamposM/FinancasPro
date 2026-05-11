@@ -273,11 +273,7 @@ const atalhoBodySchema = z.object({
   forma_pagamento: z
     .enum(["dinheiro", "cartao_credito", "cartao_debito", "pix", "transferencia", "outro"])
     .optional(),
-  cartao_id: z.preprocess((v) => {
-    if (!v || typeof v !== "string") return null;
-    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
-    return isUuid ? v : null;
-  }, z.string().uuid().nullable().optional()),
+  cartao_id: z.string().optional().nullable(),
   properties: z.object({
     DescricaoGasto: z.object({
       title: z
@@ -314,7 +310,9 @@ export const createGastoAtalho = async (
     }
 
     const userId = req.user!.userId;
-    const { properties, forma_pagamento, cartao_id } = parsed.data;
+    const { properties, forma_pagamento } = parsed.data;
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const cartao_id = parsed.data.cartao_id && UUID_RE.test(parsed.data.cartao_id) ? parsed.data.cartao_id : null;
 
     const descricao = properties.DescricaoGasto.title[0].text.content;
     const valor_total = properties.ValorGasto.number;

@@ -91,10 +91,10 @@ import {
 } from "lucide-react";
 import { PageShell } from "@/components/ui/page-shell";
 import {
-  Sheet,
-  SheetContent,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface Gasto {
   id: string;
@@ -245,7 +245,7 @@ function CartaoChip({ apelido, bandeira, cor }: { apelido: string; bandeira?: st
           className="h-2.5 w-auto max-w-[14px] object-contain shrink-0 opacity-50"
         />
       )}
-      <span className="truncate max-w-[72px]">{apelido}</span>
+      <span>{apelido}</span>
     </span>
   );
 }
@@ -373,7 +373,7 @@ function GastosPageInner() {
     if (categoriasFetched.current) return;
     categoriasFetched.current = true;
     api
-      .get<{ data: Categoria[] }>("/categorias?limit=200")
+      .get<{ data: Categoria[] }>("/categorias?tipo=gasto&limit=200")
       .then(({ data }) => setCategorias(data.data))
       .catch(() => {});
   }, []);
@@ -1099,131 +1099,116 @@ function GastoDetailSheet({
   onEdit: (g: Gasto) => void;
   onDelete: (g: Gasto) => void;
 }) {
-  if (!g) return null;
-  const statusInfo = statusConfig[g.status] ?? { label: g.status, variant: "slate" as const };
-  const isCard = g.forma_pagamento === "cartao_credito" || g.forma_pagamento === "cartao_debito";
+  const statusInfo = g ? (statusConfig[g.status] ?? { label: g.status, variant: "slate" as const }) : null;
+  const isCard = g ? (g.forma_pagamento === "cartao_credito" || g.forma_pagamento === "cartao_debito") : false;
 
   return (
-    <Sheet open={!!g} onOpenChange={(v) => !v && onClose()}>
-      <SheetContent
-        side="right"
-        className="ui-glass-surface-strong w-full sm:max-w-sm border-l border-white/[0.08] p-0 flex flex-col gap-0"
-      >
-        {/* Header */}
-        <div className="px-5 pt-6 pb-4 border-b border-white/[0.07]">
-          <div className="flex items-start gap-3 pr-6">
-            {g.categoria_cor && (
-              <div className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: g.categoria_cor }} />
-            )}
-            <div className="min-w-0">
-              <SheetTitle className="text-base font-semibold text-white leading-snug">
-                {g.descricao}
-              </SheetTitle>
-              <p className="mt-0.5 text-xs text-white/40">{formatDate(g.data_gasto)}</p>
-            </div>
-          </div>
-
-          {/* Valor grande */}
-          <p className="mt-4 text-4xl font-bold tabular-nums text-rose-400 leading-none">
-            {formatBRL(Number(g.valor_total))}
-          </p>
-
-          {/* Status badge */}
-          <div className="mt-3">
-            <Badge variant={statusInfo.variant} className="text-xs px-2.5 py-1">
-              {getStatusIcon(g.status, "h-3.5 w-3.5")}
-              {statusInfo.label}
-            </Badge>
-          </div>
-        </div>
-
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5">
-
-          {/* Cartão visual */}
-          {isCard && g.cartao_apelido && (
-            <Row label="Cartão">
-              <CartaoMiniDetail
-                apelido={g.cartao_apelido}
-                bandeira={g.cartao_bandeira}
-                cor={g.cartao_cor}
-                ultimos4={g.cartao_ultimos_4_digitos}
-              />
-            </Row>
-          )}
-
-          {/* Forma de pagamento */}
-          <Row label="Forma de pagamento">
-            <div className="flex items-center gap-2 text-sm text-white/60">
-              {getFormaIcon(g.forma_pagamento, "h-4 w-4")}
-              <span>{formaPagtoLabel(g.forma_pagamento, g.tipo_pagamento)}</span>
-            </div>
-          </Row>
-
-          {/* Parcelamento */}
-          {g.tipo_pagamento === "parcelado" && (
-            <Row label="Parcelamento">
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 rounded-lg border border-amber-400/20 bg-amber-500/[0.08] px-3 py-1.5 text-sm text-amber-300">
-                  <Zap className="h-3.5 w-3.5" />
-                  Parcela <strong>{g.numero_parcela ?? 1}</strong> de <strong>{g.quantidade_parcelas}</strong>
-                </span>
+    <Dialog open={!!g} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="p-0 flex flex-col gap-0 max-w-sm overflow-hidden max-h-[90vh]">
+        {g && statusInfo && (
+          <>
+            {/* Header */}
+            <div className="px-5 pt-6 pb-4 border-b border-white/[0.07]">
+              <div className="flex items-start gap-3 pr-6">
+                {g.categoria_cor && (
+                  <div className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: g.categoria_cor }} />
+                )}
+                <div className="min-w-0">
+                  <DialogTitle className="text-base font-semibold text-white leading-snug">
+                    {g.descricao}
+                  </DialogTitle>
+                  <p className="mt-0.5 text-xs text-white/40">{formatDate(g.data_gasto)}</p>
+                </div>
               </div>
-            </Row>
-          )}
 
-          {/* Categoria */}
-          {g.categoria_nome && (
-            <Row label="Categoria">
-              <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: g.categoria_cor ?? "#94a3b8" }} />
-                <span className="text-sm text-white/60">
-                  {g.categoria_icone ? `${g.categoria_icone} ` : ""}{g.categoria_nome}
-                </span>
-              </div>
-            </Row>
-          )}
-
-          {/* Observações */}
-          {g.observacoes && (
-            <Row label="Observações">
-              <p className="text-sm text-white/50 leading-relaxed whitespace-pre-wrap rounded-lg border border-white/[0.07] bg-white/[0.03] px-3 py-2.5">
-                {g.observacoes}
+              <p className="mt-4 text-4xl font-bold tabular-nums text-rose-400 leading-none">
+                {formatBRL(Number(g.valor_total))}
               </p>
-            </Row>
-          )}
 
-          {/* Instância recorrente */}
-          {g.gasto_origem_id && (
-            <div className="flex items-center gap-2 rounded-lg border border-indigo-400/20 bg-indigo-500/[0.06] px-3 py-2.5">
-              <Repeat className="h-3.5 w-3.5 text-indigo-400 shrink-0" />
-              <p className="text-xs text-indigo-300/80">Gerado automaticamente por assinatura recorrente</p>
+              <div className="mt-3">
+                <Badge variant={statusInfo.variant} className="text-xs px-2.5 py-1">
+                  {getStatusIcon(g.status, "h-3.5 w-3.5")}
+                  {statusInfo.label}
+                </Badge>
+              </div>
             </div>
-          )}
-        </div>
 
-        {/* Footer */}
-        <div className="flex items-center gap-2 border-t border-white/[0.07] bg-white/[0.03] px-5 py-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-rose-400/70 hover:text-rose-400 hover:bg-rose-500/10 flex-1"
-            onClick={() => onDelete(g)}
-          >
-            <Trash2 className="h-4 w-4 mr-1.5" />
-            Excluir
-          </Button>
-          <Button
-            size="sm"
-            className="flex-1"
-            onClick={() => onEdit(g)}
-          >
-            <Pencil className="h-4 w-4 mr-1.5" />
-            Editar
-          </Button>
-        </div>
-      </SheetContent>
-    </Sheet>
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5">
+              {isCard && g.cartao_apelido && (
+                <Row label="Cartão">
+                  <CartaoMiniDetail
+                    apelido={g.cartao_apelido}
+                    bandeira={g.cartao_bandeira}
+                    cor={g.cartao_cor}
+                    ultimos4={g.cartao_ultimos_4_digitos}
+                  />
+                </Row>
+              )}
+
+              <Row label="Forma de pagamento">
+                <div className="flex items-center gap-2 text-sm text-white/60">
+                  {getFormaIcon(g.forma_pagamento, "h-4 w-4")}
+                  <span>{formaPagtoLabel(g.forma_pagamento, g.tipo_pagamento)}</span>
+                </div>
+              </Row>
+
+              {g.tipo_pagamento === "parcelado" && (
+                <Row label="Parcelamento">
+                  <span className="inline-flex items-center gap-1.5 rounded-lg border border-amber-400/20 bg-amber-500/[0.08] px-3 py-1.5 text-sm text-amber-300">
+                    <Zap className="h-3.5 w-3.5" />
+                    Parcela <strong>{g.numero_parcela ?? 1}</strong> de <strong>{g.quantidade_parcelas}</strong>
+                  </span>
+                </Row>
+              )}
+
+              {g.categoria_nome && (
+                <Row label="Categoria">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: g.categoria_cor ?? "#94a3b8" }} />
+                    <span className="text-sm text-white/60">
+                      {g.categoria_icone ? `${g.categoria_icone} ` : ""}{g.categoria_nome}
+                    </span>
+                  </div>
+                </Row>
+              )}
+
+              {g.observacoes && (
+                <Row label="Observações">
+                  <p className="text-sm text-white/50 leading-relaxed whitespace-pre-wrap rounded-lg border border-white/[0.07] bg-white/[0.03] px-3 py-2.5">
+                    {g.observacoes}
+                  </p>
+                </Row>
+              )}
+
+              {g.gasto_origem_id && (
+                <div className="flex items-center gap-2 rounded-lg border border-indigo-400/20 bg-indigo-500/[0.06] px-3 py-2.5">
+                  <Repeat className="h-3.5 w-3.5 text-indigo-400 shrink-0" />
+                  <p className="text-xs text-indigo-300/80">Gerado automaticamente por assinatura recorrente</p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center gap-2 border-t border-white/[0.07] bg-white/[0.03] px-5 py-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-rose-400/70 hover:text-rose-400 hover:bg-rose-500/10 flex-1"
+                onClick={() => onDelete(g)}
+              >
+                <Trash2 className="h-4 w-4 mr-1.5" />
+                Excluir
+              </Button>
+              <Button size="sm" className="flex-1" onClick={() => onEdit(g)}>
+                <Pencil className="h-4 w-4 mr-1.5" />
+                Editar
+              </Button>
+            </div>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -1287,7 +1272,7 @@ function GastoMobileCard({
 
       {/* swipeable card */}
       <div
-        className="relative z-10 flex items-center gap-3 rounded-xl border border-white/[0.09] bg-white/[0.04] px-4 py-3.5 backdrop-blur-xl active:bg-white/[0.07] select-none"
+        className="relative z-10 flex gap-3 rounded-xl border border-white/[0.09] bg-white/[0.04] px-4 py-3.5 backdrop-blur-xl active:bg-white/[0.07] select-none"
         style={{
           transform: `translateX(${offsetX}px)`,
           transition: dragging ? "none" : "transform 0.22s cubic-bezier(0.22,1,0.36,1)",
@@ -1299,14 +1284,22 @@ function GastoMobileCard({
       >
         {/* categoria color bar */}
         <div
-          className="h-9 w-1 shrink-0 rounded-full"
+          className="w-1 shrink-0 self-stretch rounded-full"
           style={{ backgroundColor: g.categoria_cor ?? "#94a3b8" }}
         />
 
         {/* main info */}
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-white/90">{g.descricao}</p>
-          <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-white/40">
+          {/* Row 1: description + valor */}
+          <div className="flex items-start justify-between gap-2">
+            <p className="truncate text-sm font-semibold text-white/90">{g.descricao}</p>
+            <span className="shrink-0 font-bold tabular-nums text-rose-400 text-sm leading-none">
+              {formatBRL(Number(g.valor_total))}
+            </span>
+          </div>
+
+          {/* Row 2: date + forma + parcelas */}
+          <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-white/40">
             <span>{formatDate(g.data_gasto)}</span>
             <span className="text-white/20">·</span>
             <span className="flex items-center gap-1">
@@ -1318,31 +1311,36 @@ function GastoMobileCard({
                 {g.numero_parcela ?? 1}/{g.quantidade_parcelas}x
               </span>
             )}
-            {g.cartao_apelido && (
+          </div>
+
+          {/* Row 3: cartão */}
+          {g.cartao_apelido && (
+            <div className="mt-1">
               <CartaoChip
                 apelido={g.cartao_apelido}
                 bandeira={g.cartao_bandeira}
                 cor={g.cartao_cor}
               />
-            )}
-            {g.categoria_nome && (
-              <>
-                <span className="text-white/20">·</span>
-                <span>{g.categoria_nome}</span>
-              </>
-            )}
-          </div>
-        </div>
+            </div>
+          )}
 
-        {/* valor + status */}
-        <div className="shrink-0 flex flex-col items-end gap-1.5">
-          <span className="font-bold tabular-nums text-rose-400 text-sm leading-none">
-            {formatBRL(Number(g.valor_total))}
-          </span>
-          <Badge variant={statusInfo.variant} className="text-[10px] px-1.5 py-0">
-            {getStatusIcon(g.status, "h-2.5 w-2.5")}
-            {statusInfo.label}
-          </Badge>
+          {/* Row 4: categoria */}
+          {g.categoria_nome && (
+            <div className="mt-1 flex items-center gap-1.5">
+              {g.categoria_cor && (
+                <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: g.categoria_cor }} />
+              )}
+              <span className="text-[10px] text-white/35">{g.categoria_nome}</span>
+            </div>
+          )}
+
+          {/* Row 5: status */}
+          <div className="mt-2">
+            <Badge variant={statusInfo.variant} className="text-[10px] px-1.5 py-0">
+              {getStatusIcon(g.status, "h-2.5 w-2.5")}
+              {statusInfo.label}
+            </Badge>
+          </div>
         </div>
       </div>
     </div>

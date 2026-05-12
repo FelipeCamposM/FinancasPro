@@ -15,15 +15,22 @@ export const listCategorias = async (
   try {
     const { page, limit, offset } = req.pagination!;
     const userId = req.user!.userId;
-    // Retorna categorias globais (user_id IS NULL) + categorias do usuário
+    const tipo = req.query.tipo as string | undefined;
+
+    const baseWhere = tipo
+      ? "(user_id IS NULL OR user_id = $1) AND tipo = $2"
+      : "user_id IS NULL OR user_id = $1";
+    const baseValues: unknown[] = tipo ? [userId, tipo] : [userId];
+    const idx = baseValues.length + 1;
+
     const [{ rows: total }, { rows }] = await Promise.all([
       pool.query(
-        "SELECT COUNT(*)::int AS count FROM categorias WHERE user_id IS NULL OR user_id = $1",
-        [userId],
+        `SELECT COUNT(*)::int AS count FROM categorias WHERE ${baseWhere}`,
+        baseValues,
       ),
       pool.query(
-        "SELECT * FROM categorias WHERE user_id IS NULL OR user_id = $1 ORDER BY tipo, nome LIMIT $2 OFFSET $3",
-        [userId, limit, offset],
+        `SELECT * FROM categorias WHERE ${baseWhere} ORDER BY nome LIMIT $${idx} OFFSET $${idx + 1}`,
+        [...baseValues, limit, offset],
       ),
     ]);
     res.json(paginated(rows, total[0].count, page, limit));
@@ -42,8 +49,8 @@ export const listCategoriasIphone = async (
     const { rows } = await pool.query(
       `SELECT id, nome, cor, icone, tipo
        FROM categorias
-       WHERE user_id IS NULL OR user_id = $1
-       ORDER BY tipo, nome`,
+       WHERE (user_id IS NULL OR user_id = $1) AND tipo = 'gasto'
+       ORDER BY nome`,
       [userId],
     );
     res.json({ data: rows });

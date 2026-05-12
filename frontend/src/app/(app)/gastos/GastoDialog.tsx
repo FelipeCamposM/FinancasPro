@@ -8,6 +8,12 @@ import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
@@ -35,6 +41,7 @@ import {
 import {
   Loader2,
   Plus,
+  Minus,
   Pencil,
   Banknote,
   CreditCard,
@@ -286,6 +293,8 @@ export function GastoDialog({ open, onClose, onSuccess, gasto, forceAssinatura =
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [cartoes, setCartoes] = useState<Cartao[]>([]);
   const [isAssinatura, setIsAssinatura] = useState(forceAssinatura);
+  const [parcelamentoJaIniciado, setParcelamentoJaIniciado] = useState(false);
+  const [parcelaAtual, setParcelaAtual] = useState(1);
   const isEdit = !!gasto;
 
   const form = useForm<FormValues>({
@@ -321,12 +330,20 @@ export function GastoDialog({ open, onClose, onSuccess, gasto, forceAssinatura =
       form.setValue("tipo_pagamento", "a_vista");
       form.setValue("quantidade_parcelas", 1);
       form.setValue("valor_parcela", undefined);
+      form.setValue("status", "pago");
+      setParcelamentoJaIniciado(false);
+      setParcelaAtual(1);
     }
+  }
+
+  function resetParcelamento() {
+    setParcelamentoJaIniciado(false);
+    setParcelaAtual(1);
   }
 
   useEffect(() => {
     Promise.all([
-      api.get<{ data: Categoria[] }>("/categorias?limit=100").catch(() => ({ data: { data: [] as Categoria[] } })),
+      api.get<{ data: Categoria[] }>("/categorias?tipo=gasto&limit=100").catch(() => ({ data: { data: [] as Categoria[] } })),
       api.get<{ data: Cartao[] }>("/cartoes?limit=100").catch(() => ({ data: { data: [] as Cartao[] } })),
     ]).then(([catRes, cartRes]) => {
       setCategorias(catRes.data.data ?? []);
@@ -413,11 +430,20 @@ export function GastoDialog({ open, onClose, onSuccess, gasto, forceAssinatura =
       }
 
       const valorTotalFinal = isParcelado ? (values.valor_parcela ?? 0) : (values.valor_total ?? 0);
+
+      // Se parcelamento já iniciado, recalcula data da 1ª parcela
+      let dataGasto = values.data_gasto;
+      if (isParcelado && parcelamentoJaIniciado && parcelaAtual > 1) {
+        const [y, m, d] = dataGasto.split("-").map(Number);
+        const dt = new Date(y, m - 1 - (parcelaAtual - 1), d, 12);
+        dataGasto = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+      }
+
       const payload = {
         descricao: values.descricao,
         valor_total: valorTotalFinal,
         valor_parcela: isParcelado ? values.valor_parcela : undefined,
-        data_gasto: values.data_gasto,
+        data_gasto: dataGasto,
         categoria_id: values.categoria_id ? Number(values.categoria_id) : undefined,
         cartao_id: values.cartao_id || undefined,
         forma_pagamento: values.forma_pagamento,
@@ -448,7 +474,7 @@ export function GastoDialog({ open, onClose, onSuccess, gasto, forceAssinatura =
   const isCard = formaPgto === "cartao_credito" || formaPgto === "cartao_debito";
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+    <Dialog open={open} onOpenChange={(v) => { if (!v) { resetParcelamento(); onClose(); } }}>
       <DialogContent className="sm:max-w-lg p-0 overflow-hidden gap-0">
 
         {/* ── Header ───────────────────────────────────────────── */}
@@ -489,7 +515,7 @@ export function GastoDialog({ open, onClose, onSuccess, gasto, forceAssinatura =
                   <FormItem>
                     <SectionLabel>Descrição</SectionLabel>
                     <FormControl>
-                      <Input placeholder="Ex: Supermercado, Netflix, Aluguel..." {...field} />
+                      <Input placeholder="Ex: Supermercado, Netflix, Aluguel..." {...field} className="h-12 text-lg" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -545,9 +571,45 @@ export function GastoDialog({ open, onClose, onSuccess, gasto, forceAssinatura =
                           {isAssinatura ? "Início" : "Data"}
                         </span>
                       </SectionLabel>
-                      <FormControl>
-                        <Input type="date" {...field} className="h-12" />
-                      </FormControl>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <button
+                              type="button"
+                              className="ui-control flex h-12 w-full items-center gap-2 px-3 text-lg"
+                            >
+                              <CalendarDays className="h-3.5 w-3.5 shrink-0 text-white/40" />
+                              <span className={field.value ? "text-white/90" : "text-white/35"}>
+                                {field.value
+                                  ? (() => {
+                                      const [y, m, d] = field.value.split("-");
+                                      return `${d}/${m}/${y}`;
+                                    })()
+                                  : "Selecionar data"}
+                              </span>
+                            </button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          className="ui-popover w-auto p-0 ui-glass-surface-strong border-white/[0.14]"
+                          align="start"
+                        >
+                          <Calendar
+                            mode="single"
+                            className="bg-transparent"
+                            selected={field.value ? new Date(field.value + "T12:00:00") : undefined}
+                            onSelect={(date) => {
+                              if (date) {
+                                const y = date.getFullYear();
+                                const mo = String(date.getMonth() + 1).padStart(2, "0");
+                                const d = String(date.getDate()).padStart(2, "0");
+                                field.onChange(`${y}-${mo}-${d}`);
+                              }
+                            }}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -614,8 +676,8 @@ export function GastoDialog({ open, onClose, onSuccess, gasto, forceAssinatura =
               )}
 
               {/* Categoria + Status */}
-              <div className="grid grid-cols-2 gap-3">
-                <FormField
+              <div className={`grid gap-3 ${isAssinatura ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2"}`}>
+                {!isAssinatura && <FormField
                   control={form.control}
                   name="categoria_id"
                   render={({ field }) => (
@@ -623,7 +685,7 @@ export function GastoDialog({ open, onClose, onSuccess, gasto, forceAssinatura =
                       <SectionLabel>Categoria</SectionLabel>
                       <Select value={field.value ?? ""} onValueChange={field.onChange}>
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="h-12">
                             <SelectValue placeholder="Selecionar..." />
                           </SelectTrigger>
                         </FormControl>
@@ -644,7 +706,7 @@ export function GastoDialog({ open, onClose, onSuccess, gasto, forceAssinatura =
                       <FormMessage />
                     </FormItem>
                   )}
-                />
+                />}
 
                 <FormField
                   control={form.control}
@@ -772,7 +834,10 @@ export function GastoDialog({ open, onClose, onSuccess, gasto, forceAssinatura =
                           <FormControl>
                             <Switch
                               checked={field.value === "parcelado"}
-                              onCheckedChange={(c) => field.onChange(c ? "parcelado" : "a_vista")}
+                              onCheckedChange={(c) => {
+                                field.onChange(c ? "parcelado" : "a_vista");
+                                if (!c) resetParcelamento();
+                              }}
                               className="data-[state=checked]:bg-amber-500"
                             />
                           </FormControl>
@@ -848,6 +913,66 @@ export function GastoDialog({ open, onClose, onSuccess, gasto, forceAssinatura =
                           </p>
                         </div>
                       )}
+
+                      {/* Parcelamento já iniciado */}
+                      <div className={`rounded-lg border p-3 transition-colors ${
+                        parcelamentoJaIniciado
+                          ? "border-amber-400/30 bg-amber-500/[0.06]"
+                          : "border-white/[0.07] bg-white/[0.02]"
+                      }`}>
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className={`text-xs font-semibold ${parcelamentoJaIniciado ? "text-amber-300" : "text-white/50"}`}>
+                              Parcelamento já iniciado?
+                            </p>
+                            <p className="text-[10px] text-white/30 mt-0.5">
+                              Informe em qual parcela você está agora
+                            </p>
+                          </div>
+                          <Switch
+                            checked={parcelamentoJaIniciado}
+                            onCheckedChange={(c) => {
+                              setParcelamentoJaIniciado(c);
+                              if (!c) setParcelaAtual(1);
+                            }}
+                            className="data-[state=checked]:bg-amber-500 shrink-0"
+                          />
+                        </div>
+
+                        {parcelamentoJaIniciado && (
+                          <div className="mt-3 pt-3 border-t border-amber-400/20">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-amber-300/60 mb-2">
+                              Parcela atual
+                            </p>
+                            <div className="flex items-center gap-3">
+                              <button
+                                type="button"
+                                onClick={() => setParcelaAtual((p) => Math.max(1, p - 1))}
+                                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-amber-400/30 bg-amber-500/[0.08] text-amber-300 transition-colors hover:bg-amber-500/20 active:scale-95 disabled:opacity-30"
+                                disabled={parcelaAtual <= 1}
+                              >
+                                <Minus className="h-3.5 w-3.5" />
+                              </button>
+                              <div className="flex-1 text-center">
+                                <span className="text-2xl font-bold tabular-nums text-amber-300">{parcelaAtual}</span>
+                                <span className="text-sm text-amber-300/50"> / {qtdParcelas}</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setParcelaAtual((p) => Math.min(qtdParcelas, p + 1))}
+                                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-amber-400/30 bg-amber-500/[0.08] text-amber-300 transition-colors hover:bg-amber-500/20 active:scale-95 disabled:opacity-30"
+                                disabled={parcelaAtual >= qtdParcelas}
+                              >
+                                <Plus className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                            <p className="mt-2 text-[10px] text-amber-300/50 text-center">
+                              {parcelaAtual > 1 && `${parcelaAtual - 1} ${parcelaAtual - 1 === 1 ? "mês passado gerado" : "meses passados gerados"} · `}
+                              {qtdParcelas - parcelaAtual > 0 && `${qtdParcelas - parcelaAtual} ${qtdParcelas - parcelaAtual === 1 ? "mês futuro" : "meses futuros"}`}
+                            </p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -887,7 +1012,7 @@ export function GastoDialog({ open, onClose, onSuccess, gasto, forceAssinatura =
                 <Button type="button" variant="ghost" size="sm" onClick={onClose}>
                   Cancelar
                 </Button>
-                <Button type="submit" size="sm" disabled={form.formState.isSubmitting} className="min-w-28">
+                <Button type="submit" disabled={form.formState.isSubmitting} className="min-w-36 h-10 text-sm font-semibold">
                   {form.formState.isSubmitting ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : isEdit ? (

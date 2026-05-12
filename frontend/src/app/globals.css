@@ -277,4 +277,100 @@
       animation: none;
     }
   }
+
+  /* ── Dialog / Modal animations ── */
+  @keyframes modal-enter {
+    from { opacity: 0; transform: translate(-50%, calc(-50% + 22px)) scale(0.94); }
+    62%  { opacity: 1; transform: translate(-50%, calc(-50% - 5px)) scale(1.016); }
+    to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  }
+  @keyframes modal-exit {
+    from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    to   { opacity: 0; transform: translate(-50%, calc(-50% + 14px)) scale(0.95); }
+  }
+  @keyframes overlay-enter {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @keyframes overlay-exit {
+    from { opacity: 1; }
+    to   { opacity: 0; }
+  }
+
+  .ui-overlay[data-state=open]   { animation: overlay-enter 0.28s ease forwards; }
+  .ui-overlay[data-state=closed] { animation: overlay-exit  0.22s ease forwards; }
+
+  .ui-dialog-content[data-state=open]   { animation: modal-enter 0.44s cubic-bezier(0.16,1,0.3,1) forwards; }
+  .ui-dialog-content[data-state=closed] { animation: modal-exit  0.22s ease-in forwards; }
+
+  /* ── Sheet animations ── */
+  @keyframes sheet-bottom-enter {
+    from { opacity: 0; transform: translateY(100%); }
+    64%  { opacity: 1; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes sheet-bottom-exit {
+    from { opacity: 1; transform: translateY(0); }
+    to   { opacity: 0; transform: translateY(100%); }
+  }
+  @keyframes sheet-right-enter {
+    from { opacity: 0; transform: translateX(100%); }
+    64%  { opacity: 1; transform: translateX(-7px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes sheet-right-exit {
+    from { opacity: 1; transform: translateX(0); }
+    to   { opacity: 0; transform: translateX(100%); }
+  }
+  @keyframes sheet-left-enter {
+    from { opacity: 0; transform: translateX(-100%); }
+    64%  { opacity: 1; transform: translateX(7px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes sheet-left-exit {
+    from { opacity: 1; transform: translateX(0); }
+    to   { opacity: 0; transform: translateX(-100%); }
+  }
+  @keyframes sheet-top-enter {
+    from { opacity: 0; transform: translateY(-100%); }
+    64%  { opacity: 1; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes sheet-top-exit {
+    from { opacity: 1; transform: translateY(0); }
+    to   { opacity: 0; transform: translateY(-100%); }
+  }
+
+  .ui-sheet-bottom[data-state=open]   { animation: sheet-bottom-enter 0.44s cubic-bezier(0.16,1,0.3,1) forwards; }
+  .ui-sheet-bottom[data-state=closed] { animation: sheet-bottom-exit  0.22s ease-in forwards; }
+  .ui-sheet-right[data-state=open]    { animation: sheet-right-enter  0.44s cubic-bezier(0.16,1,0.3,1) forwards; }
+  .ui-sheet-right[data-state=closed]  { animation: sheet-right-exit   0.22s ease-in forwards; }
+  .ui-sheet-left[data-state=open]     { animation: sheet-left-enter   0.44s cubic-bezier(0.16,1,0.3,1) forwards; }
+  .ui-sheet-left[data-state=closed]   { animation: sheet-left-exit    0.22s ease-in forwards; }
+  .ui-sheet-top[data-state=open]      { animation: sheet-top-enter    0.44s cubic-bezier(0.16,1,0.3,1) forwards; }
+  .ui-sheet-top[data-state=closed]    { animation: sheet-top-exit     0.22s ease-in forwards; }
+
+  /* ── Popover animations ── */
+  @keyframes popover-enter {
+    from { opacity: 0; transform: scale(0.94) translateY(6px); }
+    60%  { opacity: 1; transform: scale(1.008) translateY(-2px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  @keyframes popover-exit {
+    from { opacity: 1; transform: scale(1) translateY(0); }
+    to   { opacity: 0; transform: scale(0.95) translateY(4px); }
+  }
+
+  .ui-popover[data-state=open]   { animation: popover-enter 0.32s cubic-bezier(0.16,1,0.3,1) forwards; }
+  .ui-popover[data-state=closed] { animation: popover-exit  0.18s ease-in forwards; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ui-overlay,
+    .ui-dialog-content,
+    .ui-sheet-bottom,
+    .ui-sheet-right,
+    .ui-sheet-left,
+    .ui-sheet-top,
+    .ui-popover { animation: none !important; opacity: 1 !important; transform: none !important; }
+  }
 }

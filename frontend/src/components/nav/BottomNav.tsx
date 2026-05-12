@@ -3,21 +3,20 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  LayoutDashboard,
+  CreditCard,
   TrendingDown,
   TrendingUp,
-  Settings,
+  RefreshCw,
   Plus,
-  CreditCard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
   {
-    href: "/dashboard",
-    icon: LayoutDashboard,
-    label: "Dashboard",
-    activeColor: "text-blue-400",
+    href: "/cartoes",
+    icon: CreditCard,
+    label: "Cartões",
+    activeColor: "text-sky-400",
   },
   {
     href: "/gastos",
@@ -34,10 +33,10 @@ const NAV_ITEMS = [
     activeColor: "text-blue-400",
   },
   {
-    href: "/configuracoes",
-    icon: Settings,
-    label: "Config",
-    activeColor: "text-slate-300",
+    href: "/assinaturas",
+    icon: RefreshCw,
+    label: "Assinaturas",
+    activeColor: "text-violet-400",
   },
 ];
 

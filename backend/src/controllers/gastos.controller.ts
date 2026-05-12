@@ -198,9 +198,10 @@ export const updateGasto = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
+    const userId = req.user!.userId;
     const { rows: existing } = await pool.query(
-      "SELECT id FROM gastos WHERE id = $1 AND user_id = $2",
-      [req.params.id, req.user!.userId],
+      "SELECT id, assinatura_id FROM gastos WHERE id = $1 AND user_id = $2",
+      [req.params.id, userId],
     );
     if (!existing[0]) {
       res.status(404).json({ error: "Gasto não encontrado" });
@@ -241,6 +242,51 @@ export const updateGasto = async (
       `UPDATE gastos SET ${fields.join(", ")} WHERE id = $${idx} RETURNING *`,
       values,
     );
+
+    // Propaga campos descritivos para todas as outras instâncias da assinatura
+    // status e data_gasto são por-instância, não propagados
+    console.log("[updateGasto] assinatura_id:", existing[0].assinatura_id, "| body keys:", Object.keys(typedBody));
+    const assinaturaId = existing[0].assinatura_id;
+    if (assinaturaId) {
+      const propagate: string[] = ["descricao", "valor_total", "categoria_id", "forma_pagamento", "cartao_id", "observacoes"];
+      const propFields: string[] = [];
+      const propValues: unknown[] = [];
+      let pi = 1;
+      for (const key of propagate) {
+        if (key in typedBody) {
+          propFields.push(`${key} = $${pi++}`);
+          propValues.push(typedBody[key] ?? null);
+        }
+      }
+      if (propFields.length) {
+        propValues.push(assinaturaId, req.params.id, userId);
+        const propSql = `UPDATE gastos SET ${propFields.join(", ")} WHERE assinatura_id = $${pi} AND id != $${pi + 1} AND user_id = $${pi + 2}`;
+        console.log("[updateGasto] propagation SQL:", propSql);
+        console.log("[updateGasto] propagation values:", propValues);
+        const { rowCount } = await pool.query(propSql, propValues);
+        console.log("[updateGasto] propagation rows updated:", rowCount);
+
+        // Atualiza também a tabela assinaturas para manter consistência
+        const assinaFields: string[] = [];
+        const assinaValues: unknown[] = [];
+        let ai = 1;
+        const assinaMap: Record<string, string> = { descricao: "descricao", valor_total: "valor", categoria_id: "categoria_id", observacoes: "observacoes" };
+        for (const [gastoKey, assinaKey] of Object.entries(assinaMap)) {
+          if (gastoKey in typedBody) {
+            assinaFields.push(`${assinaKey} = $${ai++}`);
+            assinaValues.push(typedBody[gastoKey] ?? null);
+          }
+        }
+        if (assinaFields.length) {
+          assinaValues.push(assinaturaId, userId);
+          await pool.query(
+            `UPDATE assinaturas SET ${assinaFields.join(", ")}, updated_at = NOW() WHERE id = $${ai++} AND user_id = $${ai}`,
+            assinaValues,
+          );
+        }
+      }
+    }
+
     res.json(rows[0]);
   } catch (err) {
     next(err);

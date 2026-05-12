@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -18,7 +19,6 @@ import {
   TrendingDown,
   TrendingUp,
   CreditCard,
-  Wallet,
   Repeat,
   Settings,
 } from "lucide-react";
@@ -74,12 +74,16 @@ export default function AppSidebar() {
     <Sidebar>
       <SidebarHeader className="border-b border-sidebar-border">
         <div className="flex items-center gap-3 px-2 py-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary shadow-glow-primary">
-            <Wallet className="h-5 w-5 text-sidebar-primary-foreground" />
-          </div>
+          <Image
+            src="/logo-valora-branca.png"
+            alt="Valora"
+            width={32}
+            height={32}
+            className="shrink-0"
+          />
           <div className="flex flex-col leading-none">
             <span className="font-display text-base tracking-wide text-sidebar-foreground">
-              FinançasPro
+              Valora
             </span>
             <span className="text-[11px] text-sidebar-foreground/50">
               Controle financeiro
@@ -171,7 +175,7 @@ export default function AppSidebar() {
 
       <SidebarFooter className="border-t border-sidebar-border">
         <div className="px-2 py-3 text-[10px] font-bold uppercase tracking-[0.14em] text-sidebar-foreground/30">
-          FinançasPro &copy; {new Date().getFullYear()}
+          Valora &copy; {new Date().getFullYear()}
         </div>
       </SidebarFooter>
     </Sidebar>

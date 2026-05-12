@@ -16,6 +16,7 @@ import rendaRoutes from "./routes/renda.routes";
 import dashboardRoutes from "./routes/dashboard.routes";
 import assinaturasRoutes from "./routes/assinaturas.routes";
 import routeMapRoutes from "./routes/route-map.routes";
+import shortcutRoutes from "./routes/shortcut.routes";
 
 const app = express();
 
@@ -55,6 +56,7 @@ app.use("/api/renda", rendaRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/assinaturas", assinaturasRoutes);
 app.use("/api/route-map", routeMapRoutes);
+app.use("/api/shortcut", shortcutRoutes);
 
 // 404
 app.use((_req, res) => {

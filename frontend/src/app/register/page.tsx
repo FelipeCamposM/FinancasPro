@@ -2,6 +2,7 @@
 
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import { api, setToken } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -15,7 +16,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Wallet, AlertCircle, Loader2, Eye, EyeOff, Check, X } from "lucide-react";
+import { AlertCircle, Loader2, Eye, EyeOff, Check, X } from "lucide-react";
 
 interface StrengthResult {
   level: "fraca" | "média" | "forte" | "muito forte";
@@ -96,11 +97,9 @@ export default function RegisterPage() {
       <div className="w-full max-w-md space-y-6">
         {/* Logo */}
         <div className="flex flex-col items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary shadow-md">
-            <Wallet className="h-6 w-6 text-primary-foreground" />
-          </div>
+          <Image src="/logo-valora-branca.png" alt="Valora" width={56} height={56} />
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-foreground">FinançasPro</h1>
+            <h1 className="text-2xl font-bold text-foreground">Valora</h1>
             <p className="text-sm text-muted-foreground">Comece a controlar seus gastos hoje</p>
           </div>
         </div>

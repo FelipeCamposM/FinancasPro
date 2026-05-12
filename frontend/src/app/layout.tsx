@@ -17,8 +17,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Gerenciar Gastos",
-  description: "Dashboard de controle financeiro pessoal",
+  title: "Valora",
+  description: "Controle financeiro pessoal inteligente",
 };
 
 export default function RootLayout({

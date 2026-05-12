@@ -684,7 +684,7 @@ export default function DashboardPage() {
           )}
 
           <p className="text-xs text-muted-foreground text-center pt-2">
-            FinançasPro &copy; {new Date().getFullYear()}
+            Valora &copy; {new Date().getFullYear()}
           </p>
         </>
       )}

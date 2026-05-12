@@ -17,7 +17,7 @@ const badgeVariants = cva(
           "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
         outline: "border-white/20 text-foreground bg-white/[0.06]",
 
-        // ── DS FinançasPro — módulos e status ──
+        // ── DS Valora — módulos e status ──
         blue:
           "bg-blue-500/[0.14] border-blue-400/30 text-blue-300",
         rose:

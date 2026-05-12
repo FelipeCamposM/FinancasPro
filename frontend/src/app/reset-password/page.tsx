@@ -2,6 +2,7 @@
 
 import { useState, FormEvent, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -16,7 +17,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  Wallet,
   AlertCircle,
   Loader2,
   Eye,
@@ -264,11 +264,9 @@ export default function ResetPasswordPage() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md space-y-6">
         <div className="flex flex-col items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary shadow-md">
-            <Wallet className="h-6 w-6 text-primary-foreground" />
-          </div>
+          <Image src="/logo-valora-branca.png" alt="Valora" width={56} height={56} />
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-foreground">FinançasPro</h1>
+            <h1 className="text-2xl font-bold text-foreground">Valora</h1>
             <p className="text-sm text-muted-foreground">Controle financeiro pessoal</p>
           </div>
         </div>

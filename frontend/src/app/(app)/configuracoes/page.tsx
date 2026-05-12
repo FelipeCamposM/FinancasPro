@@ -44,6 +44,13 @@ import {
   Tag,
   Lock,
   AlertTriangle,
+  Smartphone,
+  Copy,
+  Check,
+  Eye,
+  EyeOff,
+  RefreshCw,
+  ExternalLink,
 } from "lucide-react";
 
 interface Categoria {
@@ -74,6 +81,161 @@ function ColorDot({ cor }: { cor: string | null }) {
       className="inline-block h-3 w-3 rounded-full border border-white/20 shrink-0"
       style={{ background: cor ?? "#94A3B8" }}
     />
+  );
+}
+
+const SHORTCUT_ID = process.env.NEXT_PUBLIC_SHORTCUT_ID ?? "";
+
+function IphoneTab() {
+  const [apiKey, setApiKey] = useState<string | null>(null);
+  const [showKey, setShowKey] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [rotating, setRotating] = useState(false);
+  const [installing, setInstalling] = useState(false);
+
+  useEffect(() => {
+    api.get<{ api_key: string }>("/shortcut/my-key")
+      .then((r) => setApiKey(r.data.api_key))
+      .catch(() => toast.error("Erro ao carregar API key"));
+  }, []);
+
+  async function handleCopy() {
+    if (!apiKey) return;
+    await navigator.clipboard.writeText(apiKey);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  async function handleRotate() {
+    if (!confirm("Isso invalida o atalho configurado. Precisará reinstalar. Continuar?")) return;
+    setRotating(true);
+    try {
+      const r = await api.post<{ api_key: string }>("/shortcut/rotate-key");
+      setApiKey(r.data.api_key);
+      toast.success("API key rotacionada");
+    } catch {
+      toast.error("Erro ao rotacionar");
+    } finally {
+      setRotating(false);
+    }
+  }
+
+  async function handleInstall() {
+    if (!apiKey) return;
+    if (!SHORTCUT_ID) {
+      toast.error("ID do atalho não configurado (NEXT_PUBLIC_SHORTCUT_ID)");
+      return;
+    }
+    setInstalling(true);
+    try {
+      await navigator.clipboard.writeText(apiKey);
+      toast.success("API Key copiada! Cole quando o atalho pedir.", { duration: 4000 });
+      setTimeout(() => {
+        window.location.href = `shortcuts://run-shortcut?id=${SHORTCUT_ID}`;
+        setInstalling(false);
+      }, 1500);
+    } catch {
+      toast.error("Erro ao copiar API key");
+      setInstalling(false);
+    }
+  }
+
+  const masked = apiKey
+    ? apiKey.slice(0, 8) + "••••••••••••••••••••" + apiKey.slice(-4)
+    : null;
+
+  return (
+    <div className="space-y-6 max-w-lg">
+      {/* Instalar atalho */}
+      <Card className="border-white/[0.09] bg-white/[0.03]">
+        <CardContent className="p-5 space-y-4">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-500/15">
+              <Smartphone className="h-5 w-5 text-sky-400" />
+            </div>
+            <div>
+              <p className="font-semibold text-white text-sm">Atalho para iPhone</p>
+              <p className="text-xs text-white/50 mt-0.5">
+                Instala o atalho já configurado com sua conta. Abra esta página no iPhone.
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <ol className="space-y-1.5 text-xs text-white/50 list-decimal list-inside">
+              <li>Toque em "Instalar Atalho" — sua API Key é copiada automaticamente</li>
+              <li>O app Atalhos abre — cole a key quando solicitado</li>
+              <li>Pronto — nas próximas execuções não pergunta mais</li>
+            </ol>
+          </div>
+
+          <Button
+            onClick={handleInstall}
+            disabled={installing || !SHORTCUT_ID}
+            className="w-full bg-sky-500/20 border border-sky-400/30 text-sky-300 hover:bg-sky-500/30"
+            variant="ghost"
+          >
+            {installing ? (
+              <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <ExternalLink className="mr-2 h-4 w-4" />
+            )}
+            {installing ? "Gerando link..." : "Instalar Atalho"}
+          </Button>
+
+          {!SHORTCUT_ID && (
+            <p className="text-[11px] text-amber-400/70 text-center">
+              Configure NEXT_PUBLIC_SHORTCUT_ID com o ID do atalho no iCloud.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* API Key */}
+      <Card className="border-white/[0.09] bg-white/[0.03]">
+        <CardContent className="p-5 space-y-4">
+          <div>
+            <p className="font-semibold text-white text-sm">Sua API Key</p>
+            <p className="text-xs text-white/50 mt-0.5">
+              Usada pelo atalho para autenticar com sua conta. Não compartilhe.
+            </p>
+          </div>
+
+          {apiKey ? (
+            <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2.5">
+              <code className="flex-1 text-xs font-mono text-white/70 truncate">
+                {showKey ? apiKey : masked}
+              </code>
+              <button
+                onClick={() => setShowKey((v) => !v)}
+                className="text-white/30 hover:text-white/60 transition-colors"
+              >
+                {showKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+              </button>
+              <button
+                onClick={handleCopy}
+                className="text-white/30 hover:text-white/60 transition-colors"
+              >
+                {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+              </button>
+            </div>
+          ) : (
+            <div className="h-10 rounded-lg bg-white/[0.04] animate-pulse" />
+          )}
+
+          <Button
+            onClick={handleRotate}
+            disabled={rotating}
+            variant="ghost"
+            size="sm"
+            className="text-rose-400/70 hover:text-rose-300 hover:bg-rose-500/10 text-xs"
+          >
+            <RefreshCw className={`mr-1.5 h-3 w-3 ${rotating ? "animate-spin" : ""}`} />
+            Rotacionar key (invalida o atalho atual)
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 
@@ -205,6 +367,14 @@ export default function ConfiguracoesPage() {
             <Tag className="mr-2 h-3.5 w-3.5" />
             Categorias
           </TabsTrigger>
+          <TabsTrigger
+            value="iphone"
+            className="rounded-lg px-4 py-2 text-sm font-medium text-white/50 transition-all
+              data-[state=active]:bg-white/[0.08] data-[state=active]:text-white data-[state=active]:shadow-none"
+          >
+            <Smartphone className="mr-2 h-3.5 w-3.5" />
+            iPhone
+          </TabsTrigger>
         </TabsList>
 
         {/* ── Categorias tab ── */}
@@ -299,6 +469,9 @@ export default function ConfiguracoesPage() {
               )}
             </div>
           )}
+        </TabsContent>
+        <TabsContent value="iphone" className="mt-0">
+          <IphoneTab />
         </TabsContent>
       </Tabs>
 

@@ -120,6 +120,15 @@ export default function LoginPage() {
                 </div>
               )}
 
+              <div className="flex justify-end -mt-1">
+                <Link
+                  href="/forgot-password"
+                  className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Esqueci minha senha
+                </Link>
+              </div>
+
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {loading ? "Entrando..." : "Entrar"}

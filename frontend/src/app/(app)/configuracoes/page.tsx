@@ -84,14 +84,13 @@ function ColorDot({ cor }: { cor: string | null }) {
   );
 }
 
-const SHORTCUT_ID = process.env.NEXT_PUBLIC_SHORTCUT_ID ?? "";
+const SHORTCUT_ICLOUD_URL = process.env.NEXT_PUBLIC_SHORTCUT_ICLOUD_URL ?? "";
 
 function IphoneTab() {
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [showKey, setShowKey] = useState(false);
   const [copied, setCopied] = useState(false);
   const [rotating, setRotating] = useState(false);
-  const [installing, setInstalling] = useState(false);
 
   useEffect(() => {
     api.get<{ api_key: string }>("/shortcut/my-key")
@@ -104,10 +103,11 @@ function IphoneTab() {
     await navigator.clipboard.writeText(apiKey);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+    toast.success("API Key copiada!", { duration: 2000 });
   }
 
   async function handleRotate() {
-    if (!confirm("Isso invalida o atalho configurado. Precisará reinstalar. Continuar?")) return;
+    if (!confirm("Isso invalida o atalho configurado. Precisará reconfigurar. Continuar?")) return;
     setRotating(true);
     try {
       const r = await api.post<{ api_key: string }>("/shortcut/rotate-key");
@@ -120,85 +120,63 @@ function IphoneTab() {
     }
   }
 
-  async function handleInstall() {
-    if (!apiKey) return;
-    if (!SHORTCUT_ID) {
-      toast.error("ID do atalho não configurado (NEXT_PUBLIC_SHORTCUT_ID)");
-      return;
-    }
-    setInstalling(true);
-    try {
-      await navigator.clipboard.writeText(apiKey);
-      toast.success("API Key copiada! Cole quando o atalho pedir.", { duration: 4000 });
-      setTimeout(() => {
-        window.location.href = `shortcuts://run-shortcut?id=${SHORTCUT_ID}`;
-        setInstalling(false);
-      }, 1500);
-    } catch {
-      toast.error("Erro ao copiar API key");
-      setInstalling(false);
-    }
-  }
-
   const masked = apiKey
     ? apiKey.slice(0, 8) + "••••••••••••••••••••" + apiKey.slice(-4)
     : null;
 
   return (
     <div className="space-y-6 max-w-lg">
-      {/* Instalar atalho */}
+
+      {/* Passo 1 — Baixar */}
       <Card className="border-white/[0.09] bg-white/[0.03]">
         <CardContent className="p-5 space-y-4">
           <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-500/15">
-              <Smartphone className="h-5 w-5 text-sky-400" />
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sky-500/15 font-bold text-sm text-sky-400">
+              1
             </div>
             <div>
-              <p className="font-semibold text-white text-sm">Atalho para iPhone</p>
+              <p className="font-semibold text-white text-sm">Baixar o Atalho</p>
               <p className="text-xs text-white/50 mt-0.5">
-                Instala o atalho já configurado com sua conta. Abra esta página no iPhone.
+                Instala o atalho no app Atalhos do iPhone.
               </p>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <ol className="space-y-1.5 text-xs text-white/50 list-decimal list-inside">
-              <li>Toque em "Instalar Atalho" — sua API Key é copiada automaticamente</li>
-              <li>O app Atalhos abre — cole a key quando solicitado</li>
-              <li>Pronto — nas próximas execuções não pergunta mais</li>
-            </ol>
-          </div>
-
-          <Button
-            onClick={handleInstall}
-            disabled={installing || !SHORTCUT_ID}
-            className="w-full bg-sky-500/20 border border-sky-400/30 text-sky-300 hover:bg-sky-500/30"
-            variant="ghost"
-          >
-            {installing ? (
-              <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <ExternalLink className="mr-2 h-4 w-4" />
-            )}
-            {installing ? "Gerando link..." : "Instalar Atalho"}
-          </Button>
-
-          {!SHORTCUT_ID && (
-            <p className="text-[11px] text-amber-400/70 text-center">
-              Configure NEXT_PUBLIC_SHORTCUT_ID com o ID do atalho no iCloud.
+          {SHORTCUT_ICLOUD_URL ? (
+            <button
+              onClick={async () => {
+                if (apiKey) {
+                  await navigator.clipboard.writeText(apiKey).catch(() => {});
+                  toast.success("API Key copiada! Cole quando o atalho pedir.", { duration: 4000 });
+                }
+                window.open(SHORTCUT_ICLOUD_URL, "_blank");
+              }}
+              className="flex w-full items-center justify-center gap-2 rounded-md border border-sky-400/30 bg-sky-500/20 px-4 py-2.5 text-sm font-medium text-sky-300 transition-colors hover:bg-sky-500/30"
+            >
+              <ExternalLink className="h-4 w-4" />
+              Baixar Atalho
+            </button>
+          ) : (
+            <p className="text-center text-[11px] text-amber-400/70">
+              Configure <code className="font-mono">NEXT_PUBLIC_SHORTCUT_ICLOUD_URL</code> com o link iCloud do atalho.
             </p>
           )}
         </CardContent>
       </Card>
 
-      {/* API Key */}
+      {/* Passo 2 — Copiar API Key */}
       <Card className="border-white/[0.09] bg-white/[0.03]">
         <CardContent className="p-5 space-y-4">
-          <div>
-            <p className="font-semibold text-white text-sm">Sua API Key</p>
-            <p className="text-xs text-white/50 mt-0.5">
-              Usada pelo atalho para autenticar com sua conta. Não compartilhe.
-            </p>
+          <div className="flex items-start gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-500/15 font-bold text-sm text-violet-400">
+              2
+            </div>
+            <div>
+              <p className="font-semibold text-white text-sm">Configurar sua conta</p>
+              <p className="text-xs text-white/50 mt-0.5">
+                Copie sua API Key, abra o atalho e cole quando ele pedir.
+              </p>
+            </div>
           </div>
 
           {apiKey ? (
@@ -224,11 +202,21 @@ function IphoneTab() {
           )}
 
           <Button
+            onClick={handleCopy}
+            disabled={!apiKey}
+            variant="ghost"
+            className="w-full bg-violet-500/20 border border-violet-400/30 text-violet-300 hover:bg-violet-500/30"
+          >
+            {copied ? <Check className="mr-2 h-4 w-4 text-emerald-400" /> : <Copy className="mr-2 h-4 w-4" />}
+            {copied ? "Copiada!" : "Copiar API Key"}
+          </Button>
+
+          <Button
             onClick={handleRotate}
             disabled={rotating}
             variant="ghost"
             size="sm"
-            className="text-rose-400/70 hover:text-rose-300 hover:bg-rose-500/10 text-xs"
+            className="text-rose-400/70 hover:text-rose-300 hover:bg-rose-500/10 text-xs w-full"
           >
             <RefreshCw className={`mr-1.5 h-3 w-3 ${rotating ? "animate-spin" : ""}`} />
             Rotacionar key (invalida o atalho atual)

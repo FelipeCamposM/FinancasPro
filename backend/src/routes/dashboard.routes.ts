@@ -5,6 +5,9 @@ import {
   rendaVsGastos as getRendaVsGastos,
   gastosPorFormaPagamento as getGastosPorFormaPagamento,
   periodSummary as getPeriodSummary,
+  relatorioMensal as getRelatorioMensal,
+  projecoes as getProjecoes,
+  relatorioAnual as getRelatorioAnual,
 } from "../controllers/dashboard.controller";
 import { authenticateAny } from "../middlewares/auth.middleware";
 
@@ -156,5 +159,35 @@ router.get(
  *                 diferenca:    { type: number }
  */
 router.get("/period-summary", authenticateAny, getPeriodSummary);
+
+router.get("/relatorio-mensal", authenticateAny, getRelatorioMensal);
+
+router.get("/projecoes", authenticateAny, getProjecoes);
+
+/**
+ * @swagger
+ * /dashboard/relatorio-anual:
+ *   get:
+ *     tags: [Dashboard]
+ *     summary: Relatório consolidado de um ano
+ *     parameters:
+ *       - in: query
+ *         name: ano
+ *         description: Ano (YYYY). Default é o ano atual.
+ *         schema: { type: integer, example: 2026 }
+ *     responses:
+ *       200:
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ano:           { type: integer }
+ *                 resumo:        { type: object }
+ *                 meses:         { type: array }
+ *                 categorias:    { type: array }
+ *                 formas_pagamento: { type: array }
+ */
+router.get("/relatorio-anual", authenticateAny, getRelatorioAnual);
 
 export default router;

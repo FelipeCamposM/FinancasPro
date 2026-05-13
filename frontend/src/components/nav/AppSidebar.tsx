@@ -21,6 +21,7 @@ import {
   CreditCard,
   Repeat,
   Settings,
+  FileBarChart,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -64,6 +65,14 @@ const navItems = [
     iconColor: "text-violet-400/70",
     activeIconColor: "text-violet-400",
     activeBg: "data-[active=true]:bg-violet-500/10",
+  },
+  {
+    href: "/relatorios",
+    icon: FileBarChart,
+    label: "Relatórios",
+    iconColor: "text-amber-400/70",
+    activeIconColor: "text-amber-400",
+    activeBg: "data-[active=true]:bg-amber-500/10",
   },
 ];
 

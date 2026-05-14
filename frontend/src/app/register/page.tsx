@@ -4,7 +4,7 @@ import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { api, setToken } from "@/lib/api";
+import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -77,13 +77,14 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      const { data } = await api.post<{ token: string }>("/auth/register", {
+      const { data } = await api.post<{ retry_after_seconds?: number }>("/auth/register", {
         name,
         email,
         password,
       });
-      setToken(data.token);
-      router.push("/dashboard");
+      router.push(
+        `/verify-email?email=${encodeURIComponent(email)}&cooldown=${data.retry_after_seconds ?? 60}`,
+      );
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } }).response?.data?.error;
       setError(msg || "Erro ao criar conta. Tente novamente.");

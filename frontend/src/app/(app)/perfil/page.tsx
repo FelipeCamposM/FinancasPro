@@ -37,12 +37,13 @@ import {
 } from "@/components/ui/form";
 import {
   Camera,
-  Copy,
-  KeyRound,
   Loader2,
   UserCircle,
   Lock,
-  RefreshCw,
+  BadgeCheck,
+  CalendarDays,
+  Mail,
+  ShieldCheck,
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
@@ -86,6 +87,22 @@ function readFileAsDataURL(file: File): Promise<string> {
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
+}
+
+function formatDate(value?: string): string {
+  if (!value) return "Nao informado";
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  }).format(new Date(value));
+}
+
+function getUserLevelLabel(level?: string): string {
+  if (level === "admin") return "Administrador";
+  if (level === "premium") return "Premium";
+  return "Gratuita";
 }
 
 async function getCroppedImg(
@@ -132,9 +149,6 @@ export default function PerfilPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [avatarLoading, setAvatarLoading] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  const [apiKey, setApiKey] = useState("");
-  const [apiKeyLoading, setApiKeyLoading] = useState(false);
-  const [apiKeyRotating, setApiKeyRotating] = useState(false);
 
   // Crop dialog
   const [cropDialogOpen, setCropDialogOpen] = useState(false);
@@ -170,30 +184,6 @@ export default function PerfilPage() {
       setAvatarPreview(user.avatar ?? null);
     }
   }, [user, profileForm]);
-
-  useEffect(() => {
-    if (!user) return;
-
-    let active = true;
-    async function loadApiKey() {
-      setApiKeyLoading(true);
-      try {
-        const { data } = await api.get<{ api_key: string }>(
-          "/users/me/api-key",
-        );
-        if (active) setApiKey(data.api_key);
-      } catch {
-        if (active) toast.error("Erro ao carregar API Key");
-      } finally {
-        if (active) setApiKeyLoading(false);
-      }
-    }
-
-    loadApiKey();
-    return () => {
-      active = false;
-    };
-  }, [user]);
 
   // ── Avatar upload ────────────────────────────────────────────────────────────
 
@@ -267,32 +257,6 @@ export default function PerfilPage() {
         (err as { response?: { data?: { error?: string } } })?.response?.data
           ?.error ?? "Erro ao alterar senha";
       toast.error(msg);
-    }
-  }
-
-  async function handleCopyApiKey() {
-    if (!apiKey) return;
-
-    try {
-      await navigator.clipboard.writeText(apiKey);
-      toast.success("API Key copiada");
-    } catch {
-      toast.error("Nao foi possivel copiar a API Key");
-    }
-  }
-
-  async function handleRotateApiKey() {
-    setApiKeyRotating(true);
-    try {
-      const { data } = await api.post<{ api_key: string }>(
-        "/users/me/api-key/rotate",
-      );
-      setApiKey(data.api_key);
-      toast.success("API Key renovada");
-    } catch {
-      toast.error("Erro ao renovar API Key");
-    } finally {
-      setApiKeyRotating(false);
     }
   }
 
@@ -438,61 +402,65 @@ export default function PerfilPage() {
         </CardContent>
       </Card>
 
-      {/* API Key Card */}
+      {/* Account Info Card */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <KeyRound className="h-4 w-4 text-primary" />
-            Token de API
+            <ShieldCheck className="h-4 w-4 text-primary" />
+            Sobre a conta
           </CardTitle>
           <CardDescription>
-            Use este token em atalhos do iPhone e integrações externas.
+            Detalhes de seguranca e informacoes gerais do seu acesso.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium leading-none">
-              API Key
-            </label>
-            <div className="flex gap-2">
-              <Input
-                value={
-                  apiKeyLoading
-                    ? "Carregando..."
-                    : apiKey || "Nenhuma API Key encontrada"
-                }
-                readOnly
-                className="font-mono text-xs"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={handleCopyApiKey}
-                disabled={!apiKey || apiKeyLoading}
-                title="Copiar API Key"
-              >
-                <Copy className="h-4 w-4" />
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={handleRotateApiKey}
-                disabled={apiKeyLoading || apiKeyRotating}
-                title="Renovar API Key"
-              >
-                {apiKeyRotating ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-4 w-4" />
-                )}
-              </Button>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-lg border border-white/10 bg-white/[0.04] p-3">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <CalendarDays className="h-3.5 w-3.5" />
+                Criada em
+              </div>
+              <p className="mt-1 text-sm font-medium text-foreground">
+                {formatDate(user?.created_at)}
+              </p>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Ao renovar, o token anterior deixa de funcionar imediatamente.
-            </p>
+
+            <div className="rounded-lg border border-emerald-400/20 bg-emerald-400/10 p-3">
+              <div className="flex items-center gap-2 text-xs text-emerald-300">
+                <BadgeCheck className="h-3.5 w-3.5" />
+                Verificacao
+              </div>
+              <p className="mt-1 text-sm font-medium text-emerald-200">
+                {user?.email_verified ? "Conta verificada" : "Verificacao pendente"}
+              </p>
+            </div>
+
+            <div className="rounded-lg border border-white/10 bg-white/[0.04] p-3">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Mail className="h-3.5 w-3.5" />
+                E-mail de acesso
+              </div>
+              <p className="mt-1 break-all text-sm font-medium text-foreground">
+                {user?.email ?? "Nao informado"}
+              </p>
+            </div>
+
+            <div className="rounded-lg border border-white/10 bg-white/[0.04] p-3">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <ShieldCheck className="h-3.5 w-3.5" />
+                Tipo de conta
+              </div>
+              <p className="mt-1 text-sm font-medium text-foreground">
+                {getUserLevelLabel(user?.user_level)}
+              </p>
+            </div>
           </div>
+
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            O acesso esta protegido por autenticacao com senha ou codigo enviado
+            por e-mail. Contas verificadas podem recuperar o acesso com codigo
+            sem depender da senha.
+          </p>
         </CardContent>
       </Card>
 

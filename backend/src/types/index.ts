@@ -37,6 +37,7 @@ export type Bandeira =
   | "discover"
   | "outro";
 export type TipoCartao = "credito" | "debito" | "credito_debito";
+export type TipoCofrinho = "acao" | "conta" | "objetivo";
 
 // -------------------------------------------------------
 // Entidades do banco
@@ -49,6 +50,8 @@ export interface User {
   password_hash: string;
   avatar: string | null;
   user_level: UserLevel;
+  email_verified: boolean;
+  email_verified_at: Date | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -133,6 +136,23 @@ export interface Renda {
   updated_at: Date;
   // campo computado retornado pela listagem
   lancada_neste_mes?: boolean;
+}
+
+export interface Cofrinho {
+  id: string;
+  user_id: string;
+  tipo: TipoCofrinho;
+  nome: string;
+  saldo_atual: number;
+  meta_valor: number | null;
+  ticker: string | null;
+  quantidade_cotas: number | null;
+  instituicao: string | null;
+  data_alvo: Date | null;
+  observacoes: string | null;
+  ativo: boolean;
+  created_at: Date;
+  updated_at: Date;
 }
 
 // -------------------------------------------------------

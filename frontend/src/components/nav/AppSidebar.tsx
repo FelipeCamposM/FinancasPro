@@ -22,6 +22,7 @@ import {
   Repeat,
   Settings,
   FileBarChart,
+  PiggyBank,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -65,6 +66,14 @@ const navItems = [
     iconColor: "text-violet-400/70",
     activeIconColor: "text-violet-400",
     activeBg: "data-[active=true]:bg-violet-500/10",
+  },
+  {
+    href: "/cofrinhos",
+    icon: PiggyBank,
+    label: "Cofrinhos",
+    iconColor: "text-emerald-400/70",
+    activeIconColor: "text-emerald-400",
+    activeBg: "data-[active=true]:bg-emerald-500/10",
   },
   {
     href: "/relatorios",

@@ -604,8 +604,7 @@ function GastosPageInner() {
 
             <Button
               onClick={() => { setEditingGasto(null); setDialogOpen(true); }}
-              variant="default"
-              className="h-9"
+              className="h-9 border border-rose-400/40 bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 hover:text-rose-200"
             >
               <Plus className="mr-2 h-4 w-4" />
               Novo Gasto
@@ -617,40 +616,116 @@ function GastosPageInner() {
       {/* ── KPI Cards ───────────────────────────────────────── */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 ui-stagger">
         {/* Total Gastos */}
-        <div className="rounded-xl border border-white/[0.09] bg-white/[0.04] p-4 backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5">
-          <p className="ds-label text-white/35">Total gastos</p>
-          {loadingSummary ? (
-            <Skeleton className="mt-2 h-8 w-32" />
-          ) : (
-            <p className="mt-1.5 font-display text-3xl leading-none ds-numeric text-rose-400">
-              {formatBRL(summary?.total_gastos ?? 0)}
-            </p>
-          )}
+        <div className="relative overflow-hidden rounded-xl border border-rose-500/20 bg-gradient-to-br from-rose-950/60 via-rose-900/15 to-transparent p-4 backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5">
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-rose-400/50 to-transparent" />
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-rose-300/50">Total Gastos</p>
+              {loadingSummary ? (
+                <Skeleton className="mt-2 h-8 w-32" />
+              ) : (
+                <>
+                  <p className="mt-1.5 font-display text-3xl leading-none tabular-nums text-rose-400">
+                    {formatBRL(summary?.total_gastos ?? 0)}
+                  </p>
+                  {summary && summary.total_renda > 0 && (
+                    <p className="mt-1.5 text-[11px] text-rose-300/60">
+                      {((summary.total_gastos / summary.total_renda) * 100).toFixed(0)}% da renda
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
+            <div className="shrink-0 rounded-[9px] bg-rose-500/15 p-2.5">
+              <TrendingDown className="h-5 w-5 text-rose-400" />
+            </div>
+          </div>
         </div>
 
         {/* Total Renda */}
-        <div className="rounded-xl border border-white/[0.09] bg-white/[0.04] p-4 backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5">
-          <p className="ds-label text-white/35">Total renda</p>
-          {loadingSummary ? (
-            <Skeleton className="mt-2 h-8 w-32" />
-          ) : (
-            <p className="mt-1.5 font-display text-3xl leading-none ds-numeric text-white/70">
-              {formatBRL(summary?.total_renda ?? 0)}
-            </p>
-          )}
+        <div className="relative overflow-hidden rounded-xl border border-green-500/20 bg-gradient-to-br from-green-950/50 via-green-900/15 to-transparent p-4 backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5">
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-green-400/50 to-transparent" />
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-green-300/50">Total Renda</p>
+              {loadingSummary ? (
+                <Skeleton className="mt-2 h-8 w-32" />
+              ) : (
+                <>
+                  <p className="mt-1.5 font-display text-3xl leading-none tabular-nums text-green-400">
+                    {formatBRL(summary?.total_renda ?? 0)}
+                  </p>
+                  {summary && (
+                    <p className="mt-1.5 text-[11px] text-green-300/60">
+                      {summary.diferenca >= 0
+                        ? `${formatBRL(summary.diferenca)} disponível`
+                        : `${formatBRL(Math.abs(summary.diferenca))} a descoberto`}
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
+            <div className="shrink-0 rounded-[9px] bg-green-500/15 p-2.5">
+              <TrendingUp className="h-5 w-5 text-green-400" />
+            </div>
+          </div>
         </div>
 
         {/* Saldo */}
-        <div className="rounded-xl border border-white/[0.09] bg-white/[0.04] p-4 backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5">
-          <p className="ds-label text-white/35">Saldo do período</p>
-          {loadingSummary ? (
-            <Skeleton className="mt-2 h-8 w-32" />
-          ) : (
-            <p className={`mt-1.5 font-display text-3xl leading-none ds-numeric ${(summary?.diferenca ?? 0) >= 0 ? "text-white/70" : "text-amber-400"}`}>
-              {formatBRL(summary?.diferenca ?? 0)}
-            </p>
-          )}
-        </div>
+        {(() => {
+          const positivo = (summary?.diferenca ?? 0) >= 0;
+          const pct =
+            summary && summary.total_renda > 0
+              ? ((Math.abs(summary.diferenca) / summary.total_renda) * 100).toFixed(0)
+              : null;
+          return (
+            <div
+              className={`relative overflow-hidden rounded-xl border p-4 backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5 ${
+                positivo
+                  ? "border-blue-500/20 bg-gradient-to-br from-blue-950/50 via-blue-900/15 to-transparent"
+                  : "border-amber-500/20 bg-gradient-to-br from-amber-950/50 via-amber-900/15 to-transparent"
+              }`}
+            >
+              <div
+                className={`absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent ${positivo ? "via-blue-400/50" : "via-amber-400/50"} to-transparent`}
+              />
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <p
+                    className={`text-[10px] font-bold uppercase tracking-[0.12em] ${positivo ? "text-blue-300/50" : "text-amber-300/50"}`}
+                  >
+                    Saldo do Período
+                  </p>
+                  {loadingSummary ? (
+                    <Skeleton className="mt-2 h-8 w-32" />
+                  ) : (
+                    <>
+                      <p
+                        className={`mt-1.5 font-display text-3xl leading-none tabular-nums ${positivo ? "text-blue-400" : "text-amber-400"}`}
+                      >
+                        {formatBRL(summary?.diferenca ?? 0)}
+                      </p>
+                      {pct && (
+                        <p
+                          className={`mt-1.5 text-[11px] ${positivo ? "text-blue-300/60" : "text-amber-300/60"}`}
+                        >
+                          {pct}% {positivo ? "poupado" : "a descoberto"}
+                        </p>
+                      )}
+                    </>
+                  )}
+                </div>
+                <div
+                  className={`shrink-0 rounded-[9px] p-2.5 ${positivo ? "bg-blue-500/15" : "bg-amber-500/15"}`}
+                >
+                  <Wallet
+                    className={`h-5 w-5 ${positivo ? "text-blue-400" : "text-amber-400"}`}
+                  />
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       {/* ── Filter Bar ──────────────────────────────────────── */}
@@ -841,9 +916,9 @@ function GastosPageInner() {
         {activeChips.length > 0 && (
           <div className="flex flex-wrap items-center gap-1.5 border-t border-white/[0.06] px-3 pb-3">
             {activeChips.map((chip) => (
-              <span key={chip.key} className="flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.06] px-2.5 py-0.5 text-xs text-white/60">
+              <span key={chip.key} className="flex items-center gap-1 rounded-full border border-rose-400/30 bg-rose-500/10 px-2.5 py-0.5 text-xs text-rose-300/80">
                 {chip.label}
-                <button onClick={chip.onRemove} className="ml-0.5 text-white/30 hover:text-rose-400">
+                <button onClick={chip.onRemove} className="ml-0.5 text-rose-300/40 hover:text-rose-400">
                   <X className="h-2.5 w-2.5" />
                 </button>
               </span>
@@ -987,8 +1062,8 @@ function GastosPageInner() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={statusInfo.variant}>
-                            {getStatusIcon(g.status, "h-3 w-3")}
+                          <Badge variant={statusInfo.variant} className="text-xs px-3 py-1">
+                            {getStatusIcon(g.status, "h-3.5 w-3.5")}
                             {statusInfo.label}
                           </Badge>
                         </TableCell>
@@ -1108,7 +1183,16 @@ function GastoDetailSheet({
         {g && statusInfo && (
           <>
             {/* Header */}
-            <div className="px-5 pt-6 pb-4 border-b border-white/[0.07]">
+            <div className="relative px-5 pt-6 pb-4 border-b border-white/[0.07] overflow-hidden">
+              <div
+                className={`absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-transparent to-transparent ${
+                  g.status === "pendente"
+                    ? "via-amber-400/50"
+                    : g.status === "pago"
+                      ? "via-blue-400/50"
+                      : "via-rose-400/50"
+                }`}
+              />
               <div className="flex items-start gap-3 pr-6">
                 {g.categoria_cor && (
                   <div className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: g.categoria_cor }} />
@@ -1336,8 +1420,8 @@ function GastoMobileCard({
 
           {/* Row 5: status */}
           <div className="mt-2">
-            <Badge variant={statusInfo.variant} className="text-[10px] px-1.5 py-0">
-              {getStatusIcon(g.status, "h-2.5 w-2.5")}
+            <Badge variant={statusInfo.variant} className="text-[11px] px-2 py-0.5">
+              {getStatusIcon(g.status, "h-3 w-3")}
               {statusInfo.label}
             </Badge>
           </div>

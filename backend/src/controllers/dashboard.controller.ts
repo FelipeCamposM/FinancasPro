@@ -22,6 +22,15 @@ export const summary = async (
          FROM renda r
          WHERE r.user_id = $1
            AND (
+             r.renda_origem_id IS NOT NULL
+             OR r.recorrente = false
+             OR NOT EXISTS (
+               SELECT 1 FROM renda inst
+               WHERE inst.renda_origem_id = r.id
+                 AND DATE_TRUNC('month', inst.mes_referencia) = DATE_TRUNC('month', $2::date)
+             )
+           )
+           AND (
              -- Rendas diretas do mês (pontuais e instâncias lançadas)
              DATE_TRUNC('month', r.mes_referencia) = DATE_TRUNC('month', $2::date)
              OR (
@@ -137,7 +146,17 @@ export const rendaVsGastos = async (
          COALESCE(SUM(CASE WHEN tipo = 'gasto' THEN valor ELSE 0 END), 0)::float AS total_gastos
        FROM (
          SELECT DATE_TRUNC('month', mes_referencia) AS mes, valor, 'renda' AS tipo
-         FROM renda WHERE user_id = $1
+         FROM renda
+         WHERE user_id = $1
+           AND (
+             renda_origem_id IS NOT NULL
+             OR recorrente = false
+             OR NOT EXISTS (
+               SELECT 1 FROM renda inst
+               WHERE inst.renda_origem_id = renda.id
+                 AND DATE_TRUNC('month', inst.mes_referencia) = DATE_TRUNC('month', renda.mes_referencia)
+             )
+           )
          UNION ALL
          SELECT DATE_TRUNC('month', data_gasto) AS mes, valor_total AS valor, 'gasto' AS tipo
          FROM gastos WHERE user_id = $1 AND status != 'cancelado'
@@ -206,6 +225,15 @@ export const relatorioMensal = async (
           `SELECT COALESCE(SUM(valor), 0)::float AS total
            FROM renda r
            WHERE r.user_id = $1
+             AND (
+               r.renda_origem_id IS NOT NULL
+               OR r.recorrente = false
+               OR NOT EXISTS (
+                 SELECT 1 FROM renda inst
+                 WHERE inst.renda_origem_id = r.id
+                   AND DATE_TRUNC('month', inst.mes_referencia) = DATE_TRUNC('month', $2::date)
+               )
+             )
              AND (
                DATE_TRUNC('month', r.mes_referencia) = DATE_TRUNC('month', $2::date)
                OR (
@@ -415,7 +443,17 @@ export const relatorioAnual = async (
            COALESCE(SUM(CASE WHEN tipo = 'gasto' THEN valor ELSE 0 END), 0)::float AS total_gastos
          FROM (
            SELECT DATE_TRUNC('month', mes_referencia) AS mes, valor, 'renda' AS tipo
-           FROM renda WHERE user_id = $1
+           FROM renda
+           WHERE user_id = $1
+             AND (
+               renda_origem_id IS NOT NULL
+               OR recorrente = false
+               OR NOT EXISTS (
+                 SELECT 1 FROM renda inst
+                 WHERE inst.renda_origem_id = renda.id
+                   AND DATE_TRUNC('month', inst.mes_referencia) = DATE_TRUNC('month', renda.mes_referencia)
+               )
+             )
            UNION ALL
            SELECT DATE_TRUNC('month', data_gasto) AS mes, valor_total AS valor, 'gasto' AS tipo
            FROM gastos WHERE user_id = $1 AND status != 'cancelado'

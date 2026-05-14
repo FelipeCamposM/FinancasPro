@@ -33,6 +33,7 @@ import {
   Repeat,
   Banknote,
   CreditCard,
+  Wallet,
   Smartphone,
   ArrowLeftRight,
   MoreHorizontal,
@@ -42,8 +43,10 @@ import {
   RefreshCw,
   Pencil,
   AlertTriangle,
+  TrendingDown,
+  Sparkles,
 } from "lucide-react";
-import { GastoDialog } from "../gastos/GastoDialog";
+import { AssinaturaDialog } from "./AssinaturaDialog";
 import { PageShell } from "@/components/ui/page-shell";
 import { SectionHeader } from "@/components/ui/section-header";
 
@@ -68,7 +71,7 @@ const FORMA_PGTO_LABEL: Record<
 > = {
   dinheiro: { label: "Dinheiro", icon: Banknote },
   cartao_credito: { label: "Crédito", icon: CreditCard },
-  cartao_debito: { label: "Débito", icon: CreditCard },
+  cartao_debito: { label: "Débito", icon: Wallet },
   pix: { label: "Pix", icon: Smartphone },
   transferencia: { label: "Transf.", icon: ArrowLeftRight },
   outro: { label: "Outro", icon: MoreHorizontal },
@@ -240,35 +243,50 @@ export default function AssinaturasPage() {
 
       {!loading && !loadError && assinaturas.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 ui-stagger">
-          <div className="rounded-xl border border-white/[0.09] bg-white/[0.04] p-4 backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5">
-            <p className="text-[11px] uppercase tracking-wider text-violet-300/80 font-semibold">
-              Assinaturas ativas
-            </p>
-            <p className="mt-1 text-lg font-bold text-white tabular-nums">
+          <div className="rounded-xl border border-violet-500/20 bg-violet-500/[0.07] p-4 backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="h-7 w-7 rounded-lg bg-violet-500/20 flex items-center justify-center shrink-0">
+                <Sparkles className="h-3.5 w-3.5 text-violet-300" />
+              </div>
+              <p className="text-[11px] uppercase tracking-wider text-violet-300/80 font-semibold">
+                Assinaturas ativas
+              </p>
+            </div>
+            <p className="text-2xl font-bold text-white tabular-nums">
               {ativas.length}
             </p>
-            <p className="text-xs text-white/55">Cobranças em ciclo atual</p>
+            <p className="text-xs text-violet-300/50 mt-0.5">Cobranças em ciclo atual</p>
           </div>
 
           <div className="rounded-xl border border-white/[0.09] bg-white/[0.04] p-4 backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5">
-            <p className="text-[11px] uppercase tracking-wider text-white/70 font-semibold">
-              Assinaturas inativas
-            </p>
-            <p className="mt-1 text-lg font-bold text-white tabular-nums">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="h-7 w-7 rounded-lg bg-white/[0.06] flex items-center justify-center shrink-0">
+                <XCircle className="h-3.5 w-3.5 text-white/40" />
+              </div>
+              <p className="text-[11px] uppercase tracking-wider text-white/50 font-semibold">
+                Inativas
+              </p>
+            </div>
+            <p className="text-2xl font-bold text-white tabular-nums">
               {inativas.length}
             </p>
-            <p className="text-xs text-white/55">Histórico pausado/cancelado</p>
+            <p className="text-xs text-white/40 mt-0.5">Histórico pausado/cancelado</p>
           </div>
 
-          <div className="rounded-xl border border-white/[0.09] bg-white/[0.04] p-4 backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5">
-            <p className="text-[11px] uppercase tracking-wider text-blue-300/80 font-semibold">
-              Custo anual estimado
-            </p>
-            <p className="mt-1 text-lg font-bold text-white tabular-nums">
+          <div className="rounded-xl border border-violet-400/20 bg-violet-500/[0.05] p-4 backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="h-7 w-7 rounded-lg bg-violet-500/20 flex items-center justify-center shrink-0">
+                <TrendingDown className="h-3.5 w-3.5 text-violet-300" />
+              </div>
+              <p className="text-[11px] uppercase tracking-wider text-violet-300/70 font-semibold">
+                Custo anual estimado
+              </p>
+            </div>
+            <p className="text-2xl font-bold text-violet-300 tabular-nums">
               {fmt(totalAnual)}
             </p>
-            <p className="text-xs text-white/55">
-              Projeção com base nas ativas
+            <p className="text-xs text-violet-300/40 mt-0.5">
+              {fmt(totalMensal)}/mês com base nas ativas
             </p>
           </div>
         </div>
@@ -312,105 +330,127 @@ export default function AssinaturasPage() {
             return (
               <div
                 key={a.id}
-                className={`relative rounded-xl border p-5 flex flex-col gap-3 transition-all backdrop-blur-xl ${
+                className={`relative rounded-2xl border flex flex-col gap-0 transition-all backdrop-blur-xl overflow-hidden ${
                   a.ativa
-                    ? "border-white/[0.09] bg-white/[0.03] hover:border-violet-400/35 hover:bg-white/[0.05]"
-                    : "border-white/[0.07] bg-white/[0.025] opacity-60"
+                    ? "border-violet-500/25 bg-gradient-to-br from-violet-950/50 via-violet-900/20 to-transparent hover:border-violet-400/40 hover:shadow-lg hover:shadow-violet-500/10 hover:-translate-y-0.5"
+                    : "border-white/[0.07] bg-white/[0.025] opacity-55 grayscale-[30%]"
                 }`}
               >
-                {/* Status badge */}
-                <div className="absolute top-4 right-4">
-                  {a.ativa ? (
-                    <Badge variant="violet">
-                      <CheckCircle2 className="h-3 w-3" />
-                      Ativa
-                    </Badge>
-                  ) : (
-                    <Badge variant="slate">
-                      <XCircle className="h-3 w-3" />
-                      Cancelada
-                    </Badge>
-                  )}
-                </div>
+                {/* Top glow bar */}
+                {a.ativa && (
+                  <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-violet-400/50 to-transparent" />
+                )}
 
-                {/* Nome + valor */}
-                <div className="pr-16">
-                  <p className="font-semibold text-base leading-tight truncate text-white">
-                    {a.descricao}
-                  </p>
-                  <p className="text-xl font-bold text-violet-300 mt-1">
-                    {fmt(a.valor)}
-                    <span className="text-xs text-white/40 font-normal ml-1">
-                      /mês
-                    </span>
-                  </p>
-                </div>
+                {/* Body */}
+                <div className="p-5 flex flex-col gap-3 flex-1">
+                  {/* Status badge */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-base leading-tight truncate text-white">
+                        {a.descricao}
+                      </p>
+                      {a.categoria && (
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <span
+                            className="h-1.5 w-1.5 rounded-full shrink-0"
+                            style={{ backgroundColor: a.categoria.cor }}
+                          />
+                          <span className="text-[11px] text-white/40">
+                            {a.categoria.nome}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    {a.ativa ? (
+                      <Badge variant="violet">
+                        <CheckCircle2 className="h-3 w-3" />
+                        Ativa
+                      </Badge>
+                    ) : (
+                      <Badge variant="slate">
+                        <XCircle className="h-3 w-3" />
+                        Cancelada
+                      </Badge>
+                    )}
+                  </div>
 
-                {/* Detalhes */}
-                <div className="flex flex-col gap-1.5 text-xs text-white/50">
-                  <div className="flex items-center gap-1.5">
-                    <CalendarDays className="h-3.5 w-3.5 shrink-0" />
-                    <span>
-                      Todo dia{" "}
-                      <strong className="text-white/80">
-                        {a.dia_cobranca}
-                      </strong>{" "}
-                      — inicio em {fmtDate(a.data_inicio)}
-                    </span>
+                  {/* Valor destacado */}
+                  <div className="space-y-0.5">
+                    <div className="flex items-baseline gap-1 leading-none">
+                      <span className="text-sm font-bold text-violet-300/50 select-none">R$</span>
+                      <span className="text-3xl font-bold tabular-nums text-violet-300">
+                        {Number(a.valor).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                      <span className="text-xs text-violet-300/40 font-medium">/mês</span>
+                    </div>
+                    <div className="flex items-baseline gap-1 leading-none">
+                      <span className="text-[10px] font-semibold text-violet-300/30 select-none">R$</span>
+                      <span className="text-xs tabular-nums text-violet-300/30 font-medium">
+                        {(Number(a.valor) * 12).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                      <span className="text-[10px] text-violet-300/25">/ano estimado</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <Icon className="h-3.5 w-3.5 shrink-0" />
-                    <span>{pgto.label}</span>
-                  </div>
-                  {a.categoria && (
+
+                  {/* Detalhes */}
+                  <div className="flex flex-col gap-1.5 text-xs text-white/45">
                     <div className="flex items-center gap-1.5">
-                      <span
-                        className="h-2 w-2 rounded-full shrink-0"
-                        style={{ backgroundColor: a.categoria.cor }}
-                      />
-                      <span>{a.categoria.nome}</span>
+                      <CalendarDays className="h-3.5 w-3.5 shrink-0 text-violet-400/60" />
+                      <span>
+                        Cobra todo dia{" "}
+                        <span className="font-bold text-violet-300/80">
+                          {a.dia_cobranca}
+                        </span>
+                        {" "}— desde {fmtDate(a.data_inicio)}
+                      </span>
                     </div>
-                  )}
-                  {a.data_cancelamento && (
-                    <div className="flex items-center gap-1.5 text-rose-400">
-                      <XCircle className="h-3.5 w-3.5 shrink-0" />
-                      <span>Cancelada em {fmtDate(a.data_cancelamento)}</span>
+                    <div className="flex items-center gap-1.5">
+                      <Icon className="h-3.5 w-3.5 shrink-0 text-violet-400/60" />
+                      <span>{pgto.label}</span>
                     </div>
-                  )}
+                    {a.data_cancelamento && (
+                      <div className="flex items-center gap-1.5 text-rose-400/80">
+                        <XCircle className="h-3.5 w-3.5 shrink-0" />
+                        <span>Cancelada em {fmtDate(a.data_cancelamento)}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                {/* Ações */}
-                <div className="pt-1 border-t border-white/10 flex gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 text-xs flex-1 gap-1.5 text-violet-300 hover:text-violet-200 hover:bg-violet-500/15"
-                    onClick={() => openEdit(a)}
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                    Editar
-                  </Button>
-                  {a.ativa ? (
+                {/* Footer do card */}
+                <div className="border-t border-violet-400/[0.12] bg-violet-500/[0.05] px-5 py-2.5 flex items-center justify-end gap-0.5">
+                  <div className="flex gap-0.5">
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 text-xs flex-1 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 gap-1.5"
-                      onClick={() => setCancelTarget(a)}
+                      className="h-7 text-xs gap-1 px-2.5 text-violet-300/70 hover:text-violet-200 hover:bg-violet-500/20"
+                      onClick={() => openEdit(a)}
                     >
-                      <XCircle className="h-3.5 w-3.5" />
-                      Cancelar
+                      <Pencil className="h-3 w-3" />
+                      Editar
                     </Button>
-                  ) : (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 text-xs flex-1 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 gap-1.5"
-                      onClick={() => setReativarTarget(a)}
-                    >
-                      <RefreshCw className="h-3.5 w-3.5" />
-                      Reativar
-                    </Button>
-                  )}
+                    {a.ativa ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs gap-1 px-2.5 text-rose-400/70 hover:text-rose-300 hover:bg-rose-500/10"
+                        onClick={() => setCancelTarget(a)}
+                      >
+                        <XCircle className="h-3 w-3" />
+                        Cancelar
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs gap-1 px-2.5 text-blue-400/70 hover:text-blue-300 hover:bg-blue-500/10"
+                        onClick={() => setReativarTarget(a)}
+                      >
+                        <RefreshCw className="h-3 w-3" />
+                        Reativar
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             );
@@ -418,12 +458,11 @@ export default function AssinaturasPage() {
         </div>
       )}
 
-      {/* Dialog para criar nova assinatura (reutiliza GastoDialog) */}
-      <GastoDialog
+      {/* Dialog para criar nova assinatura */}
+      <AssinaturaDialog
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
         onSuccess={load}
-        forceAssinatura
       />
 
       {/* Dialog de edição */}

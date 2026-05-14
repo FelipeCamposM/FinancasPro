@@ -18,8 +18,8 @@ export const listCategorias = async (
     const tipo = req.query.tipo as string | undefined;
 
     const baseWhere = tipo
-      ? "(user_id IS NULL OR user_id = $1) AND tipo = $2"
-      : "user_id IS NULL OR user_id = $1";
+      ? "user_id = $1 AND tipo = $2"
+      : "user_id = $1";
     const baseValues: unknown[] = tipo ? [userId, tipo] : [userId];
     const idx = baseValues.length + 1;
 
@@ -49,7 +49,7 @@ export const listCategoriasIphone = async (
     const { rows } = await pool.query(
       `SELECT id, nome, cor, icone, tipo
        FROM categorias
-       WHERE (user_id IS NULL OR user_id = $1) AND tipo = 'gasto'
+       WHERE user_id = $1 AND tipo = 'gasto'
        ORDER BY nome`,
       [userId],
     );
@@ -67,7 +67,7 @@ export const getCategoria = async (
   try {
     const userId = req.user!.userId;
     const { rows } = await pool.query(
-      "SELECT * FROM categorias WHERE id = $1 AND (user_id IS NULL OR user_id = $2)",
+      "SELECT * FROM categorias WHERE id = $1 AND user_id = $2",
       [req.params.id, userId],
     );
     if (!rows[0]) {
@@ -190,7 +190,7 @@ export const deleteCategoria = async (
   try {
     const userId = req.user!.userId;
     const { rowCount } = await pool.query(
-      "DELETE FROM categorias WHERE id = $1 AND (user_id = $2 OR user_id IS NULL)",
+      "DELETE FROM categorias WHERE id = $1 AND user_id = $2",
       [req.params.id, userId],
     );
     if (!rowCount) {

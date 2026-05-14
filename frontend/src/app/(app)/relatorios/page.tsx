@@ -12,6 +12,7 @@ import { GastosCategoriaChart } from "@/components/dashboard/GastosCategoriaChar
 import { FormaPagamentoChart } from "@/components/dashboard/FormaPagamentoChart";
 import { StatCard } from "@/components/ui/stat-card";
 import { PageShell } from "@/components/ui/page-shell";
+import { SectionHeader } from "@/components/ui/section-header";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -1175,15 +1176,13 @@ function ProjecoesTab() {
 export default function RelatoriosPage() {
   return (
     <PageShell contentClassName="space-y-6 pb-6">
-      <div>
-        <h1 className="text-2xl font-display font-semibold text-white">
-          Relatórios
-        </h1>
-        <p className="text-sm text-white/50 mt-0.5">
-          Análise mensal, visão anual e projeções futuras
-        </p>
-      </div>
-
+      <SectionHeader
+        title={"Relat\u00f3rios"}
+        titleColor="text-amber-400"
+        description={
+          "An\u00e1lise mensal, vis\u00e3o anual e proje\u00e7\u00f5es futuras"
+        }
+      />
       <Tabs defaultValue="mensal" className="space-y-6">
         <TabsList className="bg-white/[0.06] border border-white/10 p-1 h-auto">
           <TabsTrigger

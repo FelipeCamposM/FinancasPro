@@ -144,9 +144,9 @@ async function seed() {
     const uid = crypto.randomUUID();
     const passwordHash = await bcrypt.hash("senha123", 10);
     await client.query(
-      `INSERT INTO users (id, name, email, password_hash, user_level, api_key)
-       VALUES ($1,$2,$3,$4,$5,$6)`,
-      [uid, "Felipe Teste", TEST_EMAIL, passwordHash, "premium", crypto.randomUUID()]
+      `INSERT INTO users (id, name, email, password_hash, user_level, api_key, email_verified, email_verified_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,NOW())`,
+      [uid, "Felipe Teste", TEST_EMAIL, passwordHash, "premium", crypto.randomUUID(), true]
     );
     console.log(`[seed] user criado: ${TEST_EMAIL} / senha123`);
 

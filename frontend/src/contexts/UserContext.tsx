@@ -15,6 +15,7 @@ export interface UserProfile {
   email: string;
   avatar?: string | null;
   user_level: string;
+  email_verified: boolean;
   created_at: string;
 }
 

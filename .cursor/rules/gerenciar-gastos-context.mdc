@@ -1,0 +1,21 @@
+---
+description: Gerenciar Gastos — injeta CLAUDE.md, AGENTS.md e todas as skills .claude (sem @ no chat)
+alwaysApply: true
+---
+
+# Contexto do projeto (paridade com Claude Code)
+
+Estes ficheiros **entram automaticamente** no contexto do Agent por esta regra — **não** precisas de `@CLAUDE.md`, `@AGENTS.md` nem de `@` skills no chat.
+
+- Em caso de conflito entre documentos, prevalece **`CLAUDE.md`**.
+- Os wrappers em `.codex/skills/*/SKILL.md` apenas apontam para os mesmos conteúdos em `.claude/skills/` (fonte de verdade já anexada abaixo).
+
+@CLAUDE.md
+@AGENTS.md
+@.claude/skills/frontend-visual-system-fluid-glass/SKILL.md
+@.claude/skills/project-agent-prompts-playbook/SKILL.md
+@.claude/skills/project-architecture-reference/SKILL.md
+@.claude/skills/project-code-conventions/SKILL.md
+@.claude/skills/project-commands-runbook/SKILL.md
+@.claude/skills/project-engineering-patterns/SKILL.md
+@.claude/skills/project-structure-guide/SKILL.md

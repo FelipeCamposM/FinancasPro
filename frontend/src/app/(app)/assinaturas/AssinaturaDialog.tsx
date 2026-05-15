@@ -125,10 +125,10 @@ function CartaoMini({
     <button
       type="button"
       onClick={onClick}
-      className={`relative h-[76px] w-36 shrink-0 rounded-xl p-3 text-left transition-all duration-150 active:scale-95 ${
+      className={`relative h-[76px] w-36 shrink-0 rounded-xl p-3 text-left transition-all duration-150 active:translate-y-px ${
         selected
-          ? "ring-2 ring-violet-400/80 ring-offset-2 ring-offset-[hsl(222_47%_5%)] scale-[1.04] shadow-xl shadow-violet-500/20"
-          : "opacity-55 hover:opacity-85 hover:scale-[1.02]"
+          ? "ring-2 ring-violet-400/80 ring-offset-2 ring-offset-[hsl(222_47%_5%)] shadow-xl shadow-violet-500/20"
+          : "opacity-55 hover:opacity-85"
       }`}
       style={{ background: cartao.cor, color: textColor }}
     >
@@ -248,6 +248,17 @@ interface Props {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  initialData?: {
+    id: string;
+    descricao: string;
+    valor: number;
+    forma_pagamento: "cartao_credito" | "cartao_debito";
+    cartao_id?: string;
+    categoria_id?: number;
+    dia_cobranca: number;
+    data_inicio: string;
+    observacoes?: string | null;
+  } | null;
 }
 
 const FORMA_OPTIONS = [
@@ -263,9 +274,10 @@ const FORMA_OPTIONS = [
   },
 ] as const;
 
-export function AssinaturaDialog({ open, onClose, onSuccess }: Props) {
+export function AssinaturaDialog({ open, onClose, onSuccess, initialData }: Props) {
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [cartoes, setCartoes] = useState<Cartao[]>([]);
+  const isEditing = !!initialData;
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -300,21 +312,21 @@ export function AssinaturaDialog({ open, onClose, onSuccess }: Props) {
   useEffect(() => {
     if (open) {
       form.reset({
-        descricao: "",
-        valor: undefined,
-        forma_pagamento: "cartao_credito",
-        cartao_id: undefined,
-        dia_cobranca: 1,
-        data_inicio: new Date().toISOString().split("T")[0],
-        categoria_id: undefined,
-        observacoes: "",
+        descricao: initialData?.descricao ?? "",
+        valor: initialData ? Number(initialData.valor) : undefined,
+        forma_pagamento: initialData?.forma_pagamento ?? "cartao_credito",
+        cartao_id: initialData?.cartao_id,
+        dia_cobranca: initialData?.dia_cobranca ?? 1,
+        data_inicio: initialData?.data_inicio?.slice(0, 10) ?? new Date().toISOString().split("T")[0],
+        categoria_id: initialData?.categoria_id ? String(initialData.categoria_id) : undefined,
+        observacoes: initialData?.observacoes ?? "",
       });
     }
-  }, [open, form]);
+  }, [open, form, initialData]);
 
   async function onSubmit(values: FormValues) {
     try {
-      await api.post("/assinaturas", {
+      const payload = {
         descricao: values.descricao,
         valor: values.valor,
         categoria_id: values.categoria_id
@@ -325,12 +337,18 @@ export function AssinaturaDialog({ open, onClose, onSuccess }: Props) {
         dia_cobranca: values.dia_cobranca,
         data_inicio: values.data_inicio,
         observacoes: values.observacoes || undefined,
-      });
-      toast.success("Assinatura criada — 24 meses lançados automaticamente");
+      };
+      if (isEditing && initialData) {
+        await api.put(`/assinaturas/${initialData.id}`, payload);
+        toast.success("Assinatura atualizada");
+      } else {
+        await api.post("/assinaturas", payload);
+        toast.success("Assinatura criada");
+      }
       onSuccess();
       onClose();
     } catch {
-      toast.error("Erro ao criar assinatura");
+      toast.error(isEditing ? "Erro ao atualizar assinatura" : "Erro ao criar assinatura");
     }
   }
 
@@ -344,10 +362,12 @@ export function AssinaturaDialog({ open, onClose, onSuccess }: Props) {
           </div>
           <DialogHeader className="space-y-0">
             <DialogTitle className="text-base font-semibold leading-none text-white">
-              Nova assinatura
+              {isEditing ? "Editar assinatura" : "Nova assinatura"}
             </DialogTitle>
             <p className="text-xs text-violet-300/50 mt-1">
-              Cobrança recorrente mensal via cartão
+              {isEditing
+                ? "Atualize os dados da cobrança recorrente"
+                : "Cobrança recorrente mensal via cartão"}
             </p>
           </DialogHeader>
         </div>
@@ -505,7 +525,7 @@ export function AssinaturaDialog({ open, onClose, onSuccess }: Props) {
                         Nenhum cartão ativo cadastrado.
                       </p>
                     ) : (
-                      <div className="flex gap-2.5 overflow-x-auto pb-1 -mx-1 px-1 snap-x snap-mandatory">
+                      <div className="flex gap-2.5 overflow-x-auto py-2 pl-2 pr-3 -mx-2 snap-x snap-mandatory">
                         {cartoes
                           .filter((c) => {
                             if (formaPgto === "cartao_credito")
@@ -620,7 +640,9 @@ export function AssinaturaDialog({ open, onClose, onSuccess }: Props) {
             <div className="flex items-center justify-between gap-2 border-t border-violet-400/[0.12] bg-violet-500/[0.04] px-5 py-3.5">
               <p className="flex items-center gap-1.5 text-xs text-violet-300/40 hidden sm:flex">
                 <Info className="h-3.5 w-3.5 text-violet-400/50" />
-                24 meses lançados automaticamente
+                {isEditing
+                  ? "Lançamentos pendentes serão atualizados"
+                  : "24 meses lançados automaticamente"}
               </p>
               <div className="flex items-center gap-2 ml-auto">
                 <Button
@@ -639,7 +661,7 @@ export function AssinaturaDialog({ open, onClose, onSuccess }: Props) {
                   {form.formState.isSubmitting ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    "Criar assinatura"
+                    isEditing ? "Salvar alterações" : "Criar assinatura"
                   )}
                 </Button>
               </div>

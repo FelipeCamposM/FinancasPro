@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
-import { format } from "date-fns";
+import { useEffect, useState, useCallback } from "react";
+import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { api } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,34 +11,21 @@ import { RendaVsGastosChart } from "@/components/dashboard/RendaVsGastosChart";
 import { GastosCategoriaChart } from "@/components/dashboard/GastosCategoriaChart";
 import { FormaPagamentoChart } from "@/components/dashboard/FormaPagamentoChart";
 import {
+  DashboardHeroInsights,
+  type DashboardInsightsPayload,
+} from "@/components/dashboard/DashboardHeroInsights";
+import {
   TrendingUp,
   TrendingDown,
   Wallet,
-  Clock,
   CalendarDays,
   ChevronLeft,
   ChevronRight,
   PiggyBank,
   BarChart3,
   Layers,
-  ReceiptText,
   ShoppingBag,
-  Utensils,
-  Car,
-  HeartPulse,
-  BookOpen,
-  Gamepad2,
-  Home,
-  Shirt,
-  Laptop,
-  Smartphone,
-  PawPrint,
-  Plane,
-  Sparkles,
-  ShoppingCart,
-  Pill,
-  Package,
-  Tag,
+  Activity,
   AlertTriangle,
   Target,
   Flame,
@@ -49,7 +36,6 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { PageShell } from "@/components/ui/page-shell";
 import { SectionHeader } from "@/components/ui/section-header";
-import { StatCard } from "@/components/ui/stat-card";
 
 interface Summary {
   total_renda: number;
@@ -66,7 +52,9 @@ interface RendaVsGastos {
 
 interface GastoCategoria {
   categoria_id?: number;
-  nome: string;
+  nome?: string;
+  /** Resposta de `/dashboard/gastos-por-categoria` costuma usar este campo. */
+  categoria?: string;
   cor: string;
   icone?: string;
   quantidade: number;
@@ -83,25 +71,20 @@ function formatBRL(value: number) {
   return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
-function getCategoryIcon(nome: string) {
-  const icons: Record<string, React.ReactElement> = {
-    Alimentação: <Utensils className="h-3.5 w-3.5" />,
-    Transporte: <Car className="h-3.5 w-3.5" />,
-    Saúde: <HeartPulse className="h-3.5 w-3.5" />,
-    Educação: <BookOpen className="h-3.5 w-3.5" />,
-    Lazer: <Gamepad2 className="h-3.5 w-3.5" />,
-    Moradia: <Home className="h-3.5 w-3.5" />,
-    Vestuário: <Shirt className="h-3.5 w-3.5" />,
-    Tecnologia: <Laptop className="h-3.5 w-3.5" />,
-    Assinaturas: <Smartphone className="h-3.5 w-3.5" />,
-    Pets: <PawPrint className="h-3.5 w-3.5" />,
-    Viagem: <Plane className="h-3.5 w-3.5" />,
-    "Beleza & Estética": <Sparkles className="h-3.5 w-3.5" />,
-    Mercado: <ShoppingCart className="h-3.5 w-3.5" />,
-    Farmácia: <Pill className="h-3.5 w-3.5" />,
-    "Outros Gastos": <Package className="h-3.5 w-3.5" />,
-  };
-  return icons[nome] ?? <Tag className="h-3.5 w-3.5" />;
+function labelCategoria(c: Pick<GastoCategoria, "nome" | "categoria">) {
+  const n = c.nome?.trim();
+  if (n) return n;
+  const alt = c.categoria?.trim();
+  if (alt) return alt;
+  return "Sem categoria";
+}
+
+function formatMesSerie(mes: string) {
+  try {
+    return format(parseISO(`${mes}-01`), "MMMM yyyy", { locale: ptBR });
+  } catch {
+    return mes;
+  }
 }
 
 function getMesAtual() {
@@ -119,23 +102,6 @@ function formatPercent(value: number) {
   return `${sign}${value.toFixed(1)}%`;
 }
 
-function CardSkeleton() {
-  return (
-    <Card className="overflow-hidden">
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between gap-3">
-          <div className="space-y-2 flex-1 min-w-0">
-            <Skeleton className="h-3 w-24" />
-            <Skeleton className="h-8 w-36" />
-            <Skeleton className="h-3 w-20" />
-          </div>
-          <Skeleton className="h-11 w-11 rounded-xl shrink-0" />
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
 export default function DashboardPage() {
   const [mes, setMes] = useState(getMesAtual());
   const [summary, setSummary] = useState<Summary | null>(null);
@@ -144,6 +110,22 @@ export default function DashboardPage() {
   const [porFormaPgto, setPorFormaPgto] = useState<GastoFormaPagamento[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  const [insights, setInsights] = useState<DashboardInsightsPayload | null>(null);
+  const [insightsLoading, setInsightsLoading] = useState(true);
+
+  const fetchInsights = useCallback(async (mesSelecionado: string) => {
+    setInsightsLoading(true);
+    try {
+      const { data } = await api.get<DashboardInsightsPayload>(
+        `/dashboard/insights?mes=${mesSelecionado}`,
+      );
+      setInsights(data);
+    } catch {
+      setInsights(null);
+    } finally {
+      setInsightsLoading(false);
+    }
+  }, []);
 
   const fetchAll = useCallback(async (mesSelecionado: string) => {
     setLoading(true);
@@ -175,6 +157,10 @@ export default function DashboardPage() {
     fetchAll(mes);
   }, [mes, fetchAll]);
 
+  useEffect(() => {
+    void fetchInsights(mes);
+  }, [mes, fetchInsights]);
+
   const mesDisplay = (() => {
     try {
       return format(new Date(mes + "-02"), "MMMM 'de' yyyy", { locale: ptBR });
@@ -183,7 +169,6 @@ export default function DashboardPage() {
     }
   })();
 
-  const saldoPositivo = (summary?.saldo ?? 0) >= 0;
   const totalGeral = porCategoria.reduce((s, x) => s + Number(x.total), 0);
   const topCategoria = [...porCategoria].sort(
     (a, b) => Number(b.total) - Number(a.total),
@@ -220,9 +205,9 @@ export default function DashboardPage() {
       <SectionHeader
         title={mesDisplay}
         titleClassName="capitalize"
-        description="Visão geral das suas finanças"
+        description="Painel vivo com semana atual, comparativos e selos de progresso"
         actions={
-          <>
+          <div className="flex w-full items-center gap-1.5 sm:w-auto">
             <Button
               variant="ghost"
               size="icon"
@@ -231,7 +216,7 @@ export default function DashboardPage() {
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <div className="flex min-w-[180px] items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/[0.06] px-3 py-2 text-sm backdrop-blur-sm">
+            <div className="flex min-w-0 flex-1 items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/[0.06] px-3 py-2 text-sm backdrop-blur-sm sm:min-w-[180px]">
               <CalendarDays className="h-4 w-4 shrink-0 text-white/40" />
               <span className="select-none font-medium capitalize text-white/80">
                 {mesDisplay}
@@ -245,7 +230,7 @@ export default function DashboardPage() {
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
-          </>
+          </div>
         }
       />
 
@@ -269,291 +254,533 @@ export default function DashboardPage() {
         />
       ) : (
         <>
-          {/* ── Summary Cards ─────────────────────────────── */}
-          <div className="space-y-3">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/45">
-                Indicadores principais
-              </p>
-              <p className="text-sm text-white/60">
-                O que mais importa no mês selecionado
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 ui-stagger">
-              {loading ? (
-                Array.from({ length: 4 }).map((_, i) => (
-                  <CardSkeleton key={i} />
-                ))
-              ) : summary ? (
-                <>
-                  <StatCard
-                    className="md:col-span-2 xl:col-span-2 ring-1 ring-white/15"
-                    description={
-                      saldoPositivo
-                        ? "Balanço positivo no mês"
-                        : "Balanço negativo no mês"
-                    }
-                    icon={<Wallet className="h-5 w-5" />}
-                    label="Saldo atual"
-                    tone={saldoPositivo ? "blue" : "rose"}
-                    value={formatBRL(summary.saldo)}
-                    valueClassName="text-3xl"
-                  />
-
-                  <StatCard
-                    description={`Entradas em ${format(new Date(mes + "-02"), "MMMM", { locale: ptBR })}`}
-                    icon={<TrendingUp className="h-5 w-5" />}
-                    label="Renda total"
-                    tone="blue"
-                    value={formatBRL(summary.total_renda)}
-                  />
-
-                  <StatCard
-                    description={
-                      summary.total_renda > 0
-                        ? `${((summary.total_gastos / summary.total_renda) * 100).toFixed(0)}% da renda`
-                        : "Sem renda cadastrada"
-                    }
-                    icon={<TrendingDown className="h-5 w-5" />}
-                    label="Gastos total"
-                    tone="rose"
-                    value={formatBRL(summary.total_gastos)}
-                  />
-
-                  <StatCard
-                    description={`${summary.parcelas_pendentes.count} parcela(s) em aberto`}
-                    icon={<Clock className="h-5 w-5" />}
-                    label="Parcelas pendentes"
-                    tone="amber"
-                    value={formatBRL(summary.parcelas_pendentes.total)}
-                  />
-                </>
-              ) : null}
-            </div>
-          </div>
+          <DashboardHeroInsights
+            data={insights}
+            loading={insightsLoading}
+          />
 
           {!loading && summary && (
-            <div className="space-y-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/45">
-                  Resumo estratégico
-                </p>
-                <p className="text-sm text-white/60">
-                  Sinais rápidos para orientar suas decisões no mês
-                </p>
+            <div className="rounded-2xl border border-white/[0.08] bg-gradient-to-b from-white/[0.05] to-white/[0.02] p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.04)_inset] backdrop-blur-md sm:p-6">
+              <div className="flex flex-col gap-1 border-b border-white/[0.07] pb-5 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/40">
+                    Resumo estrategico
+                  </p>
+                  <p className="mt-1 font-display text-xl uppercase tracking-wide text-white/90 sm:text-2xl">
+                    Sinais do mes
+                  </p>
+                  <p className="mt-1 max-w-xl text-sm text-white/50">
+                    Leitura rapida do comportamento financeiro no periodo selecionado
+                  </p>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 ui-stagger">
-                <Card className="border-blue-400/25 bg-blue-500/10 backdrop-blur-xl">
-                  <CardContent className="p-4 space-y-2">
-                    <div className="flex items-center gap-2 text-blue-300">
-                      <Target className="h-4 w-4" />
-                      <p className="text-xs uppercase tracking-wide font-semibold">
-                        Taxa de poupança
-                      </p>
+              <div className="mt-5 grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-2 xl:grid-cols-4 ui-stagger">
+                {/* Taxa de poupança */}
+                <Card className="group relative overflow-hidden rounded-2xl border border-sky-400/20 bg-gradient-to-br from-sky-500/[0.14] via-white/[0.02] to-blue-600/[0.08] shadow-none backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:border-sky-300/30 hover:shadow-[0_20px_50px_-24px_rgba(56,189,248,0.35)]">
+                  <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sky-300/60 to-transparent" />
+                  <CardContent className="relative flex min-h-[168px] flex-col p-5 sm:p-6">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-sky-200/75">
+                          Taxa de poupança
+                        </p>
+                        <p className="font-display text-4xl leading-none tracking-tight text-white tabular-nums sm:text-[2.75rem]">
+                          {taxaPoupanca === null ? (
+                            <span className="text-white/35">—</span>
+                          ) : (
+                            <>
+                              {taxaPoupanca.toFixed(1)}
+                              <span className="ml-0.5 text-2xl font-normal text-sky-200/90 sm:text-3xl">
+                                %
+                              </span>
+                            </>
+                          )}
+                        </p>
+                      </div>
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-sky-400/15 ring-1 ring-sky-300/25 transition-transform duration-300 group-hover:scale-105">
+                        <Target className="h-6 w-6 text-sky-200" />
+                      </div>
                     </div>
-                    <p className="text-2xl font-bold text-white">
-                      {taxaPoupanca === null
-                        ? "—"
-                        : `${taxaPoupanca.toFixed(1)}%`}
-                    </p>
-                    <p className="text-xs text-white/55">
-                      {taxaPoupanca === null
-                        ? "Sem renda suficiente para calcular."
-                        : taxaPoupanca >= 20
-                          ? "Meta saudável para manter crescimento."
-                          : "Há espaço para melhorar a margem mensal."}
-                    </p>
+                    {taxaPoupanca !== null && (
+                      <div className="mt-4 space-y-2">
+                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+                          <div
+                            className={cn(
+                              "h-full rounded-full bg-gradient-to-r transition-all duration-700",
+                              taxaPoupanca >= 20
+                                ? "from-emerald-400 to-cyan-300"
+                                : taxaPoupanca >= 10
+                                  ? "from-amber-400 to-orange-300"
+                                  : "from-rose-400 to-orange-400",
+                            )}
+                            style={{
+                              width: `${Math.min(
+                                100,
+                                Math.max(
+                                  4,
+                                  taxaPoupanca <= 0 ? 4 : taxaPoupanca,
+                                ),
+                              )}%`,
+                            }}
+                          />
+                        </div>
+                        <p className="text-[11px] leading-relaxed text-white/50">
+                          {taxaPoupanca >= 20
+                            ? "Margem confortavel — bom espaco para investir ou poupar."
+                            : "Ha espaco para melhorar a margem entre renda e gastos."}
+                        </p>
+                      </div>
+                    )}
+                    {taxaPoupanca === null && (
+                      <p className="mt-auto pt-4 text-[11px] leading-relaxed text-white/45">
+                        Sem renda suficiente no mes para calcular a taxa.
+                      </p>
+                    )}
                   </CardContent>
                 </Card>
 
-                <Card className="border-rose-400/25 bg-rose-500/10 backdrop-blur-xl">
-                  <CardContent className="p-4 space-y-2">
-                    <div className="flex items-center gap-2 text-rose-300">
-                      <Flame className="h-4 w-4" />
-                      <p className="text-xs uppercase tracking-wide font-semibold">
-                        Categoria dominante
-                      </p>
+                {/* Categoria dominante */}
+                <Card className="group relative overflow-hidden rounded-2xl border border-rose-400/20 bg-gradient-to-br from-rose-500/[0.12] via-white/[0.02] to-fuchsia-600/[0.07] shadow-none backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:border-rose-300/30 hover:shadow-[0_20px_50px_-24px_rgba(244,63,94,0.28)]">
+                  <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-rose-300/55 to-transparent" />
+                  <CardContent className="relative flex min-h-[168px] flex-col p-5 sm:p-6">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-rose-200/75">
+                          Categoria dominante
+                        </p>
+                        <div className="mt-3 flex items-center gap-2.5">
+                          {topCategoria ? (
+                            <span
+                              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm ring-1 ring-white/15"
+                              style={{
+                                backgroundColor: `${topCategoria.cor || "#fb7185"}22`,
+                                color: topCategoria.cor || "#fda4af",
+                              }}
+                            >
+                              {topCategoria.icone ?? "📦"}
+                            </span>
+                          ) : null}
+                          <p className="truncate font-medium text-lg leading-tight text-white sm:text-xl">
+                            {topCategoria
+                              ? labelCategoria(topCategoria)
+                              : "Sem dados"}
+                          </p>
+                        </div>
+                        <p className="mt-3 font-display text-2xl tabular-nums text-rose-100 sm:text-3xl">
+                          {topCategoria
+                            ? formatBRL(Number(topCategoria.total))
+                            : "—"}
+                        </p>
+                      </div>
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-rose-500/15 ring-1 ring-rose-300/25 transition-transform duration-300 group-hover:scale-105">
+                        <Flame className="h-6 w-6 text-rose-200" />
+                      </div>
                     </div>
-                    <p className="text-base font-semibold text-white truncate">
-                      {topCategoria?.nome ?? "Sem dados"}
-                    </p>
-                    <p className="text-sm font-bold text-rose-300 tabular-nums">
-                      {topCategoria
-                        ? formatBRL(Number(topCategoria.total))
-                        : "—"}
-                    </p>
-                    <p className="text-xs text-white/55">
+                    <p className="mt-auto pt-4 text-[11px] leading-relaxed text-white/50">
                       {topCategoria && totalGeral > 0
-                        ? `${((Number(topCategoria.total) / totalGeral) * 100).toFixed(1)}% dos gastos do mês.`
-                        : "Cadastre gastos para descobrir o principal centro de custo."}
+                        ? `${((Number(topCategoria.total) / totalGeral) * 100).toFixed(1)}% do volume de gastos do mes nesta categoria.`
+                        : "Cadastre gastos para ver onde o dinheiro mais se concentra."}
                     </p>
                   </CardContent>
                 </Card>
 
-                <Card className="border-violet-400/25 bg-violet-500/10 backdrop-blur-xl">
-                  <CardContent className="p-4 space-y-2">
-                    <div className="flex items-center gap-2 text-violet-300">
-                      <BarChart2 className="h-4 w-4" />
-                      <p className="text-xs uppercase tracking-wide font-semibold">
-                        Variação da renda
-                      </p>
+                {/* Variação da renda */}
+                <Card className="group relative overflow-hidden rounded-2xl border border-violet-400/20 bg-gradient-to-br from-violet-500/[0.13] via-white/[0.02] to-indigo-600/[0.08] shadow-none backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:border-violet-300/30 hover:shadow-[0_20px_50px_-24px_rgba(167,139,250,0.3)]">
+                  <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-300/55 to-transparent" />
+                  <CardContent className="relative flex min-h-[168px] flex-col p-5 sm:p-6">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1 space-y-3">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-violet-200/75">
+                          Variação da renda
+                        </p>
+                        <p className="font-display text-4xl leading-none tracking-tight text-white tabular-nums sm:text-[2.75rem]">
+                          {variacaoRenda === null ? (
+                            <span className="text-white/35">—</span>
+                          ) : (
+                            formatPercent(variacaoRenda)
+                          )}
+                        </p>
+                        {variacaoRenda !== null && (
+                          <span
+                            className={cn(
+                              "inline-flex w-fit items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold",
+                              variacaoRenda >= 0
+                                ? "border-emerald-400/35 bg-emerald-500/15 text-emerald-200"
+                                : "border-rose-400/35 bg-rose-500/12 text-rose-200",
+                            )}
+                          >
+                            {variacaoRenda >= 0 ? (
+                              <TrendingUp className="h-3.5 w-3.5" />
+                            ) : (
+                              <TrendingDown className="h-3.5 w-3.5" />
+                            )}
+                            vs mes anterior (serie 6 meses)
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-violet-500/15 ring-1 ring-violet-300/25 transition-transform duration-300 group-hover:scale-105">
+                        <BarChart2 className="h-6 w-6 text-violet-200" />
+                      </div>
                     </div>
-                    <p className="text-2xl font-bold text-white">
+                    <p className="mt-auto pt-4 text-[11px] leading-relaxed text-white/50">
                       {variacaoRenda === null
-                        ? "—"
-                        : formatPercent(variacaoRenda)}
-                    </p>
-                    <p className="text-xs text-white/55">
-                      {variacaoRenda === null
-                        ? "Histórico insuficiente para comparar com mês anterior."
+                        ? "Historico curto demais para comparar com o mes anterior na serie."
                         : variacaoRenda >= 0
-                          ? "Tendência positiva em relação ao mês anterior."
-                          : "Queda em relação ao mês anterior; revise entradas recorrentes."}
+                          ? "Entradas em alta frente ao mes anterior — otimo momento para revisar metas."
+                          : "Queda nas entradas vs mes anterior; vale checar recorrencias e fontes."}
                     </p>
                   </CardContent>
                 </Card>
 
-                <Card className="border-amber-400/25 bg-amber-500/10 backdrop-blur-xl">
-                  <CardContent className="p-4 space-y-2">
-                    <div className="flex items-center gap-2 text-amber-300">
-                      <Gauge className="h-4 w-4" />
-                      <p className="text-xs uppercase tracking-wide font-semibold">
-                        Gasto médio diário
-                      </p>
+                {/* Gasto médio diário */}
+                <Card className="group relative overflow-hidden rounded-2xl border border-amber-400/20 bg-gradient-to-br from-amber-500/[0.11] via-white/[0.02] to-orange-600/[0.07] shadow-none backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:border-amber-300/30 hover:shadow-[0_20px_50px_-24px_rgba(251,191,36,0.22)]">
+                  <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-300/50 to-transparent" />
+                  <CardContent className="relative flex min-h-[168px] flex-col p-5 sm:p-6">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-amber-200/75">
+                          Gasto medio diario
+                        </p>
+                        <p className="font-display text-4xl leading-none tracking-tight text-white tabular-nums sm:text-[2.65rem]">
+                          {formatBRL(gastoMedioDiario)}
+                        </p>
+                        <p className="pt-1 text-[11px] text-amber-100/55">
+                          Media sobre {diasConsiderados}{" "}
+                          {diasConsiderados === 1 ? "dia" : "dias"} do mes
+                          {isMesAtual ? " (ate hoje)" : ""}.
+                        </p>
+                      </div>
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-500/15 ring-1 ring-amber-300/25 transition-transform duration-300 group-hover:scale-105">
+                        <Gauge className="h-6 w-6 text-amber-200" />
+                      </div>
                     </div>
-                    <p className="text-2xl font-bold text-white tabular-nums">
-                      {formatBRL(gastoMedioDiario)}
-                    </p>
-                    <p className="text-xs text-white/55">
-                      Baseado em {diasConsiderados} dia(s) do período
-                      selecionado.
-                    </p>
+                    <div className="mt-auto flex items-center gap-2 border-t border-white/[0.08] pt-4 text-[11px] text-white/45">
+                      <CalendarDays className="h-3.5 w-3.5 shrink-0 text-amber-200/50" />
+                      <span>
+                        Ajuda a comparar meses curtos com meses cheios de forma justa.
+                      </span>
+                    </div>
                   </CardContent>
                 </Card>
               </div>
+
+              {summary.total_renda > 0 ? (
+                (() => {
+                  const gasto = summary.total_gastos;
+                  const renda = summary.total_renda;
+                  const pct = Math.min((gasto / renda) * 100, 100);
+                  const overspent = gasto > renda;
+                  const poupado = Math.max(renda - gasto, 0);
+                  const barGradient = overspent
+                    ? "from-rose-500 via-orange-500 to-rose-400"
+                    : pct > 85
+                      ? "from-amber-400 via-orange-400 to-amber-500"
+                      : "from-sky-500 via-cyan-400 to-blue-500";
+                  const badgeClass = overspent
+                    ? "border-rose-400/40 bg-rose-500/15 text-rose-100"
+                    : pct > 85
+                      ? "border-amber-400/40 bg-amber-500/12 text-amber-100"
+                      : "border-emerald-400/35 bg-emerald-500/12 text-emerald-100";
+                  const labelSoft = overspent
+                    ? "text-rose-200/90"
+                    : pct > 85
+                      ? "text-amber-200/90"
+                      : "text-cyan-200/90";
+
+                  return (
+                    <div className="group relative mt-6 overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-violet-500/[0.1] via-white/[0.04] to-emerald-500/[0.09] p-5 shadow-none backdrop-blur-xl transition-all duration-300 hover:border-white/15 sm:p-6">
+                      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-fuchsia-300/45 to-transparent" />
+                      <div className="pointer-events-none absolute -right-20 -top-20 h-40 w-40 rounded-full bg-violet-500/10 blur-3xl transition-opacity group-hover:opacity-80" />
+                      <div className="pointer-events-none absolute -bottom-16 -left-16 h-36 w-36 rounded-full bg-emerald-500/10 blur-3xl" />
+
+                      <div className="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                        <div className="flex min-w-0 items-start gap-4">
+                          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500/30 to-fuchsia-500/20 ring-1 ring-white/15">
+                            <PiggyBank className="h-7 w-7 text-violet-100" />
+                          </div>
+                          <div className="min-w-0 space-y-1">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/45">
+                              Orcamento do mes
+                            </p>
+                            <p className="font-display text-2xl uppercase tracking-wide text-white sm:text-3xl">
+                              Renda x gastos
+                            </p>
+                            <p className="max-w-md text-[12px] leading-relaxed text-white/50">
+                              Quanto da sua renda ja foi utilizada neste periodo — ideal
+                              manter folga para imprevistos.
+                            </p>
+                          </div>
+                        </div>
+                        <div
+                          className={cn(
+                            "flex shrink-0 flex-col items-start gap-1 rounded-2xl border px-4 py-3 sm:items-end sm:text-right",
+                            badgeClass,
+                          )}
+                        >
+                          <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/50">
+                            Status
+                          </span>
+                          <span className="font-display text-2xl tabular-nums leading-none tracking-tight">
+                            {overspent
+                              ? formatBRL(gasto - renda)
+                              : `${pct.toFixed(0)}%`}
+                          </span>
+                          <span className="text-[11px] font-medium text-white/60">
+                            {overspent
+                              ? "acima da renda do mes"
+                              : "da renda utilizada"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="relative mt-6">
+                        <div className="h-4 w-full overflow-hidden rounded-full bg-black/25 ring-1 ring-inset ring-white/10">
+                          <div
+                            className={cn(
+                              "h-full rounded-full bg-gradient-to-r shadow-[0_0_24px_-4px_rgba(56,189,248,0.55)] transition-all duration-700",
+                              barGradient,
+                            )}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                        <div className="mt-2 flex justify-between text-[10px] font-medium uppercase tracking-wider text-white/35">
+                          <span>0%</span>
+                          <span>100% da renda</span>
+                        </div>
+                      </div>
+
+                      <div className="relative mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                        <div className="rounded-xl border border-white/[0.08] bg-white/[0.05] px-4 py-3 backdrop-blur-sm">
+                          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/40">
+                            Gastos
+                          </p>
+                          <p className="mt-1 font-display text-xl tabular-nums text-white">
+                            {formatBRL(gasto)}
+                          </p>
+                        </div>
+                        <div className="rounded-xl border border-white/[0.08] bg-white/[0.05] px-4 py-3 backdrop-blur-sm">
+                          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/40">
+                            Renda
+                          </p>
+                          <p className="mt-1 font-display text-xl tabular-nums text-white">
+                            {formatBRL(renda)}
+                          </p>
+                        </div>
+                        <div
+                          className={cn(
+                            "rounded-xl border px-4 py-3 backdrop-blur-sm",
+                            overspent
+                              ? "border-rose-400/25 bg-rose-500/[0.08]"
+                              : "border-emerald-400/20 bg-emerald-500/[0.07]",
+                          )}
+                        >
+                          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/40">
+                            {overspent ? "Deficit" : "Disponivel"}
+                          </p>
+                          <p
+                            className={cn(
+                              "mt-1 font-display text-xl tabular-nums",
+                              overspent ? "text-rose-100" : labelSoft,
+                            )}
+                          >
+                            {overspent
+                              ? formatBRL(gasto - renda)
+                              : formatBRL(poupado)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()
+              ) : (
+                <div className="mt-6 rounded-2xl border border-dashed border-white/15 bg-white/[0.03] px-4 py-4 text-center text-sm text-white/45 backdrop-blur-sm">
+                  Cadastre renda neste mes para ver a barra de orcamento (uso da
+                  renda vs gastos).
+                </div>
+              )}
             </div>
           )}
 
-          {/* ── Budget Bar ────────────────────────────────── */}
-          {!loading &&
-            summary &&
-            summary.total_renda > 0 &&
-            (() => {
-              const gasto = summary.total_gastos;
-              const renda = summary.total_renda;
-              const pct = Math.min((gasto / renda) * 100, 100);
-              const overspent = gasto > renda;
-              const poupado = Math.max(renda - gasto, 0);
-              const barColor = overspent
-                ? "bg-rose-500"
-                : pct > 85
-                  ? "bg-amber-500"
-                  : "bg-blue-500";
-              const labelColor = overspent
-                ? "text-rose-400"
-                : pct > 85
-                  ? "text-amber-400"
-                  : "text-blue-400";
-              return (
-                <Card className="hover:shadow-md transition-shadow duration-200 ring-1 ring-white/10">
-                  <CardContent className="p-5">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <div className="rounded-lg bg-violet-500/10 p-1.5">
-                          <PiggyBank className="h-4 w-4 text-violet-500" />
-                        </div>
-                        <span className="text-sm font-semibold">
-                          Orçamento do mês
-                        </span>
-                      </div>
-                      <span className={cn("text-sm font-bold", labelColor)}>
-                        {overspent
-                          ? `Acima em ${formatBRL(gasto - renda)}`
-                          : `${pct.toFixed(0)}% utilizado`}
-                      </span>
-                    </div>
-                    <div className="h-2.5 w-full rounded-full bg-muted overflow-hidden">
-                      <div
-                        className={cn(
-                          "h-full rounded-full transition-all duration-700",
-                          barColor,
-                        )}
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                    <div className="flex flex-wrap justify-between gap-x-6 gap-y-1 text-xs text-muted-foreground mt-2.5">
-                      <span>
-                        Gastos:{" "}
-                        <span className="font-semibold text-foreground">
-                          {formatBRL(gasto)}
-                        </span>
-                      </span>
-                      <span>
-                        Renda:{" "}
-                        <span className="font-semibold text-foreground">
-                          {formatBRL(renda)}
-                        </span>
-                      </span>
-                      {!overspent && (
-                        <span>
-                          Disponível:{" "}
-                          <span className={cn("font-semibold", labelColor)}>
-                            {formatBRL(poupado)}
-                          </span>
-                        </span>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })()}
-
-          <div className="space-y-3">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/45">
-                Evolução e distribuição
-              </p>
-              <p className="text-sm text-white/60">
-                Tendência de 6 meses e composição dos gastos
-              </p>
+          <div className="group relative overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-b from-white/[0.05] to-white/[0.02] p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.04)_inset] backdrop-blur-md sm:p-6">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300/35 to-transparent" />
+            <div className="relative flex flex-col gap-1 border-b border-white/[0.07] pb-5 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/40">
+                  Evolucao e distribuicao
+                </p>
+                <p className="mt-1 font-display text-xl uppercase tracking-wide text-white/90 sm:text-2xl">
+                  Tendencia e composicao
+                </p>
+                <p className="mt-1 max-w-xl text-sm text-white/50">
+                  Serie de 6 meses e onde os gastos se concentram no mes selecionado
+                </p>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 ui-stagger">
-              <Card className="hover:shadow-md transition-shadow duration-200 ring-1 ring-white/10 xl:col-span-7">
-                <CardHeader className="pb-2">
-                  <div className="flex items-center gap-2">
-                    <div className="rounded-lg bg-blue-500/10 p-1.5">
-                      <BarChart3 className="h-4 w-4 text-blue-500" />
+            <div className="relative mt-5 grid grid-cols-1 gap-4 xl:grid-cols-12 ui-stagger">
+              <div className="flex flex-col gap-4 xl:col-span-7">
+                <Card className="group/chart relative overflow-hidden rounded-2xl border border-blue-400/18 bg-gradient-to-br from-blue-500/[0.11] via-white/[0.02] to-cyan-600/[0.07] shadow-none backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-300/28 hover:shadow-[0_20px_50px_-28px_rgba(56,189,248,0.28)]">
+                  <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-300/50 to-transparent" />
+                  <CardHeader className="relative pb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-500/15 ring-1 ring-blue-300/25">
+                        <BarChart3 className="h-4 w-4 text-sky-200" />
+                      </div>
+                      <CardTitle className="text-sm font-semibold text-white/90">
+                        Renda × Gastos — últimos 6 meses
+                      </CardTitle>
                     </div>
-                    <CardTitle className="text-sm font-semibold">
-                      Renda × Gastos — últimos 6 meses
-                    </CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-2 pb-4">
-                  {loading ? (
-                    <Skeleton className="h-72 w-full rounded-lg" />
-                  ) : (
-                    <RendaVsGastosChart data={rendaVsGastos} />
-                  )}
-                </CardContent>
-              </Card>
+                  </CardHeader>
+                  <CardContent className="relative pt-0 pb-4">
+                    {loading ? (
+                      <Skeleton className="h-[248px] w-full rounded-lg" />
+                    ) : (
+                      <RendaVsGastosChart data={rendaVsGastos} height={248} />
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card className="group/chart relative overflow-hidden rounded-2xl border border-emerald-400/18 bg-gradient-to-br from-emerald-500/[0.1] via-white/[0.02] to-teal-600/[0.07] shadow-none backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:border-emerald-300/28 hover:shadow-[0_20px_50px_-28px_rgba(16,185,129,0.22)]">
+                  <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-300/45 to-transparent" />
+                  <CardHeader className="relative pb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/15 ring-1 ring-emerald-300/25">
+                        <Activity className="h-4 w-4 text-emerald-200" />
+                      </div>
+                      <CardTitle className="text-sm font-semibold text-white/90">
+                        Ultimo mes na serie
+                      </CardTitle>
+                    </div>
+                    <p className="pt-1 text-xs text-white/45">
+                      Valores do ponto mais recente da curva (nao confundir com o
+                      mes do filtro acima).
+                    </p>
+                  </CardHeader>
+                  <CardContent className="relative pt-0">
+                    {loading ? (
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        <Skeleton className="h-20 rounded-xl" />
+                        <Skeleton className="h-20 rounded-xl" />
+                        <Skeleton className="h-20 rounded-xl" />
+                      </div>
+                    ) : serieAtual ? (
+                      <>
+                        <p className="mb-3 text-xs font-medium capitalize text-white/55">
+                          {formatMesSerie(serieAtual.mes)}
+                        </p>
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                          <div className="rounded-xl border border-white/[0.08] bg-white/[0.05] px-4 py-3 backdrop-blur-sm">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/40">
+                              Renda
+                            </p>
+                            <p className="mt-1 font-display text-lg tabular-nums text-white">
+                              {formatBRL(serieAtual.total_renda)}
+                            </p>
+                            {serieAnterior &&
+                              serieAnterior.total_renda > 0 && (
+                                <p
+                                  className={cn(
+                                    "mt-1 text-[11px] font-medium",
+                                    serieAtual.total_renda >=
+                                      serieAnterior.total_renda
+                                      ? "text-emerald-300/90"
+                                      : "text-rose-300/90",
+                                  )}
+                                >
+                                  {formatPercent(
+                                    ((serieAtual.total_renda -
+                                      serieAnterior.total_renda) /
+                                      serieAnterior.total_renda) *
+                                      100,
+                                  )}{" "}
+                                  vs anterior
+                                </p>
+                              )}
+                          </div>
+                          <div className="rounded-xl border border-white/[0.08] bg-white/[0.05] px-4 py-3 backdrop-blur-sm">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/40">
+                              Gastos
+                            </p>
+                            <p className="mt-1 font-display text-lg tabular-nums text-white">
+                              {formatBRL(serieAtual.total_gastos)}
+                            </p>
+                            {serieAnterior &&
+                              serieAnterior.total_gastos > 0 && (
+                                <p
+                                  className={cn(
+                                    "mt-1 text-[11px] font-medium",
+                                    serieAtual.total_gastos <=
+                                      serieAnterior.total_gastos
+                                      ? "text-emerald-300/90"
+                                      : "text-rose-300/90",
+                                  )}
+                                >
+                                  {formatPercent(
+                                    ((serieAtual.total_gastos -
+                                      serieAnterior.total_gastos) /
+                                      serieAnterior.total_gastos) *
+                                      100,
+                                  )}{" "}
+                                  vs anterior
+                                </p>
+                              )}
+                          </div>
+                          <div
+                            className={cn(
+                              "rounded-xl border px-4 py-3 backdrop-blur-sm",
+                              serieAtual.total_gastos >
+                                serieAtual.total_renda
+                                ? "border-rose-400/25 bg-rose-500/[0.08]"
+                                : "border-emerald-400/20 bg-emerald-500/[0.07]",
+                            )}
+                          >
+                            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/40">
+                              Saldo (serie)
+                            </p>
+                            <p
+                              className={cn(
+                                "mt-1 font-display text-lg tabular-nums",
+                                serieAtual.total_gastos >
+                                  serieAtual.total_renda
+                                  ? "text-rose-100"
+                                  : "text-emerald-100",
+                              )}
+                            >
+                              {formatBRL(
+                                serieAtual.total_renda -
+                                  serieAtual.total_gastos,
+                              )}
+                            </p>
+                            <p className="mt-1 text-[11px] text-white/45">
+                              Renda menos gastos neste mes da serie
+                            </p>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <p className="py-6 text-center text-sm text-white/45">
+                        Sem pontos na serie para exibir.
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
 
               <div className="grid grid-cols-1 gap-4 xl:col-span-5 ui-stagger">
-                <Card className="hover:shadow-md transition-shadow duration-200">
-                  <CardHeader className="pb-2">
+                <Card className="group/chart relative overflow-hidden rounded-2xl border border-violet-400/18 bg-gradient-to-br from-violet-500/[0.11] via-white/[0.02] to-fuchsia-600/[0.07] shadow-none backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:border-violet-300/28 hover:shadow-[0_20px_50px_-28px_rgba(167,139,250,0.25)]">
+                  <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-300/45 to-transparent" />
+                  <CardHeader className="relative pb-2">
                     <div className="flex items-center gap-2">
-                      <div className="rounded-lg bg-violet-500/10 p-1.5">
-                        <Layers className="h-4 w-4 text-violet-500" />
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-500/15 ring-1 ring-violet-300/25">
+                        <Layers className="h-4 w-4 text-violet-200" />
                       </div>
-                      <CardTitle className="text-sm font-semibold">
+                      <CardTitle className="text-sm font-semibold text-white/90">
                         Gastos por categoria
                       </CardTitle>
                     </div>
                   </CardHeader>
-                  <CardContent className="pt-2">
+                  <CardContent className="relative pt-0">
                     {loading ? (
                       <Skeleton className="h-64 w-full rounded-lg" />
                     ) : (
@@ -562,18 +789,19 @@ export default function DashboardPage() {
                   </CardContent>
                 </Card>
 
-                <Card className="hover:shadow-md transition-shadow duration-200">
-                  <CardHeader className="pb-2">
+                <Card className="group/chart relative overflow-hidden rounded-2xl border border-sky-400/18 bg-gradient-to-br from-sky-500/[0.1] via-white/[0.02] to-blue-600/[0.07] shadow-none backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:border-sky-300/28 hover:shadow-[0_20px_50px_-28px_rgba(56,189,248,0.22)]">
+                  <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sky-300/45 to-transparent" />
+                  <CardHeader className="relative pb-2">
                     <div className="flex items-center gap-2">
-                      <div className="rounded-lg bg-sky-500/10 p-1.5">
-                        <ShoppingBag className="h-4 w-4 text-sky-500" />
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-500/15 ring-1 ring-sky-300/25">
+                        <ShoppingBag className="h-4 w-4 text-sky-200" />
                       </div>
-                      <CardTitle className="text-sm font-semibold">
+                      <CardTitle className="text-sm font-semibold text-white/90">
                         Por forma de pagamento
                       </CardTitle>
                     </div>
                   </CardHeader>
-                  <CardContent className="pt-2">
+                  <CardContent className="relative pt-0">
                     {loading ? (
                       <Skeleton className="h-64 w-full rounded-lg" />
                     ) : (
@@ -584,104 +812,6 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
-
-          {/* ── Category Table ────────────────────────────── */}
-          {!loading && porCategoria.length > 0 && (
-            <Card className="hover:shadow-md transition-shadow duration-200">
-              <CardHeader className="pb-2">
-                <div className="flex items-center gap-2">
-                  <div className="rounded-lg bg-orange-500/10 p-1.5">
-                    <ReceiptText className="h-4 w-4 text-orange-500" />
-                  </div>
-                  <CardTitle className="text-sm font-semibold">
-                    Detalhamento por categoria
-                  </CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="border-y border-white/10 bg-white/[0.04]">
-                      <tr>
-                        <th className="px-5 py-3 text-left text-xs font-medium text-white/40 uppercase tracking-wide">
-                          Categoria
-                        </th>
-                        <th className="px-5 py-3 text-right text-xs font-medium text-white/40 uppercase tracking-wide">
-                          Qtd
-                        </th>
-                        <th className="px-5 py-3 text-right text-xs font-medium text-white/40 uppercase tracking-wide">
-                          Total
-                        </th>
-                        <th className="px-5 py-3 text-right text-xs font-medium text-white/40 uppercase tracking-wide">
-                          % gasto
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="ui-stagger-rows">
-                      {porCategoria.map((c, i) => {
-                        const pct =
-                          totalGeral > 0
-                            ? (Number(c.total) / totalGeral) * 100
-                            : 0;
-                        return (
-                          <tr
-                            key={i}
-                            className="border-b border-white/[0.06] hover:bg-white/[0.04] transition-colors"
-                          >
-                            <td className="px-5 py-3.5">
-                              <div className="flex items-center gap-2.5">
-                                <span
-                                  className="inline-flex items-center justify-center h-7 w-7 rounded-lg shrink-0"
-                                  style={{
-                                    backgroundColor: `${c.cor || "#94a3b8"}22`,
-                                    color: c.cor || "#94a3b8",
-                                  }}
-                                >
-                                  {getCategoryIcon(c.nome)}
-                                </span>
-                                <div>
-                                  <span className="font-medium text-white/80">
-                                    {c.nome}
-                                  </span>
-                                  <div className="mt-1.5 h-1 w-full min-w-[80px] max-w-[120px] rounded-full bg-white/10 overflow-hidden">
-                                    <div
-                                      className="h-full rounded-full transition-all duration-500"
-                                      style={{
-                                        width: `${pct}%`,
-                                        backgroundColor: c.cor || "#94a3b8",
-                                      }}
-                                    />
-                                  </div>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-5 py-3.5 text-right text-white/50">
-                              {c.quantidade}
-                            </td>
-                            <td className="px-5 py-3.5 text-right font-semibold tabular-nums text-white/80">
-                              {formatBRL(Number(c.total))}
-                            </td>
-                            <td className="px-5 py-3.5 text-right">
-                              <span
-                                className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold border"
-                                style={{
-                                  backgroundColor: `${c.cor || "#94a3b8"}18`,
-                                  color: c.cor || "#94a3b8",
-                                  borderColor: `${c.cor || "#94a3b8"}40`,
-                                }}
-                              >
-                                {pct.toFixed(1)}%
-                              </span>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
-          )}
 
           <p className="text-xs text-muted-foreground text-center pt-2">
             Valora &copy; {new Date().getFullYear()}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,27 +21,15 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
+  CommandSeparator,
 } from "@/components/ui/command";
-import {
-  Search,
-  LogOut,
-  User,
-  Settings,
-  LayoutDashboard,
-  TrendingDown,
-  TrendingUp,
-  CreditCard,
-  ChevronDown,
-} from "lucide-react";
+import { Search, LogOut, User, Settings, ChevronDown } from "lucide-react";
 import { clearToken } from "@/lib/api";
 import { useUser } from "@/contexts/UserContext";
-
-const searchItems = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Gastos", href: "/gastos", icon: TrendingDown },
-  { label: "Renda", href: "/renda", icon: TrendingUp },
-  { label: "Cartões", href: "/cartoes", icon: CreditCard },
-];
+import {
+  COMMAND_PALETTE_GROUPS,
+  commandPaletteFilterValue,
+} from "@/lib/command-palette";
 
 function getInitials(name?: string | null): string {
   if (!name) return "U";
@@ -57,6 +45,27 @@ export default function TopNavbar() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const { user } = useUser();
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "/" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        const t = e.target as HTMLElement | null;
+        if (
+          t &&
+          (t.tagName === "INPUT" ||
+            t.tagName === "TEXTAREA" ||
+            t.tagName === "SELECT" ||
+            t.isContentEditable)
+        ) {
+          return;
+        }
+        e.preventDefault();
+        setOpen(true);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const handleLogout = () => {
     clearToken();
@@ -104,7 +113,7 @@ export default function TopNavbar() {
             </Button>
           </DropdownMenuTrigger>
 
-          <DropdownMenuContent className="w-64" align="end" forceMount>
+          <DropdownMenuContent className="w-64 user-dropdown-content" align="end" forceMount>
             {/* User header */}
             <div className="flex items-center gap-3 rounded-lg bg-white/[0.05] px-3 py-3 mb-1.5">
               <Avatar className="h-10 w-10 shrink-0 ring-2 ring-white/10">
@@ -149,23 +158,36 @@ export default function TopNavbar() {
       </header>
 
       <CommandDialog open={open} onOpenChange={setOpen}>
-        <CommandInput placeholder="Pesquisar páginas..." />
+        <CommandInput placeholder="Buscar páginas, configurações, atalhos..." />
         <CommandList>
           <CommandEmpty>Nenhum resultado encontrado.</CommandEmpty>
-          <CommandGroup heading="Páginas">
-            {searchItems.map((item) => (
-              <CommandItem
-                key={item.href}
-                onSelect={() => {
-                  router.push(item.href);
-                  setOpen(false);
-                }}
-              >
-                <item.icon className="mr-2 h-4 w-4" />
-                {item.label}
-              </CommandItem>
-            ))}
-          </CommandGroup>
+          {COMMAND_PALETTE_GROUPS.map((group, gi) => (
+            <div key={group.heading}>
+              {gi > 0 ? <CommandSeparator className="my-1" /> : null}
+              <CommandGroup heading={group.heading}>
+                {group.items.map((item) => (
+                  <CommandItem
+                    key={item.id}
+                    value={commandPaletteFilterValue(item)}
+                    onSelect={() => {
+                      router.push(item.href);
+                      setOpen(false);
+                    }}
+                  >
+                    <item.icon className="mr-2 h-4 w-4 shrink-0" />
+                    <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <span className="truncate">{item.label}</span>
+                      {item.subtitle ? (
+                        <span className="truncate text-xs text-muted-foreground font-normal">
+                          {item.subtitle}
+                        </span>
+                      ) : null}
+                    </div>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </div>
+          ))}
         </CommandList>
       </CommandDialog>
     </>

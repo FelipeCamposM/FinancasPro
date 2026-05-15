@@ -38,8 +38,8 @@ export function SectionHeader({
       <div
         className={cn("h-px w-full bg-gradient-to-r to-transparent", accentClass)}
       />
-      <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
-        <div>
+      <div className="flex flex-col items-center gap-4 p-5 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left">
+        <div className="min-w-0">
           <h1
             className={cn(
               "font-display text-4xl uppercase leading-none tracking-wide text-white sm:text-5xl",
@@ -54,7 +54,9 @@ export function SectionHeader({
           ) : null}
         </div>
         {actions ? (
-          <div className="flex flex-wrap items-center gap-2">{actions}</div>
+          <div className="flex w-full flex-wrap items-center justify-center gap-2 [&>button]:w-full [&>div]:w-full sm:w-auto sm:justify-end sm:[&>button]:w-auto sm:[&>div]:w-auto">
+            {actions}
+          </div>
         ) : null}
       </div>
     </header>

@@ -3,14 +3,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
-  Banknote,
-  ChevronRight,
   Landmark,
   Pencil,
   PiggyBank,
   Plus,
   Search,
-  Target,
   Trash2,
   TrendingUp,
 } from "lucide-react";
@@ -35,11 +32,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Cofrinho,
-  CofrinhoDialog,
-  CofrinhoTipo,
-} from "./CofrinhoDialog";
+import { Cofrinho, CofrinhoDialog, CofrinhoTipo } from "./CofrinhoDialog";
+import { DepositarDialog } from "./DepositarDialog";
 
 interface PaginatedResponse {
   data: Cofrinho[];
@@ -54,50 +48,40 @@ interface PaginatedResponse {
 interface SummaryResponse {
   data: {
     total_guardado: number;
-    total_planejado: number;
     total_acoes: number;
     total_contas: number;
-    total_objetivos: number;
-    metas_objetivos: number;
     total_itens: number;
     total_itens_acoes: number;
     total_itens_contas: number;
-    total_itens_objetivos: number;
-    progresso_objetivos: number;
   };
 }
 
 const tipoInfo = {
-  acao: {
-    label: "A\u00e7\u00f5es",
-    singular: "a\u00e7\u00e3o",
-    icon: TrendingUp,
-    badge: "green",
-    color: "text-emerald-300",
-    button:
-      "border-emerald-400/40 bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 hover:text-emerald-200",
-  },
   conta: {
     label: "Contas",
     singular: "conta",
     icon: Landmark,
-    badge: "blue",
+    badge: "blue" as const,
     color: "text-blue-300",
     button:
       "border-blue-400/40 bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 hover:text-blue-200",
+    depositButton:
+      "border-blue-400/30 bg-blue-500/10 text-blue-300 hover:bg-blue-500/20",
   },
-  objetivo: {
-    label: "Objetivos",
-    singular: "objetivo",
-    icon: Target,
-    badge: "amber",
-    color: "text-amber-300",
+  acao: {
+    label: "Ações",
+    singular: "ação",
+    icon: TrendingUp,
+    badge: "green" as const,
+    color: "text-emerald-300",
     button:
-      "border-amber-400/40 bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 hover:text-amber-200",
+      "border-emerald-400/40 bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 hover:text-emerald-200",
+    depositButton:
+      "border-emerald-400/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20",
   },
 } as const;
 
-const tabs: CofrinhoTipo[] = ["acao", "conta", "objetivo"];
+const tabs: CofrinhoTipo[] = ["conta", "acao"];
 
 function formatCurrency(value: number | string | null | undefined) {
   return new Intl.NumberFormat("pt-BR", {
@@ -108,19 +92,16 @@ function formatCurrency(value: number | string | null | undefined) {
 
 function formatDate(value: string | null) {
   if (!value) return null;
-  return new Date(value).toLocaleDateString("pt-BR");
+  return new Date(value + "T00:00:00").toLocaleDateString("pt-BR");
 }
 
 function getProgress(cofrinho: Cofrinho) {
-  if (cofrinho.tipo !== "objetivo" || !cofrinho.meta_valor) return 0;
-  return Math.min(
-    100,
-    (Number(cofrinho.saldo_atual || 0) / Number(cofrinho.meta_valor)) * 100,
-  );
+  if (!cofrinho.meta_valor) return 0;
+  return Math.min(100, (Number(cofrinho.saldo_atual || 0) / Number(cofrinho.meta_valor)) * 100);
 }
 
 export default function CofrinhosPage() {
-  const [activeTab, setActiveTab] = useState<CofrinhoTipo>("acao");
+  const [activeTab, setActiveTab] = useState<CofrinhoTipo>("conta");
   const [items, setItems] = useState<Cofrinho[]>([]);
   const [summary, setSummary] = useState<SummaryResponse["data"] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -129,11 +110,11 @@ export default function CofrinhosPage() {
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selected, setSelected] = useState<Cofrinho | null>(null);
+  const [depositarCofrinho, setDepositarCofrinho] = useState<Cofrinho | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   const currentInfo = tipoInfo[activeTab];
-  const CurrentIcon = currentInfo.icon;
 
   const fetchItems = useCallback(async () => {
     setLoading(true);
@@ -176,33 +157,18 @@ export default function CofrinhosPage() {
     if (!term) return items;
 
     return items.filter((item) =>
-      [
-        item.nome,
-        item.ticker,
-        item.instituicao,
-        item.observacoes,
-      ]
+      [item.nome, item.ticker, item.instituicao, item.observacoes]
         .filter(Boolean)
         .some((value) => value!.toLowerCase().includes(term)),
     );
   }, [items, search]);
 
-  const totalTab = useMemo(
-    () =>
-      displayedItems.reduce(
-        (acc, item) => acc + Number(item.saldo_atual || 0),
-        0,
-      ),
-    [displayedItems],
-  );
-
   async function handleDelete() {
     if (!deleteId) return;
-
     setDeleting(true);
     try {
       await api.delete(`/cofrinhos/${deleteId}`);
-      toast.success("Cofrinho exclu\u00eddo");
+      toast.success("Cofrinho excluído");
       setDeleteId(null);
       fetchItems();
       fetchSummary();
@@ -213,14 +179,9 @@ export default function CofrinhosPage() {
     }
   }
 
-  function openNewDialog() {
-    setSelected(null);
-    setDialogOpen(true);
-  }
-
-  function openEditDialog(item: Cofrinho) {
-    setSelected(item);
-    setDialogOpen(true);
+  function onRefresh() {
+    fetchItems();
+    fetchSummary();
   }
 
   return (
@@ -231,15 +192,19 @@ export default function CofrinhosPage() {
         description="Planeje aonde sua grana vai ficar guardada"
         actions={
           <Button
-            onClick={openNewDialog}
+            onClick={() => {
+              setSelected(null);
+              setDialogOpen(true);
+            }}
             className={`border ${currentInfo.button}`}
           >
             <Plus className="mr-2 h-4 w-4" />
-            Novo {currentInfo.singular}
+            Nova {currentInfo.singular}
           </Button>
         }
       />
 
+      {/* Summary cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 ui-stagger">
         <Card className="rounded-xl border border-white/[0.09] bg-white/[0.04] backdrop-blur-xl">
           <CardContent className="flex items-center gap-4 p-5">
@@ -264,48 +229,38 @@ export default function CofrinhosPage() {
         <Card className="rounded-xl border border-white/[0.09] bg-white/[0.04] backdrop-blur-xl">
           <CardContent className="flex items-center gap-4 p-5">
             <div className="rounded-lg bg-blue-500/20 p-2.5">
-              <Banknote className="h-5 w-5 text-blue-300" />
+              <Landmark className="h-5 w-5 text-blue-300" />
             </div>
             <div className="min-w-0">
               <p className="text-xs font-medium uppercase tracking-wide text-white/50">
-                Planejado
+                Em contas
               </p>
               {loadingSummary ? (
                 <Skeleton className="mt-1 h-6 w-28" />
               ) : (
                 <p className="text-xl font-bold tabular-nums text-blue-300">
-                  {formatCurrency(summary?.total_planejado)}
+                  {formatCurrency(summary?.total_contas)}
                 </p>
               )}
             </div>
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl border border-amber-400/10 bg-amber-500/[0.05] backdrop-blur-xl">
+        <Card className="rounded-xl border border-white/[0.09] bg-white/[0.04] backdrop-blur-xl">
           <CardContent className="flex items-center gap-4 p-5">
-            <div className="rounded-lg bg-amber-500/20 p-2.5">
-              <Target className="h-5 w-5 text-amber-300" />
+            <div className="rounded-lg bg-violet-500/20 p-2.5">
+              <TrendingUp className="h-5 w-5 text-violet-300" />
             </div>
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0">
               <p className="text-xs font-medium uppercase tracking-wide text-white/50">
-                Objetivos
+                Em ações
               </p>
               {loadingSummary ? (
                 <Skeleton className="mt-1 h-6 w-28" />
               ) : (
-                <>
-                  <p className="text-xl font-bold tabular-nums text-amber-300">
-                    {Math.round(summary?.progresso_objetivos ?? 0)}%
-                  </p>
-                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
-                    <div
-                      className="h-full rounded-full bg-amber-400"
-                      style={{
-                        width: `${Math.round(summary?.progresso_objetivos ?? 0)}%`,
-                      }}
-                    />
-                  </div>
-                </>
+                <p className="text-xl font-bold tabular-nums text-violet-300">
+                  {formatCurrency(summary?.total_acoes)}
+                </p>
               )}
             </div>
           </CardContent>
@@ -321,7 +276,7 @@ export default function CofrinhosPage() {
         className="space-y-4"
       >
         <div className="flex flex-col gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-3 backdrop-blur-xl lg:flex-row lg:items-center lg:justify-between">
-          <TabsList className="grid h-auto grid-cols-3 gap-1 bg-white/[0.05] p-1">
+          <TabsList className="grid h-auto grid-cols-2 gap-1 bg-white/[0.05] p-1">
             {tabs.map((tab) => {
               const info = tipoInfo[tab];
               const Icon = info.icon;
@@ -343,64 +298,19 @@ export default function CofrinhosPage() {
             <Input
               placeholder="Buscar cofrinho..."
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(e) => setSearch(e.target.value)}
               className="pl-9"
             />
           </div>
         </div>
 
         {tabs.map((tab) => (
-          <TabsContent key={tab} value={tab} className="mt-0 space-y-4">
-            {!loading && !loadError && displayedItems.length > 0 && (
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-3 ui-stagger">
-                <Card className="rounded-lg border border-white/[0.07] bg-white/[0.03] backdrop-blur-xl">
-                  <CardContent className="p-4">
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-white/45">
-                      Exibindo
-                    </p>
-                    <p className="mt-1 text-lg font-bold text-white tabular-nums">
-                      {displayedItems.length}
-                    </p>
-                    <p className="text-xs text-white/55">
-                      {currentInfo.label.toLowerCase()} cadastradas
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card className="rounded-lg border border-emerald-400/10 bg-emerald-500/[0.04] backdrop-blur-xl">
-                  <CardContent className="p-4">
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-emerald-300/80">
-                      Guardado na aba
-                    </p>
-                    <p className="mt-1 text-lg font-bold text-emerald-300 tabular-nums">
-                      {formatCurrency(totalTab)}
-                    </p>
-                    <p className="text-xs text-white/55">
-                      {"Soma dos itens vis\u00edveis"}
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card className="rounded-lg border border-white/[0.07] bg-white/[0.03] backdrop-blur-xl">
-                  <CardContent className="p-4">
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-white/45">
-                      Categoria
-                    </p>
-                    <p className={`mt-1 flex items-center gap-2 text-lg font-bold ${currentInfo.color}`}>
-                      <CurrentIcon className="h-4 w-4" />
-                      {currentInfo.label}
-                    </p>
-                    <p className="text-xs text-white/55">Planejamento manual</p>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-
+          <TabsContent key={tab} value={tab} className="mt-0 space-y-3">
             {loading ? (
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-                {Array.from({ length: 6 }).map((_, index) => (
+                {Array.from({ length: 6 }).map((_, i) => (
                   <Card
-                    key={index}
+                    key={i}
                     className="rounded-xl border border-white/[0.09] bg-white/[0.03] backdrop-blur-xl"
                   >
                     <CardContent className="space-y-4 p-5">
@@ -415,7 +325,7 @@ export default function CofrinhosPage() {
               <PageDataState
                 mode="error"
                 icon={AlertTriangle}
-                title="N\u00e3o foi poss\u00edvel carregar os cofrinhos"
+                title="Não foi possível carregar os cofrinhos"
                 description="Ocorreu um erro ao carregar a listagem."
                 onAction={fetchItems}
               />
@@ -424,7 +334,11 @@ export default function CofrinhosPage() {
                 mode="empty"
                 icon={PiggyBank}
                 title="Nenhum cofrinho encontrado"
-                description="Cadastre a\u00e7\u00f5es, contas ou objetivos para planejar sua grana."
+                description={
+                  tab === "conta"
+                    ? "Cadastre contas para controlar seu saldo."
+                    : "Cadastre ações para acompanhar suas cotas."
+                }
               />
             ) : (
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3 ui-stagger">
@@ -438,6 +352,7 @@ export default function CofrinhosPage() {
                       className="rounded-xl border border-white/[0.09] bg-white/[0.04] backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5 hover:border-white/[0.16]"
                     >
                       <CardContent className="space-y-4 p-5">
+                        {/* Cabeçalho do card */}
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
                             <Badge variant={info.badge}>
@@ -449,21 +364,32 @@ export default function CofrinhosPage() {
                             </h2>
                             <p className="text-xs text-white/45">
                               {item.tipo === "acao"
-                                ? `${item.ticker} - ${Number(item.quantidade_cotas ?? 0).toLocaleString("pt-BR")} cotas`
-                                : item.tipo === "conta"
-                                  ? item.instituicao || "Conta manual"
-                                  : item.data_alvo
-                                    ? `At\u00e9 ${formatDate(item.data_alvo)}`
-                                    : "Sem data alvo"}
+                                ? `${item.ticker} · ${Number(item.quantidade_cotas ?? 0).toLocaleString("pt-BR")} cotas`
+                                : item.instituicao || "Conta manual"}
                             </p>
                           </div>
                           <div className="flex shrink-0 items-center gap-1">
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 text-white/40 hover:bg-emerald-500/10 hover:text-emerald-300"
-                              aria-label={`Editar ${item.nome}`}
-                              onClick={() => openEditDialog(item)}
+                              className={`h-8 w-8 text-white/40 hover:text-white/80 ${
+                                item.tipo === "conta"
+                                  ? "hover:bg-blue-500/10"
+                                  : "hover:bg-emerald-500/10"
+                              }`}
+                              title="Depositar / adicionar cotas"
+                              onClick={() => setDepositarCofrinho(item)}
+                            >
+                              <Plus className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-white/40 hover:bg-white/10 hover:text-white/80"
+                              onClick={() => {
+                                setSelected(item);
+                                setDialogOpen(true);
+                              }}
                             >
                               <Pencil className="h-3.5 w-3.5" />
                             </Button>
@@ -471,7 +397,6 @@ export default function CofrinhosPage() {
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8 text-white/40 hover:bg-rose-500/10 hover:text-rose-300"
-                              aria-label={`Excluir ${item.nome}`}
                               onClick={() => setDeleteId(item.id)}
                             >
                               <Trash2 className="h-3.5 w-3.5" />
@@ -479,28 +404,37 @@ export default function CofrinhosPage() {
                           </div>
                         </div>
 
+                        {/* Saldo */}
                         <div>
                           <p className="text-[11px] font-semibold uppercase tracking-wider text-white/40">
-                            Guardado
+                            {item.tipo === "acao" ? "Total em ações" : "Saldo"}
                           </p>
-                          <p className="mt-1 text-2xl font-bold tabular-nums text-emerald-300">
+                          <p className={`mt-1 text-2xl font-bold tabular-nums ${info.color}`}>
                             {formatCurrency(item.saldo_atual)}
                           </p>
+                          {item.tipo === "acao" && item.valor_cota && (
+                            <p className="text-xs text-white/35">
+                              {Number(item.quantidade_cotas ?? 0).toLocaleString("pt-BR")} cotas ×{" "}
+                              {formatCurrency(item.valor_cota)}
+                            </p>
+                          )}
                         </div>
 
-                        {item.tipo === "objetivo" && (
-                          <div className="space-y-2">
+                        {/* Progresso da meta (opcional) */}
+                        {item.meta_valor && (
+                          <div className="space-y-1.5">
                             <div className="flex items-center justify-between text-xs">
                               <span className="text-white/45">
                                 Meta {formatCurrency(item.meta_valor)}
+                                {item.data_alvo ? ` · até ${formatDate(item.data_alvo)}` : ""}
                               </span>
                               <span className="font-semibold text-amber-300">
                                 {Math.round(progress)}%
                               </span>
                             </div>
-                            <div className="h-2 overflow-hidden rounded-full bg-white/10">
+                            <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
                               <div
-                                className="h-full rounded-full bg-amber-400"
+                                className="h-full rounded-full bg-amber-400 transition-all"
                                 style={{ width: `${Math.round(progress)}%` }}
                               />
                             </div>
@@ -512,11 +446,6 @@ export default function CofrinhosPage() {
                             {item.observacoes}
                           </p>
                         )}
-
-                        <div className="flex items-center justify-between border-t border-white/[0.07] pt-3 text-xs text-white/35">
-                          <span>Planejamento manual</span>
-                          <ChevronRight className="h-3.5 w-3.5" />
-                        </div>
                       </CardContent>
                     </Card>
                   );
@@ -532,21 +461,22 @@ export default function CofrinhosPage() {
         tipo={activeTab}
         cofrinho={selected}
         onClose={() => setDialogOpen(false)}
-        onSuccess={() => {
-          fetchItems();
-          fetchSummary();
-        }}
+        onSuccess={onRefresh}
       />
 
-      <AlertDialog
-        open={!!deleteId}
-        onOpenChange={(value) => !value && setDeleteId(null)}
-      >
+      <DepositarDialog
+        cofrinho={depositarCofrinho}
+        open={!!depositarCofrinho}
+        onClose={() => setDepositarCofrinho(null)}
+        onSuccess={onRefresh}
+      />
+
+      <AlertDialog open={!!deleteId} onOpenChange={(v) => !v && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir cofrinho?</AlertDialogTitle>
             <AlertDialogDescription>
-              {"Esta a\u00e7\u00e3o n\u00e3o pode ser desfeita."}
+              Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

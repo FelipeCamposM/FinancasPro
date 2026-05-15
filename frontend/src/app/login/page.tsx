@@ -37,6 +37,14 @@ const FEATURES = [
   { icon: BarChart3, label: "Dashboards e relatorios em tempo real" },
 ];
 
+const POST_LOGIN_REDIRECT_MS = 1400;
+
+function delay(ms: number) {
+  return new Promise<void>((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const passwordFormRef = useRef<HTMLFormElement>(null);
@@ -47,10 +55,13 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
-  const [codeLoading, setCodeLoading] = useState(false);
+  const [codeRequestLoading, setCodeRequestLoading] = useState(false);
+  const [codeVerifyLoading, setCodeVerifyLoading] = useState(false);
   const [codeSent, setCodeSent] = useState(false);
   const [codeCooldown, setCodeCooldown] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
+  const [loginRedirecting, setLoginRedirecting] = useState(false);
+  const [codeLoginRedirecting, setCodeLoginRedirecting] = useState(false);
 
   useEffect(() => {
     if (codeCooldown <= 0) return;
@@ -70,12 +81,12 @@ export default function LoginPage() {
   }
 
   function submitCodeOnEnter(e: KeyboardEvent<HTMLInputElement>) {
-    if (e.key !== "Enter" || codeLoading) return;
+    if (e.key !== "Enter" || codeRequestLoading || codeVerifyLoading) return;
 
     e.preventDefault();
 
     if (!codeSent) {
-      if (email && codeCooldown <= 0) {
+      if (email && codeCooldown <= 0 && !codeRequestLoading) {
         void handleRequestCode();
       }
       return;
@@ -90,7 +101,10 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
     setMessage("");
+    setLoginRedirecting(false);
     setLoading(true);
+
+    let navigatedAway = false;
 
     try {
       const { data } = await api.post<{ token: string }>("/auth/login", {
@@ -98,24 +112,35 @@ export default function LoginPage() {
         password,
       });
       setToken(data.token);
+      setLoginRedirecting(true);
+      setMessage("Login realizado com sucesso. A redirecionar para o painel...");
+      await delay(POST_LOGIN_REDIRECT_MS);
       router.push("/dashboard");
+      navigatedAway = true;
     } catch (err: unknown) {
       const response = (err as { response?: { data?: { error?: string; code?: string } } }).response;
       if (response?.data?.code === "EMAIL_NOT_VERIFIED") {
         const retryAfter = (response.data as { retry_after_seconds?: number }).retry_after_seconds ?? 60;
+        setLoginRedirecting(true);
+        setMessage("Conta ainda nao verificada. A redirecionar para confirmar o e-mail...");
+        await delay(900);
         router.push(`/verify-email?email=${encodeURIComponent(email)}&cooldown=${retryAfter}`);
+        navigatedAway = true;
         return;
       }
       setError(response?.data?.error || "Credenciais invalidas");
     } finally {
-      setLoading(false);
+      if (!navigatedAway) {
+        setLoading(false);
+        setLoginRedirecting(false);
+      }
     }
   }
 
   async function handleRequestCode() {
     setError("");
     setMessage("");
-    setCodeLoading(true);
+    setCodeRequestLoading(true);
 
     try {
       const { data } = await api.post<{ retry_after_seconds?: number }>("/auth/login-code/request", { email });
@@ -132,15 +157,20 @@ export default function LoginPage() {
       const msg = response?.data?.error;
       setError(msg || "Nao foi possivel enviar o codigo.");
     } finally {
-      setCodeLoading(false);
+      setCodeRequestLoading(false);
     }
   }
 
   async function handleCodeSubmit(e: FormEvent) {
     e.preventDefault();
+    if (!codeSent || loginCode.length !== 6) return;
+
     setError("");
     setMessage("");
-    setCodeLoading(true);
+    setCodeLoginRedirecting(false);
+    setCodeVerifyLoading(true);
+
+    let navigatedAway = false;
 
     try {
       const { data } = await api.post<{ token: string }>("/auth/login-code/verify", {
@@ -148,12 +178,19 @@ export default function LoginPage() {
         code: loginCode,
       });
       setToken(data.token);
+      setCodeLoginRedirecting(true);
+      setMessage("Login realizado com sucesso. A redirecionar para o painel...");
+      await delay(POST_LOGIN_REDIRECT_MS);
       router.push("/dashboard");
+      navigatedAway = true;
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } }).response?.data?.error;
       setError(msg || "Codigo invalido ou expirado.");
     } finally {
-      setCodeLoading(false);
+      if (!navigatedAway) {
+        setCodeVerifyLoading(false);
+        setCodeLoginRedirecting(false);
+      }
     }
   }
 
@@ -172,9 +209,9 @@ export default function LoginPage() {
           }}
         />
 
-        <div className="relative z-10 flex items-center gap-3">
-          <Image src="/logo-valora-branca.png" alt="Valora" width={40} height={40} />
-          <span className="font-display text-2xl tracking-wide text-white">Valora</span>
+        <div className="relative z-10 flex items-center gap-4">
+          <Image src="/logo-valora-branca.png" alt="Valora" width={80} height={80} className="size-20" />
+          <span className="font-display text-5xl tracking-wide text-white">Valora</span>
         </div>
 
         <div className="relative z-10 space-y-8">
@@ -210,10 +247,10 @@ export default function LoginPage() {
 
       <div className="flex-1 flex items-center justify-center bg-background p-6 md:p-10">
         <div className="w-full max-w-sm space-y-6">
-          <div className="flex flex-col items-center gap-3 md:hidden">
-            <Image src="/logo-valora-branca.png" alt="Valora" width={56} height={56} />
+          <div className="flex flex-col items-center gap-4 md:hidden">
+            <Image src="/logo-valora-branca.png" alt="Valora" width={112} height={112} className="size-28" />
             <div className="text-center">
-              <h1 className="text-2xl font-bold text-foreground">Valora</h1>
+              <h1 className="text-5xl font-bold text-foreground">Valora</h1>
               <p className="text-sm text-muted-foreground">Controle financeiro pessoal</p>
             </div>
           </div>
@@ -286,7 +323,7 @@ export default function LoginPage() {
 
                     <Button type="submit" className="w-full" disabled={loading}>
                       {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      {loading ? "Entrando..." : "Entrar"}
+                      {loading ? (loginRedirecting ? "Redirecionando..." : "Entrando...") : "Entrar"}
                     </Button>
                   </form>
                 </TabsContent>
@@ -311,10 +348,10 @@ export default function LoginPage() {
                       type="button"
                       variant="outline"
                       className="w-full"
-                      disabled={codeLoading || !email || codeCooldown > 0}
+                      disabled={codeRequestLoading || !email || codeCooldown > 0}
                       onClick={handleRequestCode}
                     >
-                      {codeLoading ? (
+                      {codeRequestLoading ? (
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       ) : (
                         <Mail className="mr-2 h-4 w-4" />
@@ -326,26 +363,37 @@ export default function LoginPage() {
                           : "Receber codigo por e-mail"}
                     </Button>
 
-                    {codeSent && (
-                      <div className="space-y-2">
-                        <Label htmlFor="login-code">Codigo</Label>
-                        <Input
-                          id="login-code"
-                          inputMode="numeric"
-                          maxLength={6}
-                          required
-                          value={loginCode}
-                          onChange={(event) => setLoginCode(event.target.value.replace(/\D/g, ""))}
-                          onKeyDown={submitCodeOnEnter}
-                          placeholder="123456"
-                          autoComplete="one-time-code"
-                        />
-                      </div>
-                    )}
+                    <div className="space-y-2">
+                      <Label htmlFor="login-code" className={!codeSent ? "text-muted-foreground" : undefined}>
+                        Codigo
+                      </Label>
+                      <Input
+                        id="login-code"
+                        inputMode="numeric"
+                        maxLength={6}
+                        required={codeSent}
+                        value={loginCode}
+                        onChange={(event) => setLoginCode(event.target.value.replace(/\D/g, ""))}
+                        onKeyDown={submitCodeOnEnter}
+                        placeholder={codeSent ? "123456" : "Envie o codigo primeiro"}
+                        autoComplete="one-time-code"
+                        disabled={!codeSent}
+                        aria-disabled={!codeSent}
+                        className={!codeSent ? "cursor-not-allowed opacity-60" : undefined}
+                      />
+                    </div>
 
-                    <Button type="submit" className="w-full" disabled={codeLoading || loginCode.length !== 6}>
-                      {codeLoading && codeSent && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Entrar com codigo
+                    <Button
+                      type="submit"
+                      className="w-full"
+                      disabled={codeVerifyLoading || codeRequestLoading || loginCode.length !== 6}
+                    >
+                      {codeVerifyLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      {codeVerifyLoading
+                        ? codeLoginRedirecting
+                          ? "Redirecionando..."
+                          : "A entrar..."
+                        : "Entrar com codigo"}
                     </Button>
                   </form>
                 </TabsContent>

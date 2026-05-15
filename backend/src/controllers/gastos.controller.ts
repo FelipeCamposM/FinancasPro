@@ -111,6 +111,9 @@ export const createGasto = async (
     try {
       await client.query("BEGIN");
 
+      const statusFinal =
+        body.forma_pagamento === "cartao_credito" ? "pendente" : "pago";
+
       const { rows } = await client.query(
         `INSERT INTO gastos
           (user_id, descricao, valor_total, categoria_id, forma_pagamento, cartao_id,
@@ -132,7 +135,7 @@ export const createGasto = async (
           body.data_fim_recorrencia ?? null,
           body.data_gasto,
           body.observacoes ?? null,
-          body.status,
+          statusFinal,
           body.gasto_origem_id ?? null,
           1,
         ],
@@ -171,7 +174,7 @@ export const createGasto = async (
               false,
               dataStr,
               body.observacoes ?? null,
-              body.status,
+              statusFinal,
               gasto.id,
               i + 1,
             ],
@@ -200,7 +203,7 @@ export const updateGasto = async (
   try {
     const userId = req.user!.userId;
     const { rows: existing } = await pool.query(
-      "SELECT id, assinatura_id FROM gastos WHERE id = $1 AND user_id = $2",
+      "SELECT id, assinatura_id, tipo_pagamento, numero_parcela, gasto_origem_id, status FROM gastos WHERE id = $1 AND user_id = $2",
       [req.params.id, userId],
     );
     if (!existing[0]) {
@@ -284,6 +287,49 @@ export const updateGasto = async (
             assinaValues,
           );
         }
+      }
+    }
+
+    // Propaga campos descritivos para parcelas futuras do mesmo parcelamento
+    if (existing[0].tipo_pagamento === "parcelado") {
+      const numeroParcela: number = existing[0].numero_parcela ?? 1;
+      const gastoOrigemId: string | null = existing[0].gasto_origem_id;
+      // rootId = id da 1ª parcela (origem do parcelamento)
+      const rootId: string = gastoOrigemId ?? req.params.id;
+
+      const statusMudou =
+        "status" in typedBody && typedBody.status !== existing[0].status;
+
+      const propagateParcela: string[] = [
+        "descricao",
+        "valor_total",
+        "categoria_id",
+        "forma_pagamento",
+        "cartao_id",
+        "observacoes",
+        ...(statusMudou ? ["status"] : []),
+      ];
+      const pFields: string[] = [];
+      const pValues: unknown[] = [];
+      let pi = 1;
+      for (const key of propagateParcela) {
+        if (key in typedBody) {
+          pFields.push(`${key} = $${pi++}`);
+          pValues.push(typedBody[key] ?? null);
+        }
+      }
+      if (pFields.length) {
+        // Parcelas futuras: gasto_origem_id aponta para a 1ª parcela (rootId)
+        // Filtra numero_parcela > editada para só pegar as subsequentes
+        pValues.push(rootId, numeroParcela, userId);
+        await pool.query(
+          `UPDATE gastos
+           SET ${pFields.join(", ")}
+           WHERE gasto_origem_id = $${pi}
+             AND numero_parcela > $${pi + 1}
+             AND user_id = $${pi + 2}`,
+          pValues,
+        );
       }
     }
 

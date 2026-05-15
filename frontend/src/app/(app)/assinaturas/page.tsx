@@ -54,7 +54,7 @@ interface Assinatura {
   id: string;
   descricao: string;
   valor: number;
-  forma_pagamento: string;
+  forma_pagamento: "cartao_credito" | "cartao_debito";
   cartao_id?: string;
   categoria_id?: number;
   dia_cobranca: number;
@@ -92,13 +92,11 @@ export default function AssinaturasPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [cancelTarget, setCancelTarget] = useState<Assinatura | null>(null);
   const [cancelando, setCancelando] = useState(false);
-
   const [editTarget, setEditTarget] = useState<Assinatura | null>(null);
   const [editDescricao, setEditDescricao] = useState("");
   const [editValor, setEditValor] = useState("");
   const [editDiaCobranca, setEditDiaCobranca] = useState("");
   const [salvandoEdit, setSalvandoEdit] = useState(false);
-
   const [reativarTarget, setReativarTarget] = useState<Assinatura | null>(null);
   const [reativando, setReativando] = useState(false);
   const [loadError, setLoadError] = useState(false);
@@ -126,10 +124,7 @@ export default function AssinaturasPage() {
     if (!cancelTarget) return;
     setCancelando(true);
     try {
-      const hoje = new Date().toISOString().split("T")[0];
-      await api.post(`/assinaturas/${cancelTarget.id}/cancelar`, {
-        data_cancelamento: hoje,
-      });
+      await api.post(`/assinaturas/${cancelTarget.id}/cancelar`, {});
       toast.success("Assinatura cancelada — cobranças futuras removidas");
       setCancelTarget(null);
       load();
@@ -141,9 +136,6 @@ export default function AssinaturasPage() {
   }
 
   function openEdit(a: Assinatura) {
-    setEditDescricao(a.descricao);
-    setEditValor(String(a.valor));
-    setEditDiaCobranca(String(a.dia_cobranca));
     setEditTarget(a);
   }
 
@@ -204,9 +196,9 @@ export default function AssinaturasPage() {
         titleColor="text-violet-400"
         description="Cobranças recorrentes mensais"
         actions={
-          <div className="flex items-center gap-3 flex-wrap justify-end">
+          <div className="flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:items-center sm:flex-wrap sm:justify-end">
             {!loading && ativas.length > 0 && (
-              <div className="rounded-xl border border-white/[0.09] bg-white/[0.04] px-4 py-2 text-right backdrop-blur-xl">
+              <div className="rounded-xl border border-white/[0.09] bg-white/[0.04] px-4 py-2 text-center backdrop-blur-xl sm:text-right">
                 <p className="text-xs text-violet-300/70 font-medium uppercase tracking-wider">
                   Total mensal
                 </p>
@@ -216,7 +208,7 @@ export default function AssinaturasPage() {
               </div>
             )}
 
-            <div className="flex items-center gap-2">
+            <div className="flex h-9 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-3 sm:border-0 sm:bg-transparent sm:px-0">
               <Switch
                 id="inativas"
                 checked={mostrarInativas}
@@ -233,6 +225,7 @@ export default function AssinaturasPage() {
             <Button
               onClick={() => setDialogOpen(true)}
               variant="default"
+              className="w-full rounded-xl border border-violet-300/30 bg-gradient-to-br from-violet-500/90 via-violet-500/75 to-violet-700/90 text-white shadow-lg shadow-violet-950/25 ring-1 ring-white/[0.10] transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-200/50 hover:from-violet-400/95 hover:via-violet-500/85 hover:to-violet-600/95 hover:shadow-violet-500/20 sm:w-auto"
             >
               <Plus className="mr-2 h-4 w-4" />
               Nova assinatura
@@ -465,9 +458,19 @@ export default function AssinaturasPage() {
         onSuccess={load}
       />
 
+      <AssinaturaDialog
+        open={!!editTarget}
+        onClose={() => setEditTarget(null)}
+        onSuccess={() => {
+          setEditTarget(null);
+          load();
+        }}
+        initialData={editTarget}
+      />
+
       {/* Dialog de edição */}
       <Dialog
-        open={!!editTarget}
+        open={false}
         onOpenChange={(v) => !v && setEditTarget(null)}
       >
         <DialogContent className="sm:max-w-sm">
@@ -586,13 +589,10 @@ export default function AssinaturasPage() {
               Cancelar assinatura
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Isso vai remover todos os lançamentos{" "}
-              <strong>futuros pendentes</strong> de{" "}
-              <strong>{cancelTarget?.descricao}</strong>. Os lançamentos já
-              registrados e pagos serão mantidos no histórico.
-              <br />
-              <br />
-              Essa ação não pode ser desfeita.
+              Cancela a assinatura{" "}
+              <strong>{cancelTarget?.descricao}</strong> e remove as cobranças
+              futuras. Se o dia de cobrança do mês atual já passou, esse mês
+              ainda será cobrado. Lançamentos pagos são mantidos no histórico.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

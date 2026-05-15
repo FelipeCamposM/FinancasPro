@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { Suspense, useEffect, useState, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -356,7 +357,8 @@ const NAV_ITEMS = [
 
 // ─── Main page ─────────────────────────────────────────────────────────────────
 
-export default function ConfiguracoesPage() {
+function ConfiguracoesPageContent() {
+  const searchParams = useSearchParams();
   const [section, setSection] = useState("categorias");
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(true);
@@ -383,6 +385,11 @@ export default function ConfiguracoesPage() {
   }, []);
 
   useEffect(() => { fetchCategorias(); }, [fetchCategorias]);
+
+  useEffect(() => {
+    const s = searchParams.get("secao");
+    if (s && NAV_ITEMS.some((i) => i.id === s)) setSection(s);
+  }, [searchParams]);
 
   function openCreate() {
     setEditing(null);
@@ -424,13 +431,16 @@ export default function ConfiguracoesPage() {
   return (
     <PageShell contentClassName="space-y-6">
       {/* Page header */}
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-500/15 ring-1 ring-slate-400/20">
-          <Settings className="h-4 w-4 text-slate-400" />
-        </div>
-        <div>
-          <h1 className="text-lg font-bold leading-none text-white">Configurações</h1>
-          <p className="mt-1 text-xs text-white/40">Personalize sua conta</p>
+      <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-xl">
+        <div className="h-px w-full bg-gradient-to-r from-slate-500/60 via-slate-400/20 to-transparent" />
+        <div className="flex flex-col items-center justify-center gap-3 p-5 text-center sm:flex-row sm:justify-start sm:text-left">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-500/15 ring-1 ring-slate-400/20">
+            <Settings className="h-4 w-4 text-slate-400" />
+          </div>
+          <div className="min-w-0">
+            <h1 className="text-lg font-bold leading-none text-white">Configurações</h1>
+            <p className="mt-1 text-xs text-white/40">Personalize sua conta</p>
+          </div>
         </div>
       </div>
 
@@ -568,5 +578,25 @@ export default function ConfiguracoesPage() {
         </AlertDialogContent>
       </AlertDialog>
     </PageShell>
+  );
+}
+
+function ConfiguracoesPageFallback() {
+  return (
+    <PageShell contentClassName="space-y-6">
+      <Skeleton className="h-24 w-full rounded-2xl" />
+      <div className="flex gap-5">
+        <Skeleton className="hidden h-64 w-48 shrink-0 rounded-xl sm:block" />
+        <Skeleton className="h-64 flex-1 rounded-xl" />
+      </div>
+    </PageShell>
+  );
+}
+
+export default function ConfiguracoesPage() {
+  return (
+    <Suspense fallback={<ConfiguracoesPageFallback />}>
+      <ConfiguracoesPageContent />
+    </Suspense>
   );
 }

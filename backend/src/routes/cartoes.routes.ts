@@ -7,6 +7,11 @@ import {
   deleteCartao,
   listFormasPagamentoIphone,
 } from "../controllers/cartoes.controller";
+import {
+  getFaturas,
+  getFaturaDetail,
+  pagarFatura,
+} from "../controllers/faturas.controller";
 import { authenticateAny } from "../middlewares/auth.middleware";
 import { paginate } from "../middlewares/pagination.middleware";
 import { validate } from "../middlewares/validate.middleware";
@@ -164,5 +169,10 @@ router.get("/iphone", authenticateAny, listFormasPagamentoIphone);
 router.get("/:id", authenticateAny, getCartao);
 router.put("/:id", authenticateAny, validate(updateCartaoSchema), updateCartao);
 router.delete("/:id", authenticateAny, deleteCartao);
+
+// Fatura endpoints
+router.get("/:id/faturas", authenticateAny, getFaturas);
+router.get("/:id/faturas/:mes", authenticateAny, getFaturaDetail);
+router.post("/:id/faturas/:mes/pagar", authenticateAny, pagarFatura);
 
 export default router;

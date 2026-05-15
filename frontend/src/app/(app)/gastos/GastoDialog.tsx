@@ -226,7 +226,8 @@ export function GastoDialog({ open, onClose, onSuccess, gasto, forceAssinatura =
 
   useEffect(() => {
     if (formaPgto !== "cartao_credito" && formaPgto !== "cartao_debito") form.setValue("cartao_id", undefined);
-  }, [formaPgto, form]);
+    if (!isEdit) form.setValue("status", formaPgto === "cartao_credito" ? "pendente" : "pago");
+  }, [formaPgto, form, isEdit]);
 
   useEffect(() => {
     if (tipoPgto === "a_vista") { form.setValue("quantidade_parcelas", 1); form.setValue("valor_parcela", undefined); }
@@ -239,8 +240,11 @@ export function GastoDialog({ open, onClose, onSuccess, gasto, forceAssinatura =
     setIsAssinatura(forceAssinatura);
     resetParcelamento();
     if (gasto) {
+      const isParceladoEdit = gasto.tipo_pagamento === "parcelado";
       form.reset({
-        descricao: gasto.descricao, valor_total: Number(gasto.valor_total), valor_parcela: undefined,
+        descricao: gasto.descricao,
+        valor_total: isParceladoEdit ? undefined : Number(gasto.valor_total),
+        valor_parcela: isParceladoEdit ? Number(gasto.valor_total) : undefined,
         data_gasto: gasto.data_gasto.slice(0, 10),
         categoria_id: gasto.categoria_id ? String(gasto.categoria_id) : undefined,
         cartao_id: gasto.cartao_id ?? undefined,
@@ -334,6 +338,16 @@ export function GastoDialog({ open, onClose, onSuccess, gasto, forceAssinatura =
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <div className="px-5 py-5 space-y-5 overflow-y-auto max-h-[calc(100dvh-14rem)] sm:max-h-[62vh]">
+
+              {/* Hint: cascade parcelado */}
+              {isEdit && gasto?.tipo_pagamento === "parcelado" && (
+                <div className="flex items-start gap-2.5 rounded-xl border border-amber-400/20 bg-amber-500/[0.08] px-3.5 py-2.5">
+                  <Layers className="h-3.5 w-3.5 shrink-0 mt-0.5 text-amber-400/70" />
+                  <p className="text-[11px] text-amber-300/70 leading-relaxed">
+                    Alterações serão aplicadas a todas as parcelas futuras deste parcelamento.
+                  </p>
+                </div>
+              )}
 
               {/* 1 — Descrição */}
               <FormField control={form.control} name="descricao" render={({ field }) => (

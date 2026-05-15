@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -8,6 +10,8 @@ import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Calendar as CalendarPicker } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
@@ -36,7 +40,7 @@ import {
   Loader2,
   Building2,
   CalendarDays,
-  Calendar,
+  Calendar as CalendarIcon,
   Repeat,
   AlignLeft,
   Info,
@@ -172,6 +176,122 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
     <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/35 mb-2">
       {children}
     </p>
+  );
+}
+
+function formatDateInput(value: string) {
+  if (!value) return "Selecionar";
+  const [year, month, day] = value.split("-");
+  if (!year || !month || !day) return value;
+  return `${day}/${month}/${year}`;
+}
+
+function formatMonthInput(value: string) {
+  if (!value) return "Selecionar";
+  const [year, month] = value.split("-");
+  if (!year || !month) return value;
+  return format(new Date(Number(year), Number(month) - 1, 1), "MMMM yyyy", {
+    locale: ptBR,
+  });
+}
+
+function toDateInputValue(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function toMonthInputValue(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  return `${year}-${month}`;
+}
+
+function DateFieldButton({
+  value,
+  onChange,
+  placeholder = "Selecionar",
+  className = "",
+}: {
+  value?: string | null;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  className?: string;
+}) {
+  const normalized = value ?? "";
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className={`ui-control flex h-12 w-full items-center gap-2 px-3 ${className}`}
+        >
+          <CalendarDays className="h-3.5 w-3.5 shrink-0 text-white/40" />
+          <span className={`truncate text-sm ${normalized ? "text-white/90" : "text-white/35"}`}>
+            {normalized ? formatDateInput(normalized) : placeholder}
+          </span>
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        className="ui-popover w-auto border-white/[0.14] p-0 ui-glass-surface-strong"
+        align="start"
+      >
+        <CalendarPicker
+          mode="single"
+          className="bg-transparent"
+          selected={normalized ? new Date(`${normalized}T12:00:00`) : undefined}
+          onSelect={(date) => {
+            if (date) onChange(toDateInputValue(date));
+          }}
+          initialFocus
+        />
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function MonthFieldButton({
+  value,
+  onChange,
+}: {
+  value?: string | null;
+  onChange: (value: string) => void;
+}) {
+  const normalized = value ?? "";
+  const selected = normalized
+    ? new Date(`${normalized}-01T12:00:00`)
+    : undefined;
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="ui-control flex h-12 w-full items-center gap-2 px-3"
+        >
+          <CalendarDays className="h-3.5 w-3.5 shrink-0 text-white/40" />
+          <span className={`truncate text-sm capitalize ${normalized ? "text-white/90" : "text-white/35"}`}>
+            {normalized ? formatMonthInput(normalized) : "Selecionar"}
+          </span>
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        className="ui-popover w-auto border-white/[0.14] p-0 ui-glass-surface-strong"
+        align="start"
+      >
+        <CalendarPicker
+          mode="single"
+          className="bg-transparent"
+          selected={selected}
+          onSelect={(date) => {
+            if (date) onChange(toMonthInputValue(date));
+          }}
+          initialFocus
+        />
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -346,7 +466,7 @@ export function RendaDialog({ open, onClose, onSuccess, renda }: Props) {
               />
 
               {/* Valor + Origem */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <FormField
                   control={form.control}
                   name="valor"
@@ -394,7 +514,7 @@ export function RendaDialog({ open, onClose, onSuccess, renda }: Props) {
               </div>
 
               {/* Mês ref + Data recebimento */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <FormField
                   control={form.control}
                   name="mes_referencia"
@@ -406,7 +526,10 @@ export function RendaDialog({ open, onClose, onSuccess, renda }: Props) {
                         </span>
                       </SectionLabel>
                       <FormControl>
-                        <Input type="month" {...field} />
+                        <MonthFieldButton
+                          value={field.value}
+                          onChange={field.onChange}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -420,11 +543,14 @@ export function RendaDialog({ open, onClose, onSuccess, renda }: Props) {
                     <FormItem>
                       <SectionLabel>
                         <span className="flex items-center gap-1">
-                          <Calendar className="h-2.5 w-2.5" /> Recebimento
+                          <CalendarIcon className="h-2.5 w-2.5" /> Recebimento
                         </span>
                       </SectionLabel>
                       <FormControl>
-                        <Input type="date" {...field} />
+                        <DateFieldButton
+                          value={field.value}
+                          onChange={field.onChange}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -487,7 +613,7 @@ export function RendaDialog({ open, onClose, onSuccess, renda }: Props) {
                 />
 
                 {recorrente && (
-                  <div className="grid grid-cols-2 gap-3 pt-3 mt-3 border-t border-indigo-400/20">
+                  <div className="grid grid-cols-1 gap-3 pt-3 mt-3 border-t border-indigo-400/20 sm:grid-cols-2">
                     <FormField
                       control={form.control}
                       name="frequencia_recorrencia"
@@ -531,10 +657,10 @@ export function RendaDialog({ open, onClose, onSuccess, renda }: Props) {
                             />
                           </FormLabel>
                           <FormControl>
-                            <Input
-                              type="date"
-                              {...field}
+                            <DateFieldButton
                               value={field.value ?? ""}
+                              onChange={field.onChange}
+                              placeholder="Sem data final"
                               className="mt-1.5 border-indigo-400/30"
                             />
                           </FormControl>

@@ -8,6 +8,7 @@ import {
   relatorioMensal as getRelatorioMensal,
   projecoes as getProjecoes,
   relatorioAnual as getRelatorioAnual,
+  insights as getInsights,
 } from "../controllers/dashboard.controller";
 import { authenticateAny } from "../middlewares/auth.middleware";
 
@@ -48,6 +49,23 @@ const router = Router();
  *                     total: { type: number,  example: 450.00 }
  */
 router.get("/summary", authenticateAny, getSummary);
+
+/**
+ * @swagger
+ * /dashboard/insights:
+ *   get:
+ *     tags: [Dashboard]
+ *     summary: Semana atual, ultimos 7 dias, comparativo mes vs anterior e recompensa simbolica
+ *     parameters:
+ *       - in: query
+ *         name: mes
+ *         description: Mes de referencia (YYYY-MM) para comparativo mensal
+ *         schema: { type: string, example: '2026-05' }
+ *     responses:
+ *       200:
+ *         description: Objeto com semana_atual, ultimos_7_dias, mes, recompensa
+ */
+router.get("/insights", authenticateAny, getInsights);
 
 /**
  * @swagger

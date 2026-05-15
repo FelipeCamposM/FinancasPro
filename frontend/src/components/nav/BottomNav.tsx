@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -43,6 +44,16 @@ const NAV_ITEMS = [
 export default function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
+  const [bouncing, setBouncing] = useState(false);
+
+  function handleCtaClick() {
+    setBouncing(false);
+    requestAnimationFrame(() => {
+      setBouncing(true);
+      setTimeout(() => setBouncing(false), 450);
+    });
+    router.push("/gastos?new=1");
+  }
 
   return (
     <nav
@@ -58,14 +69,24 @@ export default function BottomNav() {
               <button
                 type="button"
                 aria-label="Registrar gasto"
-                onClick={() => router.push("/gastos?new=1")}
-                className="flex h-14 w-14 items-center justify-center rounded-full
-                  bg-rose-500 shadow-lg shadow-rose-500/40
-                  ring-4 ring-[hsl(222_47%_5%)] active:scale-95 transition-transform"
+                onClick={handleCtaClick}
+                className={cn(
+                  "relative flex h-14 w-14 items-center justify-center rounded-full overflow-hidden",
+                  "bg-gradient-to-br from-rose-400 via-rose-500 to-pink-600",
+                  "shadow-[0_0_18px_4px_rgba(244,63,94,0.45)]",
+                  "ring-[3px] ring-[hsl(222_47%_5%)]",
+                  bouncing ? "cta-bounce" : "",
+                )}
               >
-                <Plus className="h-6 w-6 text-white" strokeWidth={2.5} />
+                {/* shimmer sweep */}
+                <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-full">
+                  <span className="cta-shimmer absolute inset-y-0 w-10 bg-gradient-to-r from-transparent via-white/35 to-transparent" />
+                </span>
+                {/* subtle inner highlight */}
+                <span className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-b from-white/15 to-transparent" />
+                <Plus className="relative h-6 w-6 text-white drop-shadow-sm" strokeWidth={2.5} />
               </button>
-              <span className="mt-1 text-[10px] font-medium text-rose-400/80">Gasto</span>
+              <span className="mt-1 text-[10px] font-semibold text-rose-400/80 tracking-wide">Gasto</span>
             </div>
           );
         }

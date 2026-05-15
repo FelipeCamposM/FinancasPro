@@ -13,6 +13,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import {
   LayoutDashboard,
@@ -87,23 +88,28 @@ const navItems = [
 
 export default function AppSidebar() {
   const pathname = usePathname();
+  const { isMobile, setOpenMobile } = useSidebar();
+
+  function closeMobileSidebar() {
+    if (isMobile) setOpenMobile(false);
+  }
 
   return (
     <Sidebar>
       <SidebarHeader className="border-b border-sidebar-border">
-        <div className="flex items-center gap-3 px-2 py-3">
+        <div className="flex items-center gap-4 px-4 py-5 md:gap-3.5 md:px-3 md:py-4">
           <Image
             src="/logo-valora-branca.png"
             alt="Valora"
-            width={32}
-            height={32}
-            className="shrink-0"
+            width={48}
+            height={48}
+            className="h-14 w-14 shrink-0 md:h-11 md:w-11"
           />
           <div className="flex flex-col leading-none">
-            <span className="font-display text-base tracking-wide text-sidebar-foreground">
+            <span className="font-display text-3xl tracking-wide text-sidebar-foreground md:text-xl">
               Valora
             </span>
-            <span className="text-[11px] text-sidebar-foreground/50">
+            <span className="mt-1.5 text-base text-sidebar-foreground/60 md:mt-1 md:text-sm md:text-sidebar-foreground/55">
               Controle financeiro
             </span>
           </div>
@@ -112,10 +118,10 @@ export default function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="text-[10px] font-bold uppercase tracking-[0.14em] text-sidebar-foreground/35">
+          <SidebarGroupLabel className="h-10 px-4 text-sm font-bold uppercase tracking-[0.14em] text-sidebar-foreground/40 md:h-9 md:px-3 md:text-xs">
             Navegação
           </SidebarGroupLabel>
-          <SidebarMenu>
+          <SidebarMenu className="gap-2 md:gap-1.5">
             {navItems.map((item) => {
               const isActive =
                 pathname === item.href || pathname.startsWith(item.href + "/");
@@ -129,13 +135,13 @@ export default function AppSidebar() {
                       "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent",
                       item.activeBg,
                       "data-[active=true]:text-sidebar-foreground",
-                      "transition-all duration-150",
+                      "h-14 gap-3.5 rounded-xl px-4 text-lg transition-all duration-150 [&_svg]:!size-7 md:h-11 md:gap-3 md:rounded-lg md:px-3 md:py-2 md:text-base md:[&_svg]:!size-5",
                     )}
                   >
-                    <Link href={item.href}>
+                    <Link href={item.href} onClick={closeMobileSidebar}>
                       <item.icon
                         className={cn(
-                          "h-4 w-4 transition-colors",
+                          "h-7 w-7 transition-colors md:h-5 md:w-5",
                           isActive ? item.activeIconColor : item.iconColor,
                         )}
                       />
@@ -151,10 +157,10 @@ export default function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup className="mt-auto">
-          <SidebarGroupLabel className="text-[10px] font-bold uppercase tracking-[0.14em] text-sidebar-foreground/35">
+          <SidebarGroupLabel className="h-10 px-4 text-sm font-bold uppercase tracking-[0.14em] text-sidebar-foreground/40 md:h-9 md:px-3 md:text-xs">
             Sistema
           </SidebarGroupLabel>
-          <SidebarMenu>
+          <SidebarMenu className="gap-2 md:gap-1.5">
             {(() => {
               const isActive =
                 pathname === "/configuracoes" ||
@@ -169,13 +175,13 @@ export default function AppSidebar() {
                       "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent",
                       "data-[active=true]:bg-slate-500/10",
                       "data-[active=true]:text-sidebar-foreground",
-                      "transition-all duration-150",
+                      "h-14 gap-3.5 rounded-xl px-4 text-lg transition-all duration-150 [&_svg]:!size-7 md:h-11 md:gap-3 md:rounded-lg md:px-3 md:py-2 md:text-base md:[&_svg]:!size-5",
                     )}
                   >
-                    <Link href="/configuracoes">
+                    <Link href="/configuracoes" onClick={closeMobileSidebar}>
                       <Settings
                         className={cn(
-                          "h-4 w-4 transition-colors",
+                          "h-7 w-7 transition-colors md:h-5 md:w-5",
                           isActive ? "text-slate-300" : "text-slate-400/70",
                         )}
                       />

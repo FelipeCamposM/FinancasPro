@@ -263,13 +263,16 @@ export default function PerfilPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       {/* Header */}
-      <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl">
-        <h1 className="font-display text-4xl uppercase leading-none tracking-wide text-white sm:text-5xl">
-          Perfil
-        </h1>
-        <p className="mt-0.5 text-[12px] text-white/40">
-          Gerencie suas informações pessoais e senha
-        </p>
+      <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-xl">
+        <div className="h-px w-full bg-gradient-to-r from-white/40 via-white/15 to-transparent" />
+        <div className="p-5 text-center sm:text-left">
+          <h1 className="font-display text-4xl uppercase leading-none tracking-wide text-white sm:text-5xl">
+            Perfil
+          </h1>
+          <p className="mt-0.5 text-[12px] text-white/40">
+            Gerencie suas informações pessoais e senha
+          </p>
+        </div>
       </div>
 
       {/* Avatar Card */}
@@ -285,7 +288,7 @@ export default function PerfilPage() {
             automaticamente).
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex items-center gap-6">
+        <CardContent className="flex flex-col items-center gap-4 sm:flex-row sm:items-center sm:gap-6">
           {/* Avatar clicável */}
           <div className="relative group">
             <Avatar className="h-24 w-24 ring-2 ring-border ring-offset-2 ring-offset-background">
@@ -324,15 +327,11 @@ export default function PerfilPage() {
             />
           </div>
 
-          <div className="space-y-1">
-            <p className="font-medium">{user?.name ?? "—"}</p>
-            <p className="text-sm text-muted-foreground">
-              {user?.email ?? "—"}
-            </p>
+          <div>
             <Button
               variant="ghost"
               size="sm"
-              className="mt-2 border border-white/15 bg-white/[0.06] text-white/70 hover:bg-white/10 hover:text-white"
+              className="border border-white/15 bg-white/[0.06] text-white/70 hover:bg-white/10 hover:text-white"
               onClick={() => fileInputRef.current?.click()}
               disabled={avatarLoading}
             >

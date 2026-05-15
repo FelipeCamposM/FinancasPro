@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const tipoCofrinhoSchema = z.enum(["acao", "conta", "objetivo"]);
+const tipoCofrinhoSchema = z.enum(["acao", "conta"]);
 const optionalDateSchema = z.string().date().nullable().optional();
 const optionalTextSchema = z.string().max(1000).nullable().optional();
 
@@ -18,22 +18,23 @@ export const createCofrinhoSchema = z
       .nullable()
       .optional(),
     quantidade_cotas: z.number().positive().nullable().optional(),
+    valor_cota: z.number().positive().nullable().optional(),
     instituicao: z.string().max(120).nullable().optional(),
     data_alvo: optionalDateSchema,
     observacoes: optionalTextSchema,
     ativo: z.boolean().optional(),
   })
   .refine((data) => data.tipo !== "acao" || !!data.ticker, {
-    message: "ticker \u00e9 obrigat\u00f3rio para a\u00e7\u00f5es",
+    message: "ticker é obrigatório para ações",
     path: ["ticker"],
   })
   .refine((data) => data.tipo !== "acao" || !!data.quantidade_cotas, {
-    message: "quantidade_cotas \u00e9 obrigat\u00f3ria para a\u00e7\u00f5es",
+    message: "quantidade_cotas é obrigatória para ações",
     path: ["quantidade_cotas"],
   })
-  .refine((data) => data.tipo !== "objetivo" || !!data.meta_valor, {
-    message: "meta_valor \u00e9 obrigat\u00f3rio para objetivos",
-    path: ["meta_valor"],
+  .refine((data) => data.tipo !== "acao" || !!data.valor_cota, {
+    message: "valor_cota é obrigatório para ações",
+    path: ["valor_cota"],
   });
 
 export const updateCofrinhoSchema = z
@@ -50,6 +51,7 @@ export const updateCofrinhoSchema = z
       .nullable()
       .optional(),
     quantidade_cotas: z.number().positive().nullable().optional(),
+    valor_cota: z.number().positive().nullable().optional(),
     instituicao: z.string().max(120).nullable().optional(),
     data_alvo: optionalDateSchema,
     observacoes: optionalTextSchema,
@@ -59,5 +61,18 @@ export const updateCofrinhoSchema = z
     message: "Nenhum campo para atualizar",
   });
 
+export const depositarContaSchema = z.object({
+  valor: z.number().positive(),
+  observacoes: z.string().max(1000).optional(),
+});
+
+export const depositarAcaoSchema = z.object({
+  quantidade_cotas: z.number().positive(),
+  valor_cota: z.number().positive(),
+  observacoes: z.string().max(1000).optional(),
+});
+
 export type CreateCofrinhoInput = z.infer<typeof createCofrinhoSchema>;
 export type UpdateCofrinhoInput = z.infer<typeof updateCofrinhoSchema>;
+export type DepositarContaInput = z.infer<typeof depositarContaSchema>;
+export type DepositarAcaoInput = z.infer<typeof depositarAcaoSchema>;

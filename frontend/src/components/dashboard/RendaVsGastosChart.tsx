@@ -21,6 +21,8 @@ interface DataPoint {
 
 interface Props {
   data: DataPoint[];
+  /** Altura do grafico em px (default mais compacto para caber com cards ao lado). */
+  height?: number;
 }
 
 function formatMes(mes: string) {
@@ -71,7 +73,7 @@ function CustomTooltip({ active, payload, label }: any) {
   );
 }
 
-export function RendaVsGastosChart({ data }: Props) {
+export function RendaVsGastosChart({ data, height = 248 }: Props) {
   if (!data.length)
     return (
       <p className="text-muted-foreground text-sm text-center py-12">
@@ -80,7 +82,7 @@ export function RendaVsGastosChart({ data }: Props) {
     );
 
   return (
-    <ResponsiveContainer width="100%" height={300}>
+    <ResponsiveContainer width="100%" height={height}>
       <AreaChart
         data={data}
         margin={{ top: 10, right: 10, left: 0, bottom: 0 }}

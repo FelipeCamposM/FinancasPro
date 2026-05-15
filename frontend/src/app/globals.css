@@ -2,6 +2,60 @@
 @tailwind components;
 @tailwind utilities;
 
+@keyframes popup-bounce {
+  0%   { opacity: 0; transform: scale(0.80) translateY(-6px); }
+  55%  { opacity: 1; transform: scale(1.05) translateY(0); }
+  75%  { transform: scale(0.97); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes popup-bounce-out {
+  0%   { opacity: 1; transform: scale(1); }
+  25%  { transform: scale(1.03); }
+  100% { opacity: 0; transform: scale(0.82) translateY(-5px); }
+}
+
+.user-dropdown-content[data-state="open"] {
+  animation: popup-bounce 0.38s cubic-bezier(0.34, 1.56, 0.64, 1) both !important;
+}
+
+.user-dropdown-content[data-state="closed"] {
+  animation: popup-bounce-out 0.20s cubic-bezier(0.36, 0, 0.66, -0.56) both !important;
+}
+
+.select-bounce-content[data-state="open"] {
+  animation: popup-bounce 0.38s cubic-bezier(0.34, 1.56, 0.64, 1) both !important;
+}
+
+.select-bounce-content[data-state="closed"] {
+  animation: popup-bounce-out 0.20s cubic-bezier(0.36, 0, 0.66, -0.56) both !important;
+}
+
+/* ── CTA button: shimmer sweep ── */
+@keyframes cta-shimmer {
+  0%, 60%  { transform: translateX(-130%) skewX(-12deg); opacity: 0; }
+  8%        { opacity: 1; }
+  38%       { transform: translateX(300%) skewX(-12deg); opacity: 0; }
+}
+
+/* ── CTA button: bounce on click ── */
+@keyframes cta-bounce {
+  0%   { transform: scale(1); }
+  18%  { transform: scale(0.86); }
+  48%  { transform: scale(1.18); }
+  68%  { transform: scale(0.95); }
+  84%  { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+
+.cta-shimmer {
+  animation: cta-shimmer 3.2s ease-in-out infinite;
+}
+
+.cta-bounce {
+  animation: cta-bounce 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
 @layer base {
   :root {
     /* ── Superfícies (paleta DS Valora) ── */

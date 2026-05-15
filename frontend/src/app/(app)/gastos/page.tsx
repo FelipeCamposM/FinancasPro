@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GastoDialog } from "./GastoDialog";
+import { FaturaDetailDialog } from "./FaturaDetailDialog";
 import {
   Plus,
   Pencil,
@@ -123,6 +124,16 @@ interface Categoria {
   nome: string;
   cor: string;
   icone: string;
+}
+
+interface CartaoFatura {
+  id: string;
+  apelido: string;
+  tipo: string;
+  cor: string;
+  bandeira: string;
+  ultimos_4_digitos: string;
+  dia_fechamento?: number;
 }
 
 interface PaginatedResponse {
@@ -327,6 +338,16 @@ function GastosPageInner() {
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const categoriasFetched = useRef(false);
 
+  // Cartões de crédito para fatura picker
+  const [creditCartoes, setCreditCartoes] = useState<CartaoFatura[]>([]);
+  const cartoesFetched = useRef(false);
+
+  // Fatura
+  const [faturaPickerOpen, setFaturaPickerOpen] = useState(false);
+  const [faturaCartaoId, setFaturaCartaoId] = useState<string | null>(null);
+  const [faturaCartaoApelido, setFaturaCartaoApelido] = useState<string>("");
+  const [faturaMes, setFaturaMes] = useState<string>("");
+
   // Filtros
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
@@ -375,6 +396,20 @@ function GastosPageInner() {
     api
       .get<{ data: Categoria[] }>("/categorias?tipo=gasto&limit=200")
       .then(({ data }) => setCategorias(data.data))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (cartoesFetched.current) return;
+    cartoesFetched.current = true;
+    api
+      .get<{ data: CartaoFatura[] }>("/cartoes?limit=50")
+      .then(({ data }) => {
+        const credit = (data.data ?? []).filter(
+          (c) => c.tipo === "credito" || c.tipo === "credito_debito",
+        );
+        setCreditCartoes(credit);
+      })
       .catch(() => {});
   }, []);
 
@@ -545,13 +580,13 @@ function GastosPageInner() {
       <div className="rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-xl overflow-hidden">
         {/* top rose accent line */}
         <div className="h-px w-full bg-gradient-to-r from-rose-500/60 via-rose-400/20 to-transparent" />
-        <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col items-center gap-4 p-5 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left">
           {/* Left: title block */}
-          <div className="flex items-center gap-4">
+          <div className="flex w-full flex-col items-center justify-center gap-3 sm:w-auto sm:flex-row sm:justify-start sm:gap-4">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-rose-500/15 ring-1 ring-rose-400/30">
               <TrendingDown className="h-5 w-5 text-rose-400" />
             </div>
-            <div>
+            <div className="min-w-0">
               <h1 className="font-display text-4xl leading-none tracking-wide text-white sm:text-5xl">
                 GASTOS
               </h1>
@@ -570,9 +605,9 @@ function GastosPageInner() {
           </div>
 
           {/* Right: period nav + CTA */}
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="grid w-full grid-cols-1 gap-2 min-[380px]:grid-cols-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end">
             {/* Month navigator */}
-            <div className="flex items-center overflow-hidden rounded-xl border border-white/10 bg-white/[0.05]">
+            <div className="flex w-full items-center overflow-hidden rounded-xl border border-white/10 bg-white/[0.05] min-[380px]:col-span-2 sm:w-auto">
               <button
                 className="flex h-9 w-9 items-center justify-center border-r border-white/10 text-white/40 transition-colors hover:bg-white/[0.07] hover:text-white/80"
                 aria-label="Mês anterior"
@@ -583,7 +618,7 @@ function GastosPageInner() {
               <button
                 type="button"
                 onClick={() => setPeriodoMode((prev) => prev === "todos" ? "mes" : "todos")}
-                className="flex h-9 min-w-[140px] items-center justify-center px-3 transition-colors hover:bg-white/[0.04] focus-visible:outline-none"
+                className="flex h-9 min-w-0 flex-1 items-center justify-center px-3 transition-colors hover:bg-white/[0.04] focus-visible:outline-none sm:min-w-[140px]"
               >
                 {periodoMode === "todos" ? (
                   <span className="text-xs text-white/35">Todos os meses</span>
@@ -602,9 +637,18 @@ function GastosPageInner() {
               </button>
             </div>
 
+            {creditCartoes.length > 0 && (
+              <Button
+                onClick={() => setFaturaPickerOpen(true)}
+                className="h-10 w-full rounded-xl border border-blue-300/30 bg-gradient-to-br from-blue-500/90 via-blue-500/75 to-blue-700/90 px-4 text-white shadow-lg shadow-blue-950/25 ring-1 ring-white/[0.10] transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-200/50 hover:from-blue-400/95 hover:via-blue-500/85 hover:to-blue-600/95 hover:shadow-blue-500/20 sm:w-auto"
+              >
+                <Receipt className="mr-2 h-4 w-4" />
+                Fatura do Mês
+              </Button>
+            )}
             <Button
               onClick={() => { setEditingGasto(null); setDialogOpen(true); }}
-              className="h-9 border border-rose-400/40 bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 hover:text-rose-200"
+              className="h-10 w-full rounded-xl border border-rose-300/30 bg-gradient-to-br from-rose-500/90 via-rose-500/75 to-rose-700/90 px-4 text-white shadow-lg shadow-rose-950/25 ring-1 ring-white/[0.10] transition-all duration-200 hover:-translate-y-0.5 hover:border-rose-200/50 hover:from-rose-400/95 hover:via-rose-500/85 hover:to-rose-600/95 hover:shadow-rose-500/20 sm:w-auto"
             >
               <Plus className="mr-2 h-4 w-4" />
               Novo Gasto
@@ -616,47 +660,51 @@ function GastosPageInner() {
       {/* ── KPI Cards ───────────────────────────────────────── */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 ui-stagger">
         {/* Total Gastos */}
-        <div className="relative overflow-hidden rounded-xl border border-rose-500/20 bg-gradient-to-br from-rose-950/60 via-rose-900/15 to-transparent p-4 backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5">
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-rose-400/50 to-transparent" />
-          <div className="flex items-start justify-between gap-3">
+        <div className="group relative overflow-hidden rounded-xl border border-rose-300/25 bg-gradient-to-br from-rose-500/[0.24] via-white/[0.075] to-rose-950/35 p-4 shadow-lg shadow-rose-950/20 ring-1 ring-white/[0.08] backdrop-blur-xl transition-all duration-300 ease-out hover:-translate-y-1 hover:border-rose-300/45 hover:bg-rose-500/[0.18] hover:shadow-rose-500/15">
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-rose-200/80 to-transparent" />
+          <div className="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full bg-rose-300/[0.16] blur-2xl transition-transform duration-500 group-hover:scale-125" />
+          <div className="pointer-events-none absolute inset-x-4 bottom-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent" />
+          <div className="relative flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-rose-300/50">Total Gastos</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-rose-100/75">Total Gastos</p>
               {loadingSummary ? (
-                <Skeleton className="mt-2 h-8 w-32" />
+                <Skeleton className="mt-2 h-8 w-32 bg-white/10" />
               ) : (
                 <>
-                  <p className="mt-1.5 font-display text-3xl leading-none tabular-nums text-rose-400">
+                  <p className="mt-1.5 font-display text-3xl leading-none tabular-nums text-rose-100 drop-shadow-sm transition-transform duration-300 group-hover:translate-x-0.5">
                     {formatBRL(summary?.total_gastos ?? 0)}
                   </p>
                   {summary && summary.total_renda > 0 && (
-                    <p className="mt-1.5 text-[11px] text-rose-300/60">
+                    <p className="mt-2 inline-flex rounded-full border border-rose-200/20 bg-rose-950/25 px-2 py-0.5 text-[11px] font-medium text-rose-100/75">
                       {((summary.total_gastos / summary.total_renda) * 100).toFixed(0)}% da renda
                     </p>
                   )}
                 </>
               )}
             </div>
-            <div className="shrink-0 rounded-[9px] bg-rose-500/15 p-2.5">
-              <TrendingDown className="h-5 w-5 text-rose-400" />
+            <div className="shrink-0 rounded-xl border border-rose-200/25 bg-rose-300/15 p-2.5 shadow-inner shadow-white/10 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
+              <TrendingDown className="h-5 w-5 text-rose-100" />
             </div>
           </div>
         </div>
 
         {/* Total Renda */}
-        <div className="relative overflow-hidden rounded-xl border border-green-500/20 bg-gradient-to-br from-green-950/50 via-green-900/15 to-transparent p-4 backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5">
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-green-400/50 to-transparent" />
-          <div className="flex items-start justify-between gap-3">
+        <div className="group relative overflow-hidden rounded-xl border border-emerald-300/25 bg-gradient-to-br from-emerald-500/[0.22] via-white/[0.075] to-emerald-950/35 p-4 shadow-lg shadow-emerald-950/20 ring-1 ring-white/[0.08] backdrop-blur-xl transition-all duration-300 ease-out hover:-translate-y-1 hover:border-emerald-300/45 hover:bg-emerald-500/[0.18] hover:shadow-emerald-500/15">
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-200/80 to-transparent" />
+          <div className="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full bg-emerald-300/[0.14] blur-2xl transition-transform duration-500 group-hover:scale-125" />
+          <div className="pointer-events-none absolute inset-x-4 bottom-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent" />
+          <div className="relative flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-green-300/50">Total Renda</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-100/75">Total Renda</p>
               {loadingSummary ? (
-                <Skeleton className="mt-2 h-8 w-32" />
+                <Skeleton className="mt-2 h-8 w-32 bg-white/10" />
               ) : (
                 <>
-                  <p className="mt-1.5 font-display text-3xl leading-none tabular-nums text-green-400">
+                  <p className="mt-1.5 font-display text-3xl leading-none tabular-nums text-emerald-100 drop-shadow-sm transition-transform duration-300 group-hover:translate-x-0.5">
                     {formatBRL(summary?.total_renda ?? 0)}
                   </p>
                   {summary && (
-                    <p className="mt-1.5 text-[11px] text-green-300/60">
+                    <p className="mt-2 inline-flex rounded-full border border-emerald-200/20 bg-emerald-950/25 px-2 py-0.5 text-[11px] font-medium text-emerald-100/75">
                       {summary.diferenca >= 0
                         ? `${formatBRL(summary.diferenca)} disponível`
                         : `${formatBRL(Math.abs(summary.diferenca))} a descoberto`}
@@ -665,8 +713,8 @@ function GastosPageInner() {
                 </>
               )}
             </div>
-            <div className="shrink-0 rounded-[9px] bg-green-500/15 p-2.5">
-              <TrendingUp className="h-5 w-5 text-green-400" />
+            <div className="shrink-0 rounded-xl border border-emerald-200/25 bg-emerald-300/15 p-2.5 shadow-inner shadow-white/10 transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3">
+              <TrendingUp className="h-5 w-5 text-emerald-100" />
             </div>
           </div>
         </div>
@@ -680,34 +728,36 @@ function GastosPageInner() {
               : null;
           return (
             <div
-              className={`relative overflow-hidden rounded-xl border p-4 backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5 ${
+              className={`group relative overflow-hidden rounded-xl border p-4 shadow-lg ring-1 ring-white/[0.08] backdrop-blur-xl transition-all duration-300 ease-out hover:-translate-y-1 ${
                 positivo
-                  ? "border-blue-500/20 bg-gradient-to-br from-blue-950/50 via-blue-900/15 to-transparent"
-                  : "border-amber-500/20 bg-gradient-to-br from-amber-950/50 via-amber-900/15 to-transparent"
+                  ? "border-blue-300/25 bg-gradient-to-br from-blue-500/[0.22] via-white/[0.075] to-blue-950/35 shadow-blue-950/20 hover:border-blue-300/45 hover:bg-blue-500/[0.18] hover:shadow-blue-500/15"
+                  : "border-amber-300/25 bg-gradient-to-br from-amber-500/[0.22] via-white/[0.075] to-amber-950/35 shadow-amber-950/20 hover:border-amber-300/45 hover:bg-amber-500/[0.18] hover:shadow-amber-500/15"
               }`}
             >
               <div
-                className={`absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent ${positivo ? "via-blue-400/50" : "via-amber-400/50"} to-transparent`}
+                className={`absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent ${positivo ? "via-blue-200/80" : "via-amber-200/80"} to-transparent`}
               />
-              <div className="flex items-start justify-between gap-3">
+              <div className={`pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full blur-2xl transition-transform duration-500 group-hover:scale-125 ${positivo ? "bg-blue-300/[0.14]" : "bg-amber-300/[0.16]"}`} />
+              <div className="pointer-events-none absolute inset-x-4 bottom-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent" />
+              <div className="relative flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <p
-                    className={`text-[10px] font-bold uppercase tracking-[0.12em] ${positivo ? "text-blue-300/50" : "text-amber-300/50"}`}
+                    className={`text-[10px] font-bold uppercase tracking-[0.12em] ${positivo ? "text-blue-100/75" : "text-amber-100/75"}`}
                   >
                     Saldo do Período
                   </p>
                   {loadingSummary ? (
-                    <Skeleton className="mt-2 h-8 w-32" />
+                    <Skeleton className="mt-2 h-8 w-32 bg-white/10" />
                   ) : (
                     <>
                       <p
-                        className={`mt-1.5 font-display text-3xl leading-none tabular-nums ${positivo ? "text-blue-400" : "text-amber-400"}`}
+                        className={`mt-1.5 font-display text-3xl leading-none tabular-nums drop-shadow-sm transition-transform duration-300 group-hover:translate-x-0.5 ${positivo ? "text-blue-100" : "text-amber-100"}`}
                       >
                         {formatBRL(summary?.diferenca ?? 0)}
                       </p>
                       {pct && (
                         <p
-                          className={`mt-1.5 text-[11px] ${positivo ? "text-blue-300/60" : "text-amber-300/60"}`}
+                          className={`mt-2 inline-flex rounded-full border px-2 py-0.5 text-[11px] font-medium ${positivo ? "border-blue-200/20 bg-blue-950/25 text-blue-100/75" : "border-amber-200/20 bg-amber-950/25 text-amber-100/75"}`}
                         >
                           {pct}% {positivo ? "poupado" : "a descoberto"}
                         </p>
@@ -716,10 +766,10 @@ function GastosPageInner() {
                   )}
                 </div>
                 <div
-                  className={`shrink-0 rounded-[9px] p-2.5 ${positivo ? "bg-blue-500/15" : "bg-amber-500/15"}`}
+                  className={`shrink-0 rounded-xl border p-2.5 shadow-inner shadow-white/10 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 ${positivo ? "border-blue-200/25 bg-blue-300/15" : "border-amber-200/25 bg-amber-300/15"}`}
                 >
                   <Wallet
-                    className={`h-5 w-5 ${positivo ? "text-blue-400" : "text-amber-400"}`}
+                    className={`h-5 w-5 ${positivo ? "text-blue-100" : "text-amber-100"}`}
                   />
                 </div>
               </div>
@@ -787,7 +837,7 @@ function GastosPageInner() {
                 <ChevronsUpDown className="h-3 w-3 opacity-40" />
               </button>
             </PopoverTrigger>
-            <PopoverContent className="w-52 p-0" align="start">
+            <PopoverContent className="select-bounce-content w-52 p-0" align="start">
               <Command>
                 <CommandInput placeholder="Buscar categoria..." />
                 <CommandList>
@@ -818,7 +868,7 @@ function GastosPageInner() {
                 <ChevronsUpDown className="h-3 w-3 opacity-40" />
               </button>
             </PopoverTrigger>
-            <PopoverContent className="w-44 p-0" align="start">
+            <PopoverContent className="select-bounce-content w-44 p-0" align="start">
               <Command>
                 <CommandInput placeholder="Buscar..." />
                 <CommandList>
@@ -848,7 +898,7 @@ function GastosPageInner() {
                 <ChevronsUpDown className="h-3 w-3 opacity-40" />
               </button>
             </PopoverTrigger>
-            <PopoverContent className="w-48 p-0" align="start">
+            <PopoverContent className="select-bounce-content w-48 p-0" align="start">
               <Command>
                 <CommandInput placeholder="Buscar forma..." />
                 <CommandList>
@@ -882,7 +932,7 @@ function GastosPageInner() {
                 <ChevronsUpDown className="h-3 w-3 opacity-40" />
               </button>
             </PopoverTrigger>
-            <PopoverContent className="w-40 p-0" align="start">
+            <PopoverContent className="select-bounce-content w-40 p-0" align="start">
               <Command>
                 <CommandInput placeholder="Buscar status..." />
                 <CommandList>
@@ -1150,6 +1200,75 @@ function GastosPageInner() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Cartão picker → fatura do mês */}
+      <Dialog open={faturaPickerOpen} onOpenChange={setFaturaPickerOpen}>
+        <DialogContent className="max-w-[380px] p-0 overflow-hidden gap-0">
+          <div className="relative overflow-hidden border-b border-white/[0.09]">
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent" />
+            <div className="pointer-events-none absolute -left-6 -top-6 h-28 w-28 rounded-full bg-blue-500/[0.08] blur-2xl" />
+            <div className="relative flex items-center gap-4 px-6 py-5">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-500/15 ring-1 ring-blue-400/20">
+                <Receipt className="h-5 w-5 text-blue-400" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl font-bold leading-none text-white">
+                  Fatura do Mês
+                </DialogTitle>
+                <p className="mt-1.5 text-sm text-white/40 capitalize">
+                  {format(mesAtual, "MMMM yyyy", { locale: ptBR })}
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-3 px-5 py-4">
+            {creditCartoes.map((c) => {
+              const bg = c.cor ?? "#334155";
+              const textColor = getContrastColor(bg);
+              const isLight = textColor === "#1a1a1a";
+              const logo = BANDEIRA_LOGOS[c.bandeira?.toLowerCase() ?? ""];
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => {
+                    const today = new Date();
+                    const dia = c.dia_fechamento ?? 1;
+                    const mes = today.getDate() <= dia
+                      ? format(today, "yyyy-MM")
+                      : format(new Date(today.getFullYear(), today.getMonth() + 1, 1), "yyyy-MM");
+                    setFaturaMes(mes);
+                    setFaturaCartaoId(c.id);
+                    setFaturaCartaoApelido(c.apelido);
+                    setFaturaPickerOpen(false);
+                  }}
+                  style={{ background: bg, color: textColor }}
+                  className="relative h-[76px] w-36 shrink-0 rounded-xl p-3 text-left transition-all duration-150 active:scale-95 border-2 border-transparent opacity-80 hover:opacity-100 hover:shadow-lg hover:shadow-black/30"
+                >
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] font-semibold truncate max-w-[80px]" style={{ color: textColor, opacity: 0.85 }}>{c.apelido}</p>
+                    {logo
+                      ? <img src={logo} alt={c.bandeira} className="h-5 w-auto max-w-[32px] object-contain shrink-0" style={isLight ? {} : { filter: "brightness(0) invert(1)" }} />
+                      : <div className={`h-4 w-6 rounded shrink-0 ${isLight ? "bg-black/20" : "bg-white/30"}`} />}
+                  </div>
+                  <p className="mt-auto pt-2 font-mono text-xs tracking-widest" style={{ color: textColor, opacity: 0.75 }}>•••• {c.ultimos_4_digitos}</p>
+                </button>
+              );
+            })}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {faturaCartaoId && faturaMes && (
+        <FaturaDetailDialog
+          cartaoId={faturaCartaoId}
+          cartaoApelido={faturaCartaoApelido}
+          mes={faturaMes}
+          open={!!faturaCartaoId}
+          onOpenChange={(v) => { if (!v) setFaturaCartaoId(null); }}
+          onPaid={fetchGastos}
+        />
+      )}
     </PageShell>
   );
 }
@@ -1309,10 +1428,15 @@ function GastoMobileCard({
   const [dragging, setDragging] = useState(false);
   const startX = useRef(0);
   const moved = useRef(false);
-  const THRESHOLD = 72;
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const statusInfo = statusConfig[g.status] ?? { label: g.status, variant: "slate" as const };
-  const revealRatio = Math.min(1, Math.abs(offsetX) / THRESHOLD);
+
+  const cardWidth = containerRef.current?.getBoundingClientRect().width ?? 320;
+  const THRESHOLD = cardWidth * 0.48;
+  const swipeAmt = Math.abs(offsetX);
+  const deleteActive = swipeAmt > THRESHOLD;
+  const revealRatio = Math.min(1, swipeAmt / 90);
 
   function onTouchStart(e: React.TouchEvent) {
     startX.current = e.touches[0].clientX;
@@ -1324,15 +1448,15 @@ function GastoMobileCard({
     const delta = e.touches[0].clientX - startX.current;
     if (delta < 0) {
       moved.current = true;
-      setOffsetX(Math.max(delta, -110));
+      const w = containerRef.current?.getBoundingClientRect().width ?? 320;
+      setOffsetX(Math.max(delta, -w));
     }
   }
 
   function onTouchEnd() {
     setDragging(false);
-    if (offsetX < -THRESHOLD) {
-      onDelete();
-    }
+    const w = containerRef.current?.getBoundingClientRect().width ?? 320;
+    if (offsetX < -(w * 0.48)) onDelete();
     setOffsetX(0);
   }
 
@@ -1342,24 +1466,29 @@ function GastoMobileCard({
   }
 
   return (
-    <div className="relative overflow-hidden rounded-xl">
-      {/* delete strip revealed on swipe */}
+    <div ref={containerRef} className="relative rounded-xl overflow-hidden bg-[hsl(222,47%,9%)]">
+      {/* Delete background — fades in as card slides. Opacity tied to swipeAmt = seamless. */}
       <div
-        className="absolute inset-y-0 right-0 flex items-center justify-center gap-1.5 bg-rose-500"
-        style={{ width: `${Math.abs(offsetX)}px`, opacity: revealRatio }}
+        className={`absolute inset-0 flex items-center justify-end pr-5 transition-colors duration-150 ${deleteActive ? "bg-rose-600" : "bg-rose-500"}`}
+        style={{ opacity: revealRatio }}
       >
-        <Trash2 className="h-4 w-4 shrink-0 text-white" />
-        {Math.abs(offsetX) > 52 && (
-          <span className="text-xs font-semibold text-white whitespace-nowrap">Excluir</span>
-        )}
+        <div className="flex items-center gap-1.5 text-white">
+          <Trash2 className="h-4 w-4 shrink-0" />
+          {swipeAmt > 72 && (
+            <span className="text-xs font-semibold whitespace-nowrap">
+              {deleteActive ? "Solte para excluir" : "Excluir"}
+            </span>
+          )}
+        </div>
       </div>
 
-      {/* swipeable card */}
+      {/* Swipeable card — glass on top of dark container base */}
       <div
-        className="relative z-10 flex gap-3 rounded-xl border border-white/[0.09] bg-white/[0.04] px-4 py-3.5 backdrop-blur-xl active:bg-white/[0.07] select-none"
+        className="relative z-10 flex gap-3 border border-white/[0.09] bg-white/[0.06] px-4 py-3.5 select-none active:brightness-110"
         style={{
           transform: `translateX(${offsetX}px)`,
           transition: dragging ? "none" : "transform 0.22s cubic-bezier(0.22,1,0.36,1)",
+          backdropFilter: "blur(12px)",
         }}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}

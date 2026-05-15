@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from "express";
 import pool from "../config/database";
 import {
   CreateAssinaturaInput,
-  CancelAssinaturaInput,
   UpdateAssinaturaInput,
 } from "../schemas/assinaturas.schema";
 
@@ -206,7 +205,16 @@ export const updateAssinatura = async (
     const values: unknown[] = [];
     let idx = 1;
 
-    const updatable = ["descricao", "valor", "categoria_id", "observacoes", "dia_cobranca"];
+    const updatable = [
+      "descricao",
+      "valor",
+      "categoria_id",
+      "forma_pagamento",
+      "cartao_id",
+      "observacoes",
+      "dia_cobranca",
+      "data_inicio",
+    ];
     const typedBody = body as Record<string, unknown>;
     for (const key of updatable) {
       if (key in typedBody) {
@@ -266,8 +274,15 @@ export const updateAssinatura = async (
             ],
           );
         }
-      } else if (body.descricao || body.valor !== undefined) {
-        // Apenas descricao/valor: atualiza in-place nos gastos pendentes
+      } else if (
+        body.descricao ||
+        body.valor !== undefined ||
+        body.categoria_id !== undefined ||
+        body.forma_pagamento ||
+        body.cartao_id !== undefined ||
+        body.observacoes !== undefined
+      ) {
+        // Atualiza in-place nos gastos pendentes quando nÃ£o precisa regenerar datas
         const gastoFields: string[] = [];
         const gastoValues: unknown[] = [];
         let gi = 1;
@@ -278,6 +293,22 @@ export const updateAssinatura = async (
         if (body.valor !== undefined) {
           gastoFields.push(`valor_total = $${gi++}`);
           gastoValues.push(body.valor);
+        }
+        if (body.categoria_id !== undefined) {
+          gastoFields.push(`categoria_id = $${gi++}`);
+          gastoValues.push(body.categoria_id);
+        }
+        if (body.forma_pagamento) {
+          gastoFields.push(`forma_pagamento = $${gi++}`);
+          gastoValues.push(body.forma_pagamento);
+        }
+        if (body.cartao_id !== undefined) {
+          gastoFields.push(`cartao_id = $${gi++}`);
+          gastoValues.push(body.cartao_id);
+        }
+        if (body.observacoes !== undefined) {
+          gastoFields.push(`observacoes = $${gi++}`);
+          gastoValues.push(body.observacoes);
         }
         if (gastoFields.length) {
           gastoValues.push(id, todayStr);
@@ -311,10 +342,9 @@ export const cancelAssinatura = async (
 ): Promise<void> => {
   const userId = req.user!.userId;
   const { id } = req.params;
-  const body: CancelAssinaturaInput = req.body;
 
   const { rows: existing } = await pool.query(
-    "SELECT id FROM assinaturas WHERE id = $1 AND user_id = $2 AND ativa = TRUE",
+    "SELECT id, dia_cobranca FROM assinaturas WHERE id = $1 AND user_id = $2 AND ativa = TRUE",
     [id, userId],
   );
   if (!existing[0]) {
@@ -324,24 +354,42 @@ export const cancelAssinatura = async (
     return;
   }
 
+  const today = new Date();
+  const todayDay = today.getDate();
+  const diaCobranca: number = existing[0].dia_cobranca;
+
+  let deleteFrom: string;
+  if (todayDay >= diaCobranca) {
+    // Billing day passed this month → keep this month, delete from next month's charge date
+    const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+    const lastDayNext = new Date(nextMonth.getFullYear(), nextMonth.getMonth() + 1, 0).getDate();
+    const effectiveDay = Math.min(diaCobranca, lastDayNext);
+    deleteFrom = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, "0")}-${String(effectiveDay).padStart(2, "0")}`;
+  } else {
+    // Billing day not yet reached → delete from this month's charge date
+    const lastDayCur = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+    const effectiveDay = Math.min(diaCobranca, lastDayCur);
+    deleteFrom = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(effectiveDay).padStart(2, "0")}`;
+  }
+
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
 
-    // Deleta gastos pendentes com data >= data_cancelamento
+    // Deleta gastos pendentes a partir da data de cobrança calculada
     const { rowCount: removidos } = await client.query(
       `DELETE FROM gastos
        WHERE assinatura_id = $1
          AND data_gasto >= $2
          AND status = 'pendente'`,
-      [id, body.data_cancelamento],
+      [id, deleteFrom],
     );
 
-    // Marca a assinatura como inativa
+    // Marca a assinatura como inativa com a data de hoje
     const { rows } = await client.query(
-      `UPDATE assinaturas SET ativa = FALSE, data_cancelamento = $1, updated_at = NOW()
-       WHERE id = $2 RETURNING *`,
-      [body.data_cancelamento, id],
+      `UPDATE assinaturas SET ativa = FALSE, data_cancelamento = CURRENT_DATE, updated_at = NOW()
+       WHERE id = $1 RETURNING *`,
+      [id],
     );
 
     await client.query("COMMIT");

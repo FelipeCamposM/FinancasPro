@@ -36,17 +36,17 @@ export const createAssinaturaSchema = z
     },
   );
 
-export const cancelAssinaturaSchema = z.object({
-  // Data a partir da qual cancelar: gastos com data_gasto >= data_cancelamento e status=pendente são removidos
-  data_cancelamento: z.string().date(),
-});
+export const cancelAssinaturaSchema = z.object({});
 
 export const updateAssinaturaSchema = z.object({
   descricao: z.string().min(1).max(255).optional(),
   valor: z.number().positive().optional(),
   categoria_id: z.number().int().positive().nullable().optional(),
+  forma_pagamento: z.enum(formasPagamento).optional(),
+  cartao_id: z.string().uuid().nullable().optional(),
   observacoes: z.string().max(1000).nullable().optional(),
   dia_cobranca: z.number().int().min(1).max(31).optional(),
+  data_inicio: z.string().date().optional(),
 });
 
 export type CreateAssinaturaInput = z.infer<typeof createAssinaturaSchema>;

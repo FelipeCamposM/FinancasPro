@@ -18,6 +18,7 @@ import assinaturasRoutes from "./routes/assinaturas.routes";
 import routeMapRoutes from "./routes/route-map.routes";
 import shortcutRoutes from "./routes/shortcut.routes";
 import cofrinhosRoutes from "./routes/cofrinhos.routes";
+import relatoriosRoutes from "./routes/relatorios.routes";
 
 const app = express();
 
@@ -59,6 +60,7 @@ app.use("/api/assinaturas", assinaturasRoutes);
 app.use("/api/route-map", routeMapRoutes);
 app.use("/api/shortcut", shortcutRoutes);
 app.use("/api/cofrinhos", cofrinhosRoutes);
+app.use("/api/relatorios", relatoriosRoutes);
 
 // 404
 app.use((_req, res) => {

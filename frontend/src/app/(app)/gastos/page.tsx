@@ -1427,6 +1427,8 @@ function GastoMobileCard({
   const [offsetX, setOffsetX] = useState(0);
   const [dragging, setDragging] = useState(false);
   const startX = useRef(0);
+  const startY = useRef(0);
+  const dirLocked = useRef<"h" | "v" | null>(null);
   const moved = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -1440,21 +1442,29 @@ function GastoMobileCard({
 
   function onTouchStart(e: React.TouchEvent) {
     startX.current = e.touches[0].clientX;
+    startY.current = e.touches[0].clientY;
     moved.current = false;
-    setDragging(true);
+    dirLocked.current = null;
   }
 
   function onTouchMove(e: React.TouchEvent) {
-    const delta = e.touches[0].clientX - startX.current;
-    if (delta < 0) {
-      moved.current = true;
-      const w = containerRef.current?.getBoundingClientRect().width ?? 320;
-      setOffsetX(Math.max(delta, -w));
+    const deltaX = e.touches[0].clientX - startX.current;
+    const deltaY = e.touches[0].clientY - startY.current;
+
+    if (!dirLocked.current && (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5)) {
+      dirLocked.current = Math.abs(deltaX) > Math.abs(deltaY) ? "h" : "v";
     }
+    if (dirLocked.current !== "h" || deltaX >= 0) return;
+
+    moved.current = true;
+    if (!dragging) setDragging(true);
+    const w = containerRef.current?.getBoundingClientRect().width ?? 320;
+    setOffsetX(Math.max(deltaX, -w));
   }
 
   function onTouchEnd() {
     setDragging(false);
+    dirLocked.current = null;
     const w = containerRef.current?.getBoundingClientRect().width ?? 320;
     if (offsetX < -(w * 0.48)) onDelete();
     setOffsetX(0);
@@ -1466,7 +1476,7 @@ function GastoMobileCard({
   }
 
   return (
-    <div ref={containerRef} className="relative rounded-xl overflow-hidden bg-[hsl(222,47%,9%)]">
+    <div ref={containerRef} className="relative rounded-xl overflow-hidden bg-[hsl(222,47%,9%)]" style={{ touchAction: "pan-y" }}>
       {/* Delete background — fades in as card slides. Opacity tied to swipeAmt = seamless. */}
       <div
         className={`absolute inset-0 flex items-center justify-end pr-5 transition-colors duration-150 ${deleteActive ? "bg-rose-600" : "bg-rose-500"}`}

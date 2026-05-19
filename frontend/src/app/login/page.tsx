@@ -28,6 +28,7 @@ import {
   BarChart3,
   Check,
   Mail,
+  ChevronLeft,
 } from "lucide-react";
 
 const FEATURES = [
@@ -195,7 +196,35 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex flex-col md:flex-row">
+
+      {/* ── MOBILE GRADIENT HEADER (oculto no desktop) ── */}
+      <div
+        className="md:hidden relative overflow-hidden flex flex-col items-center text-center px-6 pt-12 pb-10"
+        style={{ background: "linear-gradient(135deg, #0ea5e9 0%, #2563eb 55%, #1d4ed8 100%)" }}
+      >
+        <div
+          className="absolute inset-0 opacity-[0.05]"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(255,255,255,0.7) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.7) 1px, transparent 1px)",
+            backgroundSize: "48px 48px",
+          }}
+        />
+        <div
+          className="pointer-events-none absolute -top-10 left-0 h-48 w-48 rounded-full opacity-20"
+          style={{ background: "radial-gradient(circle, #38bdf8 0%, transparent 70%)" }}
+        />
+        <Link href="/" className="relative z-10 flex flex-col items-center gap-3">
+          <Image src="/logo-valora-branca.png" alt="Valora" width={56} height={56} className="size-14" />
+          <div>
+            <p className="font-display text-3xl tracking-wide text-white">Valora</p>
+            <p className="text-sm text-sky-100/70 mt-1">Inteligência financeira pessoal</p>
+          </div>
+        </Link>
+      </div>
+
+      {/* ── DESKTOP GRADIENT PANEL ── */}
       <div
         className="hidden md:flex md:w-[58%] relative overflow-hidden flex-col justify-between p-12"
         style={{ background: "linear-gradient(135deg, #0ea5e9 0%, #2563eb 55%, #1d4ed8 100%)" }}
@@ -209,10 +238,10 @@ export default function LoginPage() {
           }}
         />
 
-        <div className="relative z-10 flex items-center gap-4">
+        <Link href="/" className="relative z-10 flex items-center gap-4 group w-fit">
           <Image src="/logo-valora-branca.png" alt="Valora" width={80} height={80} className="size-20" />
-          <span className="font-display text-5xl tracking-wide text-white">Valora</span>
-        </div>
+          <span className="font-display text-5xl tracking-wide text-white group-hover:text-sky-100 transition-colors">Valora</span>
+        </Link>
 
         <div className="relative z-10 space-y-8">
           <div className="space-y-4">
@@ -245,25 +274,26 @@ export default function LoginPage() {
         </div>
       </div>
 
-      <div className="flex-1 flex items-center justify-center bg-background p-6 md:p-10">
+      <div className="flex-1 bg-background px-5 py-8 md:flex md:items-center md:justify-center md:p-10">
         <div className="w-full max-w-sm space-y-6">
-          <div className="flex flex-col items-center gap-4 md:hidden">
-            <Image src="/logo-valora-branca.png" alt="Valora" width={112} height={112} className="size-28" />
-            <div className="text-center">
-              <h1 className="text-5xl font-bold text-foreground">Valora</h1>
-              <p className="text-sm text-muted-foreground">Controle financeiro pessoal</p>
-            </div>
-          </div>
-
           <div className="hidden md:block space-y-1">
             <h2 className="text-2xl font-bold text-foreground">Bem-vindo de volta</h2>
             <p className="text-sm text-muted-foreground">Entre na sua conta para continuar</p>
           </div>
 
           <Card className="shadow-md border-border/60">
-            <CardHeader className="space-y-1 pb-4">
-              <CardTitle className="text-xl">Entrar na conta</CardTitle>
-              <CardDescription>Use sua senha ou receba um codigo por e-mail</CardDescription>
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-1.5">
+                <Link
+                  href="/"
+                  aria-label="Voltar para o início"
+                  className="text-muted-foreground/40 hover:text-muted-foreground transition-colors shrink-0"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Link>
+                <CardTitle className="text-xl">Entrar na conta</CardTitle>
+              </div>
+              <CardDescription className="mt-1">Use sua senha ou receba um codigo por e-mail</CardDescription>
             </CardHeader>
 
             <CardContent>
@@ -394,6 +424,7 @@ export default function LoginPage() {
                           ? "Redirecionando..."
                           : "A entrar..."
                         : "Entrar com codigo"}
+
                     </Button>
                   </form>
                 </TabsContent>

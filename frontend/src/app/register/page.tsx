@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -62,6 +63,7 @@ export default function RegisterPage() {
   const [showConfirm, setShowConfirm]   = useState(false);
   const [error, setError]             = useState("");
   const [loading, setLoading]         = useState(false);
+  const [lgpdAccepted, setLgpdAccepted] = useState(false);
 
   const strength        = password ? passwordStrength(password) : null;
   const allPassed       = REQUIREMENTS.every((r) => r.test(password));
@@ -116,7 +118,7 @@ export default function RegisterPage() {
       </div>
 
       {/* ── FORM PANEL ── */}
-      <div className="flex-1 bg-background px-5 py-8 md:flex md:items-center md:justify-center md:p-10">
+      <div className="flex-1 bg-background px-5 pt-5 pb-8 md:flex md:items-center md:justify-center md:p-10">
         <div className="w-full max-w-sm space-y-6">
 
           {/* Desktop header */}
@@ -258,6 +260,30 @@ export default function RegisterPage() {
                   )}
                 </div>
 
+                <div className="rounded-lg border border-border/60 bg-muted/30 p-3.5 flex items-start gap-3">
+                  <Checkbox
+                    id="lgpd"
+                    checked={lgpdAccepted}
+                    onCheckedChange={(v) => setLgpdAccepted(!!v)}
+                    className="mt-0.5 shrink-0"
+                  />
+                  <Label
+                    htmlFor="lgpd"
+                    className="text-xs text-muted-foreground leading-relaxed font-normal cursor-pointer"
+                  >
+                    Li e aceito a{" "}
+                    <Link href="/politica-de-privacidade" target="_blank" className="text-primary underline underline-offset-2 hover:text-primary/80 font-medium">
+                      Política de Privacidade
+                    </Link>{" "}
+                    e os{" "}
+                    <Link href="/termos-de-uso" target="_blank" className="text-primary underline underline-offset-2 hover:text-primary/80 font-medium">
+                      Termos de Uso
+                    </Link>
+                    , concordando com o tratamento dos meus dados conforme a{" "}
+                    <span className="font-medium text-foreground">LGPD</span>.
+                  </Label>
+                </div>
+
                 {error && (
                   <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-sm text-destructive">
                     <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
@@ -268,7 +294,7 @@ export default function RegisterPage() {
                 <Button
                   type="submit"
                   className="w-full"
-                  disabled={loading || !allPassed || passwordsMismatch}
+                  disabled={loading || !allPassed || passwordsMismatch || !lgpdAccepted}
                 >
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {loading ? "Criando conta..." : "Criar conta"}

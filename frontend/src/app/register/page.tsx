@@ -260,16 +260,24 @@ export default function RegisterPage() {
                   )}
                 </div>
 
-                <div className="rounded-lg border border-border/60 bg-muted/30 p-3.5 flex items-start gap-3">
-                  <Checkbox
-                    id="lgpd"
-                    checked={lgpdAccepted}
-                    onCheckedChange={(v) => setLgpdAccepted(!!v)}
-                    className="mt-0.5 shrink-0"
-                  />
+                <div className={`rounded-lg border p-3.5 flex items-start gap-3 transition-all duration-300 ${
+                  lgpdAccepted
+                    ? "border-emerald-500/40 bg-emerald-500/5"
+                    : "border-border/60 bg-muted/30"
+                }`}>
+                  <div className={`transition-transform duration-150 ${lgpdAccepted ? "scale-110" : "scale-100"}`}>
+                    <Checkbox
+                      id="lgpd"
+                      checked={lgpdAccepted}
+                      onCheckedChange={(v) => setLgpdAccepted(!!v)}
+                      className="mt-0.5 shrink-0"
+                    />
+                  </div>
                   <Label
                     htmlFor="lgpd"
-                    className="text-xs text-muted-foreground leading-relaxed font-normal cursor-pointer"
+                    className={`text-xs leading-relaxed font-normal cursor-pointer transition-colors duration-300 ${
+                      lgpdAccepted ? "text-foreground" : "text-muted-foreground"
+                    }`}
                   >
                     Li e aceito a{" "}
                     <Link href="/politica-de-privacidade" target="_blank" className="text-primary underline underline-offset-2 hover:text-primary/80 font-medium">

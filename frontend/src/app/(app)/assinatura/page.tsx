@@ -504,8 +504,9 @@ export default function AssinaturaPage() {
   const isAdmin     = user?.user_level === "admin";
   const isCancelled = !!status?.subscription_cancelled_at;
   const hasUsedTrial = !!status?.trial_ends_at;
-  const currentPlan  = (status?.subscription_plan ?? "monthly") as "monthly" | "annual";
-  const isCourtesy   = currentPlan === "courtesy";
+  const rawPlan      = status?.subscription_plan ?? "monthly";
+  const isCourtesy   = rawPlan === "courtesy";
+  const currentPlan  = (isCourtesy ? "monthly" : rawPlan) as "monthly" | "annual";
   const accessUntil  = fmtDate(status?.subscription_ends_at ?? null);
 
   return (

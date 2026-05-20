@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import { useUser } from "@/contexts/UserContext";
@@ -433,7 +433,7 @@ function StatusHero({ status, isAdmin, isCancelled }: { status: SubStatus; isAdm
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-export default function AssinaturaPage() {
+function AssinaturaPageContent() {
   const searchParams = useSearchParams();
   const { user }     = useUser();
 
@@ -626,5 +626,13 @@ export default function AssinaturaPage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+  );
+}
+
+export default function AssinaturaPage() {
+  return (
+    <Suspense>
+      <AssinaturaPageContent />
+    </Suspense>
   );
 }

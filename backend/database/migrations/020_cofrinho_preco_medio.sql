@@ -1,0 +1,2 @@
+ALTER TABLE cofrinhos
+  ADD COLUMN IF NOT EXISTS preco_medio DECIMAL(12,4);

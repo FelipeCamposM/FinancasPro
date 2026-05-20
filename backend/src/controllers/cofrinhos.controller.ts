@@ -16,6 +16,7 @@ const TIPO_COLUMNS = [
   "ticker",
   "quantidade_cotas",
   "valor_cota",
+  "preco_medio",
   "instituicao",
   "data_alvo",
   "observacoes",
@@ -117,11 +118,16 @@ export const createCofrinho = async (
     const userId = req.user!.userId;
     const body = normalizeByTipo(req.body as CreateCofrinhoInput);
 
+    const preco_medio =
+      body.tipo === "acao"
+        ? ((body as Record<string, unknown>).valor_cota ?? null)
+        : null;
+
     const { rows } = await pool.query(
       `INSERT INTO cofrinhos
         (user_id, tipo, nome, saldo_atual, meta_valor, ticker, quantidade_cotas,
-         valor_cota, instituicao, data_alvo, observacoes, ativo)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+         valor_cota, preco_medio, instituicao, data_alvo, observacoes, ativo)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
        RETURNING *`,
       [
         userId,
@@ -132,6 +138,7 @@ export const createCofrinho = async (
         body.ticker ?? null,
         body.quantidade_cotas ?? null,
         (body as Record<string, unknown>).valor_cota ?? null,
+        preco_medio,
         body.instituicao ?? null,
         body.data_alvo ?? null,
         body.observacoes ?? null,
@@ -283,13 +290,21 @@ export const depositarCofrinho = async (
         return;
       }
       const { quantidade_cotas, valor_cota, observacoes } = parsed.data;
-      const novaQtd = Number(cofrinho.quantidade_cotas ?? 0) + Number(quantidade_cotas);
+      const qtdAnterior = Number(cofrinho.quantidade_cotas ?? 0);
+      const novaQtd = qtdAnterior + Number(quantidade_cotas);
       const novoSaldo = novaQtd * Number(valor_cota);
       const valorMovimentacao = Number(quantidade_cotas) * Number(valor_cota);
 
+      const precoMedioAnterior = Number(cofrinho.preco_medio ?? valor_cota);
+      const novoPrecoMedio =
+        qtdAnterior === 0
+          ? Number(valor_cota)
+          : (qtdAnterior * precoMedioAnterior + Number(quantidade_cotas) * Number(valor_cota)) /
+            novaQtd;
+
       await pool.query(
-        "UPDATE cofrinhos SET quantidade_cotas = $1, valor_cota = $2, saldo_atual = $3 WHERE id = $4",
-        [novaQtd, valor_cota, novoSaldo, cofrinhoId],
+        "UPDATE cofrinhos SET quantidade_cotas = $1, valor_cota = $2, saldo_atual = $3, preco_medio = $4 WHERE id = $5",
+        [novaQtd, valor_cota, novoSaldo, novoPrecoMedio, cofrinhoId],
       );
       await pool.query(
         `INSERT INTO cofrinho_movimentacoes

@@ -81,8 +81,16 @@ function fmt(valor: number) {
   return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
-function fmtDate(date: string) {
-  return new Date(date + "T12:00:00").toLocaleDateString("pt-BR");
+function fmtDate(date?: string | null) {
+  if (!date) return null;
+
+  const parsedDate = /^\d{4}-\d{2}-\d{2}$/.test(date)
+    ? new Date(`${date}T12:00:00`)
+    : new Date(date);
+
+  if (Number.isNaN(parsedDate.getTime())) return null;
+
+  return parsedDate.toLocaleDateString("pt-BR");
 }
 
 export default function AssinaturasPage() {
@@ -319,6 +327,8 @@ export default function AssinaturasPage() {
               icon: MoreHorizontal,
             };
             const Icon = pgto.icon;
+            const dataInicio = fmtDate(a.data_inicio);
+            const dataCancelamento = fmtDate(a.data_cancelamento);
 
             return (
               <div
@@ -394,17 +404,17 @@ export default function AssinaturasPage() {
                         <span className="font-bold text-violet-300/80">
                           {a.dia_cobranca}
                         </span>
-                        {" "}— desde {fmtDate(a.data_inicio)}
+                        {dataInicio && <> — desde {dataInicio}</>}
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <Icon className="h-3.5 w-3.5 shrink-0 text-violet-400/60" />
                       <span>{pgto.label}</span>
                     </div>
-                    {a.data_cancelamento && (
+                    {dataCancelamento && (
                       <div className="flex items-center gap-1.5 text-rose-400/80">
                         <XCircle className="h-3.5 w-3.5 shrink-0" />
-                        <span>Cancelada em {fmtDate(a.data_cancelamento)}</span>
+                        <span>Cancelada em {dataCancelamento}</span>
                       </div>
                     )}
                   </div>

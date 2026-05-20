@@ -23,9 +23,11 @@ import {
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { CurrencyInput } from "@/components/ui/currency-input";
+import { NumberStepper } from "@/components/ui/number-stepper";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -52,6 +54,7 @@ export interface Cofrinho {
   ticker: string | null;
   quantidade_cotas: number | null;
   valor_cota: number | null;
+  preco_medio: number | null;
   instituicao: string | null;
   data_alvo: string | null;
   observacoes: string | null;
@@ -236,23 +239,59 @@ export function CofrinhoDialog({ open, tipo, cofrinho, onClose, onSuccess }: Pro
     }
   }
 
+  const isAcao = currentTipo === "acao";
+  const gradientCls = isAcao
+    ? "bg-gradient-to-br from-emerald-700 to-teal-600"
+    : "bg-gradient-to-br from-blue-700 to-sky-600";
+
   return (
     <Dialog open={open} onOpenChange={(value) => !value && onClose()}>
       <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-lg">
-        <div className="flex items-center gap-3.5 border-b border-white/[0.08] px-5 py-4">
-          <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${config.bg}`}>
-            {isEdit ? (
-              <Pencil className={`h-4 w-4 ${config.color}`} />
-            ) : (
-              <Plus className={`h-4 w-4 ${config.color}`} />
+        {/* Gradient header */}
+        <div className={`${gradientCls} px-6 py-5`}>
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/20">
+                {isEdit ? <Pencil className="h-4 w-4 text-white" /> : <Plus className="h-4 w-4 text-white" />}
+              </div>
+              <div>
+                <DialogDescription className="text-white/65 text-[11px] font-medium uppercase tracking-wider m-0 p-0">
+                  {isEdit ? "Editar" : "Novo"}
+                </DialogDescription>
+                <DialogTitle className="text-2xl font-black text-white tracking-tight leading-none">
+                  {isEdit
+                    ? `Editar ${config.label}`
+                    : `Nova ${config.label}`}
+                </DialogTitle>
+              </div>
+            </div>
+          </DialogHeader>
+
+          {/* Info card */}
+          <div className="rounded-xl bg-white/15 border border-white/20 px-4 py-3 flex items-center gap-3">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/20">
+              <Icon className="h-4 w-4 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-white leading-none">
+                {isEdit ? cofrinho?.nome : config.desc}
+              </p>
+              {isEdit && (
+                <p className="text-xs text-white/65 mt-0.5">
+                  {isAcao ? cofrinho?.ticker : cofrinho?.instituicao || "Conta manual"}
+                </p>
+              )}
+              {!isEdit && (
+                <p className="text-xs text-white/60 mt-0.5">{config.label}</p>
+              )}
+            </div>
+            {isEdit && (
+              <div className="shrink-0 text-right">
+                <p className="text-base font-black text-white">{formatCurrency(cofrinho?.saldo_atual)}</p>
+                <p className="text-[10px] text-white/60">saldo atual</p>
+              </div>
             )}
           </div>
-          <DialogHeader className="space-y-0">
-            <DialogTitle className="text-base font-semibold leading-none">
-              {isEdit ? "Editar cofrinho" : `Nova ${config.label.toLowerCase()}`}
-            </DialogTitle>
-            <p className="mt-1 text-xs text-white/40">{config.desc}</p>
-          </DialogHeader>
         </div>
 
         <Form {...form}>
@@ -313,15 +352,13 @@ export function CofrinhoDialog({ open, tipo, cofrinho, onClose, onSuccess }: Pro
                         <FormItem>
                           <SectionLabel>Cotas</SectionLabel>
                           <FormControl>
-                            <Input
-                              type="number"
-                              step="0.000001"
-                              min="0"
+                            <NumberStepper
+                              value={field.value}
+                              onChange={field.onChange}
+                              step={1}
+                              min={0}
                               placeholder="10"
-                              value={field.value ?? ""}
-                              onChange={(e) =>
-                                field.onChange(e.target.value ? Number(e.target.value) : undefined)
-                              }
+                              color="text-emerald-300"
                             />
                           </FormControl>
                           <FormMessage />
@@ -428,7 +465,11 @@ export function CofrinhoDialog({ open, tipo, cofrinho, onClose, onSuccess }: Pro
                   )}
                 </button>
 
-                {showObjetivo && (
+                <div
+                  className={`overflow-hidden transition-all duration-200 ease-in-out ${
+                    showObjetivo ? "max-h-48 opacity-100" : "max-h-0 opacity-0 pointer-events-none"
+                  }`}
+                >
                   <div className="grid grid-cols-2 gap-3 border-t border-white/[0.08] px-4 pb-4 pt-3">
                     <FormField
                       control={form.control}
@@ -474,7 +515,7 @@ export function CofrinhoDialog({ open, tipo, cofrinho, onClose, onSuccess }: Pro
                       )}
                     />
                   </div>
-                )}
+                </div>
               </div>
 
               {/* Observações */}

@@ -7,11 +7,14 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { ArrowRight, Landmark, Loader2, Plus, TrendingUp } from "lucide-react";
 import { api } from "@/lib/api";
+import { fetchAndCacheQuotes, getCachedQuotes } from "@/lib/stockApi";
+import { NumberStepper } from "@/components/ui/number-stepper";
 import { Button } from "@/components/ui/button";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -22,7 +25,6 @@ import {
   FormItem,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Cofrinho } from "./CofrinhoDialog";
 
@@ -172,10 +174,12 @@ function DepositarContaForm({
 
 function DepositarAcaoForm({
   cofrinho,
+  open,
   onClose,
   onSuccess,
 }: {
   cofrinho: Cofrinho;
+  open: boolean;
   onClose: () => void;
   onSuccess: () => void;
 }) {
@@ -196,11 +200,30 @@ function DepositarAcaoForm({
     });
   }, [cofrinho, form]);
 
+  // Auto-fill valor_cota from Brapi cache when dialog opens
+  useEffect(() => {
+    if (!open || !cofrinho.ticker) return;
+    const cached = getCachedQuotes();
+    if (cached[cofrinho.ticker]) {
+      form.setValue("valor_cota", cached[cofrinho.ticker].price);
+      return;
+    }
+    fetchAndCacheQuotes([cofrinho.ticker])
+      .then((quotes) => {
+        if (quotes[cofrinho.ticker!]) {
+          form.setValue("valor_cota", quotes[cofrinho.ticker!].price);
+        }
+      })
+      .catch(() => {/* silently ignore — user can type manually */});
+  }, [open, cofrinho.ticker, form]);
+
   const watchedQtd = form.watch("quantidade_cotas");
   const watchedVc = form.watch("valor_cota");
   const qtdAtual = Number(cofrinho.quantidade_cotas ?? 0);
   const novaQtd = qtdAtual + Number(watchedQtd ?? 0);
   const novoSaldo = novaQtd * Number(watchedVc ?? 0);
+
+  const cachedQuote = cofrinho.ticker ? getCachedQuotes()[cofrinho.ticker] : null;
 
   async function onSubmit(values: AcaoValues) {
     try {
@@ -217,23 +240,22 @@ function DepositarAcaoForm({
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <div className="space-y-5 px-5 py-5">
+          {/* Qtd + Valor lado a lado */}
           <div className="grid grid-cols-2 gap-3">
             <FormField
               control={form.control}
               name="quantidade_cotas"
               render={({ field }) => (
                 <FormItem>
-                  <SectionLabel>Qtd de cotas a adicionar</SectionLabel>
+                  <SectionLabel>Cotas a adicionar</SectionLabel>
                   <FormControl>
-                    <Input
-                      type="number"
-                      step="0.000001"
-                      min="0"
-                      placeholder="10"
-                      value={field.value ?? ""}
-                      onChange={(e) =>
-                        field.onChange(e.target.value ? Number(e.target.value) : undefined)
-                      }
+                    <NumberStepper
+                      value={field.value}
+                      onChange={field.onChange}
+                      step={1}
+                      min={0}
+                      placeholder="0"
+                      color="text-emerald-300"
                     />
                   </FormControl>
                   <FormMessage />
@@ -245,7 +267,14 @@ function DepositarAcaoForm({
               name="valor_cota"
               render={({ field }) => (
                 <FormItem>
-                  <SectionLabel>Valor atual da cota</SectionLabel>
+                  <SectionLabel>
+                    Valor da cota
+                    {cachedQuote && (
+                      <span className="ml-1 normal-case font-normal text-emerald-400/70">
+                        · real
+                      </span>
+                    )}
+                  </SectionLabel>
                   <FormControl>
                     <div className="relative">
                       <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-white/35">
@@ -264,21 +293,22 @@ function DepositarAcaoForm({
             />
           </div>
 
+          {/* Preview de resultado */}
           {watchedQtd && watchedQtd > 0 && watchedVc && watchedVc > 0 && (
-            <div className="rounded-xl border border-emerald-400/15 bg-emerald-500/[0.06] px-4 py-3 text-sm space-y-1.5">
-              <div className="flex items-center gap-2">
-                <span className="text-white/40 text-xs">Cotas</span>
-                <span className="tabular-nums text-white/50">
+            <div className="rounded-xl border border-emerald-400/15 bg-emerald-500/[0.06] px-4 py-3 space-y-1.5">
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-white/35">Cotas</span>
+                <span className="tabular-nums text-white/50 text-xs">
                   {qtdAtual.toLocaleString("pt-BR")}
                 </span>
                 <ArrowRight className="h-3 w-3 shrink-0 text-white/30" />
-                <span className="font-semibold tabular-nums text-emerald-300">
+                <span className="font-bold tabular-nums text-emerald-300 text-sm">
                   {novaQtd.toLocaleString("pt-BR")}
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-white/40 text-xs">Total</span>
-                <span className="font-semibold tabular-nums text-emerald-300">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-white/35">Total</span>
+                <span className="font-bold tabular-nums text-emerald-300">
                   {formatCurrency(novoSaldo)}
                 </span>
               </div>
@@ -332,29 +362,78 @@ export function DepositarDialog({ cofrinho, open, onClose, onSuccess }: Props) {
 
   const isAcao = cofrinho.tipo === "acao";
   const Icon = isAcao ? TrendingUp : Landmark;
-  const color = isAcao ? "text-emerald-300" : "text-blue-300";
-  const bg = isAcao ? "bg-emerald-500/15" : "bg-blue-500/15";
+  const gradientCls = isAcao
+    ? "bg-gradient-to-br from-emerald-700 to-teal-600"
+    : "bg-gradient-to-br from-blue-700 to-sky-600";
+
+  const cachedQuote = isAcao && cofrinho.ticker ? getCachedQuotes()[cofrinho.ticker] : null;
 
   return (
     <Dialog open={open} onOpenChange={(value) => !value && onClose()}>
       <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-md">
-        <div className="flex items-center gap-3.5 border-b border-white/[0.08] px-5 py-4">
-          <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${bg}`}>
-            <Plus className={`h-4 w-4 ${color}`} />
-          </div>
-          <DialogHeader className="space-y-0">
-            <DialogTitle className="text-base font-semibold leading-none">
-              {isAcao ? "Adicionar cotas" : "Depositar"} — {cofrinho.nome}
-            </DialogTitle>
-            <p className="mt-1 flex items-center gap-1 text-xs text-white/40">
-              <Icon className="h-3 w-3" />
-              {isAcao ? cofrinho.ticker : cofrinho.instituicao || "Conta manual"}
-            </p>
+
+        {/* Gradient header — igual ao CofrinhoDialog */}
+        <div className={`${gradientCls} px-6 py-5`}>
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/20">
+                <Plus className="h-4 w-4 text-white" />
+              </div>
+              <div>
+                <DialogDescription className="text-white/65 text-[11px] font-medium uppercase tracking-wider m-0 p-0">
+                  {isAcao ? "Ação" : "Conta"}
+                </DialogDescription>
+                <DialogTitle className="text-2xl font-black text-white tracking-tight leading-none">
+                  {isAcao ? "Adicionar cotas" : "Depositar"}
+                </DialogTitle>
+              </div>
+            </div>
           </DialogHeader>
+
+          {/* Info card */}
+          <div className="rounded-xl bg-white/15 border border-white/20 px-4 py-3 flex items-center gap-3">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/20">
+              <Icon className="h-4 w-4 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-white leading-none truncate">{cofrinho.nome}</p>
+              <p className="text-xs text-white/65 mt-0.5 flex items-center gap-1.5">
+                <span>{isAcao ? cofrinho.ticker : cofrinho.instituicao || "Conta manual"}</span>
+                {cachedQuote && (
+                  <span className="rounded-full bg-white/20 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                    {formatCurrency(cachedQuote.price)}
+                  </span>
+                )}
+              </p>
+            </div>
+            <div className="shrink-0 text-right">
+              {isAcao && cachedQuote ? (
+                <>
+                  <p className="text-base font-black text-white">
+                    {formatCurrency(Number(cofrinho.quantidade_cotas ?? 0) * cachedQuote.price)}
+                  </p>
+                  <p className="text-[10px] text-white/60">mercado</p>
+                  <p className="text-[10px] text-white/40 mt-0.5">
+                    compra: {formatCurrency(cofrinho.saldo_atual)}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-base font-black text-white">{formatCurrency(cofrinho.saldo_atual)}</p>
+                  <p className="text-[10px] text-white/60">{isAcao ? "total atual" : "saldo atual"}</p>
+                </>
+              )}
+            </div>
+          </div>
         </div>
 
         {isAcao ? (
-          <DepositarAcaoForm cofrinho={cofrinho} onClose={onClose} onSuccess={onSuccess} />
+          <DepositarAcaoForm
+            cofrinho={cofrinho}
+            open={open}
+            onClose={onClose}
+            onSuccess={onSuccess}
+          />
         ) : (
           <DepositarContaForm cofrinho={cofrinho} onClose={onClose} onSuccess={onSuccess} />
         )}

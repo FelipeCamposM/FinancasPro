@@ -24,9 +24,11 @@ import {
 import {
   Plus, Search, Trash2, Tag, Lock, AlertTriangle, Smartphone,
   Copy, Check, Eye, EyeOff, RefreshCw, ExternalLink, Pencil,
-  ChevronDown, Settings,
+  ChevronDown, Settings, Crown, CheckCircle2, Clock, XCircle, Loader2,
 } from "lucide-react";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { useUser } from "@/contexts/UserContext";
 
 interface Categoria {
   id: number; nome: string; cor: string | null;
@@ -348,18 +350,392 @@ function CategoriaRow({ cat, onEdit }: { cat: Categoria; onEdit: () => void }) {
   );
 }
 
+// ─── Assinatura section ───────────────────────────────────────────────────────
+
+interface SubStatus {
+  user_level: string;
+  trial_ends_at: string | null;
+  subscription_ends_at: string | null;
+  mp_subscription_id: string | null;
+  subscription_plan: string | null;
+  subscription_cancelled_at: string | null;
+}
+
+function daysUntil(dateStr: string | null) {
+  if (!dateStr) return null;
+  const diff = new Date(dateStr).getTime() - Date.now();
+  return Math.max(0, Math.ceil(diff / 86_400_000));
+}
+
+function fmt(dateStr: string | null) {
+  if (!dateStr) return null;
+  return new Date(dateStr).toLocaleDateString("pt-BR");
+}
+
+function AssinaturaSection() {
+  const { user }                      = useUser();
+  const [status, setStatus]           = useState<SubStatus | null>(null);
+  const [loading, setLoading]         = useState(true);
+  const [cancelling, setCancelling]   = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [changingPlan, setChangingPlan] = useState(false);
+
+  useEffect(() => {
+    api.get<{ data: SubStatus }>("/subscriptions/status")
+      .then(({ data }) => setStatus(data.data))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  async function handleCancel() {
+    setCancelling(true);
+    try {
+      const { data } = await api.delete<{ message: string }>("/subscriptions");
+      toast.success(data.message, { duration: 6000 });
+      setStatus((s) => s ? { ...s, subscription_cancelled_at: new Date().toISOString() } : s);
+      setShowConfirm(false);
+    } catch {
+      toast.error("Erro ao cancelar renovação");
+    } finally {
+      setCancelling(false);
+    }
+  }
+
+  async function handleChangePlan(targetPlan: "monthly" | "annual") {
+    setChangingPlan(true);
+    try {
+      const { data } = await api.patch<{ message: string }>("/subscriptions/plan", { plan: targetPlan });
+      toast.success(data.message, { duration: 6000 });
+      setStatus((s) => s ? { ...s, subscription_plan: targetPlan } : s);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      toast.error(msg ?? "Erro ao alterar plano");
+    } finally {
+      setChangingPlan(false);
+    }
+  }
+
+  const isPremium   = status?.user_level === "premium";
+  const isCourtesy  = status?.subscription_plan === "courtesy";
+  const isCancelled = !!status?.subscription_cancelled_at;
+  const isAnnual    = status?.subscription_plan === "annual";
+  const trialDays   = daysUntil(status?.trial_ends_at ?? null);
+  const inTrial     = trialDays !== null && trialDays > 0;
+  const subEnd      = fmt(status?.subscription_ends_at ?? null);
+  const subEndDays  = daysUntil(status?.subscription_ends_at ?? null);
+  const freeDays    = !isPremium && user?.created_at
+    ? Math.min(7, Math.max(0, Math.ceil((7 * 86_400_000 - (Date.now() - new Date(user.created_at).getTime())) / 86_400_000)))
+    : null;
+
+  // Plan label helpers
+  const planLabel   = isAnnual ? "Anual" : "Mensal";
+  const planPrice   = isAnnual ? "R$ 94,90/ano" : "R$ 9,90/mês";
+
+  return (
+    <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] overflow-hidden">
+      <div className="px-5 py-4 border-b border-white/[0.06]">
+        <h2 className="text-sm font-semibold text-white">Plano atual</h2>
+        <p className="text-xs text-white/40 mt-0.5">Gerencie sua assinatura Valora Premium</p>
+      </div>
+
+      <div className="p-5 space-y-4">
+        {loading ? (
+          <div className="space-y-3">
+            <div className="h-28 rounded-2xl bg-white/[0.04] animate-pulse" />
+            <div className="h-10 rounded-xl bg-white/[0.03] animate-pulse" />
+            <div className="h-8 w-40 rounded-lg bg-white/[0.03] animate-pulse" />
+          </div>
+        ) : (
+          <>
+            {/* ── Main plan card ── */}
+            {isPremium && inTrial && (
+              <div className="rounded-2xl overflow-hidden">
+                <div className="bg-gradient-to-br from-violet-600 to-purple-500 px-5 py-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/20">
+                        <Clock className="h-4 w-4 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-white/65 font-medium uppercase tracking-wider">Valora Premium</p>
+                        <p className="text-sm font-bold text-white leading-none">Período de teste</p>
+                      </div>
+                    </div>
+                    <span className="rounded-full bg-white/20 px-2.5 py-1 text-[10px] font-bold text-white uppercase tracking-wide">Trial</span>
+                  </div>
+                  <div className="rounded-xl bg-white/15 border border-white/20 px-4 py-3 flex items-center gap-4">
+                    <div className="text-center">
+                      <p className="text-3xl font-black text-white leading-none">{trialDays}</p>
+                      <p className="text-[10px] text-white/70 mt-0.5">dia{trialDays !== 1 ? "s" : ""} grátis</p>
+                    </div>
+                    <div className="h-8 w-px bg-white/20" />
+                    <div>
+                      {subEnd && <p className="text-xs text-white/80">Primeiro pagamento em <span className="font-bold">{subEnd}</span></p>}
+                      <p className="text-xs text-white/60 mt-0.5">{planLabel} · {planPrice}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {isPremium && !inTrial && !isCancelled && !isCourtesy && (
+              <div className="rounded-2xl overflow-hidden">
+                <div className="bg-gradient-to-br from-blue-600 to-sky-500 px-5 py-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/20">
+                        <Crown className="h-4 w-4 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-white/65 font-medium uppercase tracking-wider">Valora Premium</p>
+                        <p className="text-sm font-bold text-white leading-none">Plano {planLabel}</p>
+                      </div>
+                    </div>
+                    <span className="rounded-full bg-emerald-400/25 border border-emerald-300/30 px-2.5 py-1 text-[10px] font-bold text-emerald-200 uppercase tracking-wide">Ativo</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="rounded-xl bg-white/15 border border-white/20 px-3 py-2.5 text-center">
+                      <p className="text-[10px] text-white/60 uppercase tracking-wide">Valor</p>
+                      <p className="text-sm font-black text-white mt-0.5">{planPrice}</p>
+                    </div>
+                    <div className="rounded-xl bg-white/15 border border-white/20 px-3 py-2.5 text-center">
+                      <p className="text-[10px] text-white/60 uppercase tracking-wide">Renova em</p>
+                      <p className="text-sm font-black text-white mt-0.5">{subEnd ?? "—"}</p>
+                      {subEndDays !== null && subEndDays <= 7 && (
+                        <p className="text-[10px] text-amber-300 mt-0.5">{subEndDays}d</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {isPremium && isCancelled && (
+              <div className="rounded-2xl overflow-hidden">
+                <div className="bg-gradient-to-br from-amber-600 to-orange-500 px-5 py-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/20">
+                        <Clock className="h-4 w-4 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-white/65 font-medium uppercase tracking-wider">Valora Premium</p>
+                        <p className="text-sm font-bold text-white leading-none">Renovação cancelada</p>
+                      </div>
+                    </div>
+                    <span className="rounded-full bg-white/20 px-2.5 py-1 text-[10px] font-bold text-white uppercase tracking-wide">Expirando</span>
+                  </div>
+                  <div className="rounded-xl bg-white/15 border border-white/20 px-4 py-3 flex items-center gap-4">
+                    {subEndDays !== null && (
+                      <div className="text-center">
+                        <p className="text-3xl font-black text-white leading-none">{subEndDays}</p>
+                        <p className="text-[10px] text-white/70 mt-0.5">dia{subEndDays !== 1 ? "s" : ""} restantes</p>
+                      </div>
+                    )}
+                    {subEndDays !== null && <div className="h-8 w-px bg-white/20" />}
+                    <div>
+                      {subEnd && <p className="text-xs text-white/80">Acesso garantido até <span className="font-bold">{subEnd}</span></p>}
+                      <p className="text-xs text-white/60 mt-0.5">Sem cobranças futuras</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {isPremium && isCourtesy && (
+              <div className="rounded-2xl overflow-hidden">
+                <div className="bg-gradient-to-br from-violet-700 to-fuchsia-600 px-5 py-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/20">
+                        <Crown className="h-4 w-4 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-white/65 font-medium uppercase tracking-wider">Valora Premium</p>
+                        <p className="text-sm font-bold text-white leading-none">Plano Cortesia</p>
+                      </div>
+                    </div>
+                    <span className="rounded-full bg-white/20 px-2.5 py-1 text-[10px] font-bold text-white uppercase tracking-wide">Permanente</span>
+                  </div>
+                  <p className="text-xs text-white/70">Acesso completo concedido. Sem cobranças.</p>
+                </div>
+              </div>
+            )}
+
+            {!isPremium && (
+              <div className="rounded-2xl overflow-hidden">
+                <div className="bg-gradient-to-br from-slate-700 to-slate-600 px-5 py-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/20">
+                        <Crown className="h-4 w-4 text-white/50" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-white/50 font-medium uppercase tracking-wider">Valora Finanças</p>
+                        <p className="text-sm font-bold text-white leading-none">Plano Gratuito</p>
+                      </div>
+                    </div>
+                  </div>
+                  {freeDays !== null && freeDays > 0 ? (
+                    <div className="rounded-xl bg-white/10 border border-white/15 px-4 py-3 flex items-center gap-4">
+                      <div className="text-center">
+                        <p className="text-3xl font-black text-white leading-none">{freeDays}</p>
+                        <p className="text-[10px] text-white/60 mt-0.5">dia{freeDays !== 1 ? "s" : ""} grátis</p>
+                      </div>
+                      <div className="h-8 w-px bg-white/15" />
+                      <p className="text-xs text-white/60">Assine para manter acesso completo após o período gratuito</p>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-white/50">Assine para desbloquear todos os recursos Premium</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ── Change plan (only for active non-courtesy premium) ── */}
+            {isPremium && !isCourtesy && !isCancelled && !inTrial && (
+              <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-4 space-y-3">
+                <p className="text-xs font-semibold text-white/50 uppercase tracking-widest">Alterar plano</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    disabled={!isAnnual || changingPlan}
+                    onClick={() => handleChangePlan("monthly")}
+                    className={cn(
+                      "relative rounded-xl border px-4 py-3 text-left transition-all",
+                      !isAnnual
+                        ? "border-blue-400/40 bg-blue-500/15 cursor-default"
+                        : "border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/15 disabled:opacity-40"
+                    )}
+                  >
+                    {!isAnnual && (
+                      <span className="absolute right-2 top-2 flex h-4 w-4 items-center justify-center rounded-full bg-blue-500">
+                        <Check className="h-2.5 w-2.5 text-white" />
+                      </span>
+                    )}
+                    <p className="text-xs font-bold text-white">Mensal</p>
+                    <p className="text-lg font-black text-white mt-0.5">R$ 9,90</p>
+                    <p className="text-[10px] text-white/40">por mês</p>
+                  </button>
+
+                  <button
+                    disabled={isAnnual || changingPlan}
+                    onClick={() => handleChangePlan("annual")}
+                    className={cn(
+                      "relative rounded-xl border px-4 py-3 text-left transition-all",
+                      isAnnual
+                        ? "border-emerald-400/40 bg-emerald-500/15 cursor-default"
+                        : "border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/15 disabled:opacity-40"
+                    )}
+                  >
+                    {isAnnual && (
+                      <span className="absolute right-2 top-2 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500">
+                        <Check className="h-2.5 w-2.5 text-white" />
+                      </span>
+                    )}
+                    <span className="absolute left-3 top-2 rounded-full bg-emerald-500/20 border border-emerald-400/30 px-1.5 py-0.5 text-[9px] font-bold text-emerald-400">-20%</span>
+                    <p className="text-xs font-bold text-white mt-4">Anual</p>
+                    <p className="text-lg font-black text-white mt-0.5">R$ 94,90</p>
+                    <p className="text-[10px] text-white/40">por ano · R$ 7,91/mês</p>
+                  </button>
+                </div>
+                {changingPlan && (
+                  <div className="flex items-center gap-2 text-xs text-white/40">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Alterando plano...
+                  </div>
+                )}
+                <p className="text-[10px] text-white/30">A mudança entra em vigor na próxima cobrança.</p>
+              </div>
+            )}
+
+            {/* ── Actions ── */}
+            <div className="flex flex-wrap gap-2">
+              {!isPremium ? (
+                <Link
+                  href="/assinatura"
+                  className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-sky-500 px-4 py-2.5 text-sm font-bold text-white hover:opacity-90 transition-opacity"
+                >
+                  <Crown className="h-4 w-4" />
+                  Assinar agora
+                </Link>
+              ) : (
+                <>
+                  {!isCancelled && !isCourtesy && (
+                    <Link
+                      href="/assinatura"
+                      className="flex items-center gap-2 rounded-lg border border-white/15 bg-white/[0.06] px-4 py-2 text-sm font-semibold text-white/80 hover:bg-white/[0.10] transition-colors"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
+                      Ver detalhes
+                    </Link>
+                  )}
+
+                  {isCancelled ? (
+                    <div className="flex items-center gap-1.5 rounded-lg border border-amber-400/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-400/80">
+                      <Clock className="h-3.5 w-3.5" />
+                      Renovação já cancelada
+                    </div>
+                  ) : !isCourtesy ? (
+                    <button
+                      onClick={() => setShowConfirm(true)}
+                      className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs text-rose-400/60 hover:text-rose-300 hover:bg-rose-500/10 transition-colors"
+                    >
+                      <XCircle className="h-3.5 w-3.5" />
+                      Cancelar renovação
+                    </button>
+                  ) : null}
+                </>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+
+      <AlertDialog open={showConfirm} onOpenChange={(v) => !cancelling && setShowConfirm(v)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancelar renovação automática?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  Seu acesso Premium será mantido até{" "}
+                  <span className="font-semibold text-foreground">{subEnd ?? "o fim do período pago"}</span>.
+                  Após essa data, a conta retorna ao plano gratuito.
+                </p>
+                <p className="text-xs text-muted-foreground">Não há reembolso após o cancelamento.</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={cancelling}>Manter assinatura</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleCancel}
+              disabled={cancelling}
+              className="bg-rose-500/20 border border-rose-400/40 text-rose-300 hover:bg-rose-500/30"
+            >
+              {cancelling ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : null}
+              Confirmar cancelamento
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
 // ─── Settings nav ─────────────────────────────────────────────────────────────
 
 const NAV_ITEMS = [
-  { id: "categorias", icon: Tag, label: "Categorias", desc: "Tags para gastos e rendas" },
-  { id: "iphone", icon: Smartphone, label: "Atalho iPhone", desc: "Integração iOS" },
+  { id: "plano",      icon: Crown,      label: "Plano",          desc: "Assinatura Premium" },
+  { id: "categorias", icon: Tag,        label: "Categorias",     desc: "Tags para gastos e rendas" },
+  { id: "iphone",     icon: Smartphone, label: "Atalho iPhone",  desc: "Integração iOS" },
 ];
 
 // ─── Main page ─────────────────────────────────────────────────────────────────
 
 function ConfiguracoesPageContent() {
   const searchParams = useSearchParams();
-  const [section, setSection] = useState("categorias");
+  const [section, setSection] = useState("plano");
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -491,6 +867,7 @@ function ConfiguracoesPageContent() {
 
         {/* ── Content — full width on mobile ── */}
         <div className="flex-1 min-w-0 w-full">
+          {section === "plano" && <AssinaturaSection />}
           {section === "categorias" && (
             <CategoriasSection
               categorias={categorias}

@@ -84,6 +84,19 @@ export const authenticateApiKey = async (
   await authenticateWithApiKey(req, res, next, key);
 };
 
+/** Bloqueia acesso para não-admins. Usar após authenticate. */
+export const requireAdmin = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void => {
+  if (req.user?.userLevel !== "admin") {
+    res.status(403).json({ error: "Acesso restrito a administradores" });
+    return;
+  }
+  next();
+};
+
 /** Aceita JWT Bearer ou API Key. */
 export const authenticateAny = async (
   req: Request,

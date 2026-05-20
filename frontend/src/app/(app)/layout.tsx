@@ -9,6 +9,7 @@ import AppSidebar from "@/components/nav/AppSidebar";
 import TopNavbar from "@/components/nav/TopNavbar";
 import BottomNav from "@/components/nav/BottomNav";
 import { UserProvider } from "@/contexts/UserContext";
+import { TrialWelcomeDialog } from "@/components/ui/trial-welcome-dialog";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -36,6 +37,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
         <BottomNav />
         <Toaster richColors position="bottom-right" />
+        <TrialWelcomeDialog />
       </SidebarProvider>
     </UserProvider>
   );

@@ -1,0 +1,4 @@
+CREATE TABLE IF NOT EXISTS trial_used_emails (
+  email   VARCHAR(255) PRIMARY KEY,
+  used_at TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+);

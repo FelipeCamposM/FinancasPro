@@ -19,6 +19,8 @@ import routeMapRoutes from "./routes/route-map.routes";
 import shortcutRoutes from "./routes/shortcut.routes";
 import cofrinhosRoutes from "./routes/cofrinhos.routes";
 import relatoriosRoutes from "./routes/relatorios.routes";
+import adminRoutes from "./routes/admin.routes";
+import subscriptionRoutes from "./routes/subscription.routes";
 
 const app = express();
 
@@ -61,6 +63,8 @@ app.use("/api/route-map", routeMapRoutes);
 app.use("/api/shortcut", shortcutRoutes);
 app.use("/api/cofrinhos", cofrinhosRoutes);
 app.use("/api/relatorios", relatoriosRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/subscriptions", subscriptionRoutes);
 
 // 404
 app.use((_req, res) => {

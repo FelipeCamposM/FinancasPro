@@ -24,8 +24,11 @@ import {
   Settings,
   FileBarChart,
   PiggyBank,
+  ShieldCheck,
+  Crown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useUser } from "@/contexts/UserContext";
 
 const navItems = [
   {
@@ -84,11 +87,21 @@ const navItems = [
     activeIconColor: "text-amber-400",
     activeBg: "data-[active=true]:bg-amber-500/10",
   },
+  {
+    href: "/assinatura",
+    icon: Crown,
+    label: "Assinatura",
+    iconColor: "text-yellow-400/70",
+    activeIconColor: "text-yellow-400",
+    activeBg: "data-[active=true]:bg-yellow-500/10",
+  },
 ];
 
 export default function AppSidebar() {
   const pathname = usePathname();
   const { isMobile, setOpenMobile } = useSidebar();
+  const { user } = useUser();
+  const isAdmin = user?.user_level === "admin";
 
   function closeMobileSidebar() {
     if (isMobile) setOpenMobile(false);
@@ -160,6 +173,31 @@ export default function AppSidebar() {
           <SidebarGroupLabel className="h-10 px-4 text-sm font-bold uppercase tracking-[0.14em] text-sidebar-foreground/40 md:h-9 md:px-3 md:text-xs">
             Sistema
           </SidebarGroupLabel>
+          {isAdmin && (() => {
+            const isActive = pathname === "/admin" || pathname.startsWith("/admin/");
+            return (
+              <SidebarMenu className="gap-2 mb-1 md:gap-1.5">
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive}
+                    tooltip="Admin"
+                    className={cn(
+                      "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent",
+                      "data-[active=true]:bg-rose-500/10",
+                      "data-[active=true]:text-sidebar-foreground",
+                      "h-14 gap-3.5 rounded-xl px-4 text-lg transition-all duration-150 [&_svg]:!size-7 md:h-11 md:gap-3 md:rounded-lg md:px-3 md:py-2 md:text-base md:[&_svg]:!size-5",
+                    )}
+                  >
+                    <Link href="/admin" onClick={closeMobileSidebar}>
+                      <ShieldCheck className={cn("h-7 w-7 transition-colors md:h-5 md:w-5", isActive ? "text-rose-400" : "text-rose-400/70")} />
+                      <span className={cn(isActive && "font-semibold")}>Admin</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            );
+          })()}
           <SidebarMenu className="gap-2 md:gap-1.5">
             {(() => {
               const isActive =

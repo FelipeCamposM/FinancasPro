@@ -320,6 +320,66 @@ export default function GastosPage() {
   );
 }
 
+const MONTH_LABELS_SHORT = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+
+function FaturaMonthPicker({ value, onChange }: { value: Date; onChange: (d: Date) => void }) {
+  const [open, setOpen] = useState(false);
+  const [pickerYear, setPickerYear] = useState(value.getFullYear());
+
+  return (
+    <Popover open={open} onOpenChange={(v) => { setOpen(v); if (v) setPickerYear(value.getFullYear()); }}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="rounded-md px-2 py-0.5 text-sm font-semibold capitalize text-blue-300 transition-colors hover:bg-blue-500/10"
+        >
+          {format(value, "MMMM yyyy", { locale: ptBR })}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="ui-popover w-56 p-3 ui-glass-surface-strong border-white/[0.14]" align="start">
+        {/* Year nav */}
+        <div className="mb-2.5 flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() => setPickerYear((y) => y - 1)}
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-white/40 transition-colors hover:bg-white/10 hover:text-white/80"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <span className="text-sm font-bold text-white">{pickerYear}</span>
+          <button
+            type="button"
+            onClick={() => setPickerYear((y) => y + 1)}
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-white/40 transition-colors hover:bg-white/10 hover:text-white/80"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+        {/* Month grid */}
+        <div className="grid grid-cols-3 gap-1">
+          {MONTH_LABELS_SHORT.map((label, i) => {
+            const isSelected = value.getFullYear() === pickerYear && value.getMonth() === i;
+            return (
+              <button
+                key={i}
+                type="button"
+                onClick={() => { onChange(new Date(pickerYear, i, 1)); setOpen(false); }}
+                className={`rounded-lg py-1.5 text-xs font-medium transition-colors ${
+                  isSelected
+                    ? "bg-blue-500/30 text-blue-300 ring-1 ring-blue-400/40"
+                    : "text-white/55 hover:bg-white/10 hover:text-white/90"
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 function GastosPageInner() {
   const [gastos, setGastos] = useState<Gasto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -344,8 +404,13 @@ function GastosPageInner() {
   const [creditCartoes, setCreditCartoes] = useState<CartaoFatura[]>([]);
   const cartoesFetched = useRef(false);
 
+  // Month/year picker para navegador de mês
+  const [monthPickerOpen, setMonthPickerOpen] = useState(false);
+  const [pickerYear, setPickerYear] = useState(() => new Date().getFullYear());
+
   // Fatura
   const [faturaPickerOpen, setFaturaPickerOpen] = useState(false);
+  const [faturaNavMes, setFaturaNavMes] = useState<Date>(() => new Date());
   const [faturaCartaoId, setFaturaCartaoId] = useState<string | null>(null);
   const [faturaCartaoApelido, setFaturaCartaoApelido] = useState<string>("");
   const [faturaMes, setFaturaMes] = useState<string>("");
@@ -617,19 +682,89 @@ function GastosPageInner() {
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
-              <button
-                type="button"
-                onClick={() => setPeriodoMode((prev) => prev === "todos" ? "mes" : "todos")}
-                className="flex h-9 min-w-0 flex-1 items-center justify-center px-3 transition-colors hover:bg-white/[0.04] focus-visible:outline-none sm:min-w-[140px]"
+              <Popover
+                open={monthPickerOpen}
+                onOpenChange={(v) => {
+                  setMonthPickerOpen(v);
+                  if (v) setPickerYear(mesAtual.getFullYear());
+                }}
               >
-                {periodoMode === "todos" ? (
-                  <span className="text-xs text-white/35">Todos os meses</span>
-                ) : (
-                  <span className="text-sm font-semibold capitalize text-white/80">
-                    {format(mesAtual, "MMM yyyy", { locale: ptBR })}
-                  </span>
-                )}
-              </button>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className="flex h-9 min-w-0 flex-1 items-center justify-center px-3 transition-colors hover:bg-white/[0.04] focus-visible:outline-none sm:min-w-[140px]"
+                  >
+                    {periodoMode === "todos" ? (
+                      <span className="text-xs text-white/35">Todos os meses</span>
+                    ) : (
+                      <span className="text-sm font-semibold capitalize text-white/80">
+                        {format(mesAtual, "MMM yyyy", { locale: ptBR })}
+                      </span>
+                    )}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent
+                  className="ui-popover w-56 p-3 ui-glass-surface-strong border-white/[0.14]"
+                  align="center"
+                >
+                  {/* Year nav */}
+                  <div className="mb-2.5 flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={() => setPickerYear((y) => y - 1)}
+                      className="flex h-7 w-7 items-center justify-center rounded-lg text-white/40 transition-colors hover:bg-white/10 hover:text-white/80"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+                    <span className="text-sm font-bold text-white">{pickerYear}</span>
+                    <button
+                      type="button"
+                      onClick={() => setPickerYear((y) => y + 1)}
+                      className="flex h-7 w-7 items-center justify-center rounded-lg text-white/40 transition-colors hover:bg-white/10 hover:text-white/80"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                  {/* Month grid */}
+                  <div className="grid grid-cols-3 gap-1">
+                    {["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"].map((label, i) => {
+                      const isSelected = periodoMode === "mes" && mesAtual.getFullYear() === pickerYear && mesAtual.getMonth() === i;
+                      return (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => {
+                            setMesAtual(new Date(pickerYear, i, 1));
+                            setPeriodoMode("mes");
+                            setMonthPickerOpen(false);
+                          }}
+                          className={`rounded-lg py-1.5 text-xs font-medium transition-colors ${
+                            isSelected
+                              ? "bg-rose-500/30 text-rose-300 ring-1 ring-rose-400/40"
+                              : "text-white/55 hover:bg-white/10 hover:text-white/90"
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {/* Todos */}
+                  <div className="mt-2 border-t border-white/[0.07] pt-2">
+                    <button
+                      type="button"
+                      onClick={() => { setPeriodoMode("todos"); setMonthPickerOpen(false); }}
+                      className={`w-full rounded-lg py-1.5 text-xs font-medium transition-colors ${
+                        periodoMode === "todos"
+                          ? "bg-white/10 text-white/80"
+                          : "text-white/40 hover:bg-white/[0.06] hover:text-white/70"
+                      }`}
+                    >
+                      Todos os meses
+                    </button>
+                  </div>
+                </PopoverContent>
+              </Popover>
               <button
                 className="flex h-9 w-9 items-center justify-center border-l border-white/10 text-white/40 transition-colors hover:bg-white/[0.07] hover:text-white/80"
                 aria-label="Próximo mês"
@@ -1204,7 +1339,13 @@ function GastosPageInner() {
       </AlertDialog>
 
       {/* Cartão picker → fatura do mês */}
-      <Dialog open={faturaPickerOpen} onOpenChange={setFaturaPickerOpen}>
+      <Dialog
+        open={faturaPickerOpen}
+        onOpenChange={(v) => {
+          setFaturaPickerOpen(v);
+          if (v) setFaturaNavMes(new Date());
+        }}
+      >
         <DialogContent className="max-w-[380px] p-0 overflow-hidden gap-0">
           <div className="relative overflow-hidden border-b border-white/[0.09]">
             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent" />
@@ -1213,13 +1354,31 @@ function GastosPageInner() {
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-500/15 ring-1 ring-blue-400/20">
                 <Receipt className="h-5 w-5 text-blue-400" />
               </div>
-              <div>
+              <div className="flex-1 min-w-0">
                 <DialogTitle className="text-xl font-bold leading-none text-white">
                   Fatura do Mês
                 </DialogTitle>
-                <p className="mt-1.5 text-sm text-white/40 capitalize">
-                  {format(mesAtual, "MMMM yyyy", { locale: ptBR })}
-                </p>
+                {/* Month navigator inline */}
+                <div className="mt-2 flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setFaturaNavMes((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1))}
+                    className="flex h-6 w-6 items-center justify-center rounded-md text-white/30 transition-colors hover:bg-white/10 hover:text-white/70"
+                  >
+                    <ChevronLeft className="h-3.5 w-3.5" />
+                  </button>
+                  <FaturaMonthPicker
+                    value={faturaNavMes}
+                    onChange={(d) => setFaturaNavMes(d)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setFaturaNavMes((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1))}
+                    className="flex h-6 w-6 items-center justify-center rounded-md text-white/30 transition-colors hover:bg-white/10 hover:text-white/70"
+                  >
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -1234,12 +1393,7 @@ function GastosPageInner() {
                   key={c.id}
                   type="button"
                   onClick={() => {
-                    const today = new Date();
-                    const dia = c.dia_fechamento ?? 1;
-                    const mes = today.getDate() <= dia
-                      ? format(today, "yyyy-MM")
-                      : format(new Date(today.getFullYear(), today.getMonth() + 1, 1), "yyyy-MM");
-                    setFaturaMes(mes);
+                    setFaturaMes(format(faturaNavMes, "yyyy-MM"));
                     setFaturaCartaoId(c.id);
                     setFaturaCartaoApelido(c.apelido);
                     setFaturaPickerOpen(false);

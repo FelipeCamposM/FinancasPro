@@ -49,15 +49,39 @@ const SHORTCUT_ICLOUD_URL = process.env.NEXT_PUBLIC_SHORTCUT_ICLOUD_URL ?? "";
 
 // ─── iPhone section ───────────────────────────────────────────────────────────
 
+interface ShortcutStats {
+  api_key: string | null;
+  shortcut_count: number;
+  last_shortcut_at: string | null;
+}
+
+function fmtRelativo(dateStr: string | null): string {
+  if (!dateStr) return "Nunca";
+  const date = new Date(dateStr);
+  const diffMs = Date.now() - date.getTime();
+  const diffMin = Math.floor(diffMs / 60_000);
+  const diffH   = Math.floor(diffMs / 3_600_000);
+  const diffD   = Math.floor(diffMs / 86_400_000);
+  if (diffMin < 1)       return "agora";
+  if (diffMin < 60)      return `${diffMin}min atrás`;
+  if (diffH < 24)        return `${diffH}h atrás`;
+  if (diffD === 1)       return "ontem";
+  if (diffD < 30)        return `${diffD} dias atrás`;
+  if (diffD < 365)       return `${Math.floor(diffD / 30)} meses atrás`;
+  return `${Math.floor(diffD / 365)} anos atrás`;
+}
+
 function IphoneSection() {
-  const [apiKey, setApiKey] = useState<string | null>(null);
+  const [stats, setStats] = useState<ShortcutStats>({ api_key: null, shortcut_count: 0, last_shortcut_at: null });
   const [showKey, setShowKey] = useState(false);
   const [copied, setCopied] = useState(false);
   const [rotating, setRotating] = useState(false);
 
+  const apiKey = stats.api_key;
+
   useEffect(() => {
-    api.get<{ api_key: string }>("/shortcut/my-key")
-      .then((r) => setApiKey(r.data.api_key))
+    api.get<ShortcutStats>("/shortcut/my-key")
+      .then((r) => setStats(r.data))
       .catch(() => toast.error("Erro ao carregar API key"));
   }, []);
 
@@ -74,7 +98,7 @@ function IphoneSection() {
     setRotating(true);
     try {
       const r = await api.post<{ api_key: string }>("/shortcut/rotate-key");
-      setApiKey(r.data.api_key);
+      setStats((s) => ({ ...s, api_key: r.data.api_key }));
       toast.success("API key rotacionada");
     } catch {
       toast.error("Erro ao rotacionar");
@@ -159,6 +183,40 @@ function IphoneSection() {
                 <RefreshCw className={cn("h-3 w-3", rotating && "animate-spin")} />
                 Rotacionar key
               </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Stats do atalho */}
+        <div className="px-5 py-4 border-t border-white/[0.06] bg-white/[0.015]">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-white/30 mb-3">
+            Uso do atalho
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-xl border border-sky-500/20 bg-sky-500/[0.06] px-4 py-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-sky-300/60 mb-1">
+                Gastos registrados
+              </p>
+              <p className="text-2xl font-bold tabular-nums text-sky-300">
+                {stats.shortcut_count}
+              </p>
+              <p className="text-[10px] text-sky-300/40 mt-0.5">via iPhone Shortcuts</p>
+            </div>
+            <div className="rounded-xl border border-white/[0.07] bg-white/[0.03] px-4 py-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-white/35 mb-1">
+                Último uso
+              </p>
+              <p
+                className="text-sm font-semibold text-white/70"
+                title={stats.last_shortcut_at ? new Date(stats.last_shortcut_at).toLocaleString("pt-BR") : undefined}
+              >
+                {fmtRelativo(stats.last_shortcut_at)}
+              </p>
+              {stats.last_shortcut_at && (
+                <p className="text-[10px] text-white/30 mt-0.5">
+                  {new Date(stats.last_shortcut_at).toLocaleDateString("pt-BR")}
+                </p>
+              )}
             </div>
           </div>
         </div>

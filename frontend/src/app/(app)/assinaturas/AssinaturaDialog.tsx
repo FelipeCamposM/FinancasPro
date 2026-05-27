@@ -28,13 +28,7 @@ import {
   FormItem,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+// Select removed — category is now fixed to "Assinaturas"
 import {
   Loader2,
   Plus,
@@ -45,6 +39,7 @@ import {
   CalendarDays,
   AlignLeft,
   Info,
+  Lock,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
@@ -304,25 +299,34 @@ export function AssinaturaDialog({ open, onClose, onSuccess, initialData }: Prop
         .get<{ data: Cartao[] }>("/cartoes?limit=100")
         .catch(() => ({ data: { data: [] as Cartao[] } })),
     ]).then(([catRes, cartRes]) => {
-      setCategorias(catRes.data.data ?? []);
+      const cats = catRes.data.data ?? [];
+      setCategorias(cats);
       setCartoes((cartRes.data.data ?? []).filter((c) => c.ativo));
     });
   }, []);
 
+  // Auto-set "Assinaturas" category whenever categories load or dialog opens
   useEffect(() => {
-    if (open) {
-      form.reset({
-        descricao: initialData?.descricao ?? "",
-        valor: initialData ? Number(initialData.valor) : undefined,
-        forma_pagamento: initialData?.forma_pagamento ?? "cartao_credito",
-        cartao_id: initialData?.cartao_id,
-        dia_cobranca: initialData?.dia_cobranca ?? 1,
-        data_inicio: initialData?.data_inicio?.slice(0, 10) ?? new Date().toISOString().split("T")[0],
-        categoria_id: initialData?.categoria_id ? String(initialData.categoria_id) : undefined,
-        observacoes: initialData?.observacoes ?? "",
-      });
-    }
-  }, [open, form, initialData]);
+    if (!open) return;
+    const assinaturasCat = categorias.find(
+      (c) => c.nome.toLowerCase() === "assinaturas",
+    );
+    const catId = assinaturasCat ? String(assinaturasCat.id) : undefined;
+
+    form.reset({
+      descricao: initialData?.descricao ?? "",
+      valor: initialData ? Number(initialData.valor) : undefined,
+      forma_pagamento: initialData?.forma_pagamento ?? "cartao_credito",
+      cartao_id: initialData?.cartao_id,
+      dia_cobranca: initialData?.dia_cobranca ?? 1,
+      data_inicio:
+        initialData?.data_inicio?.slice(0, 10) ??
+        new Date().toISOString().split("T")[0],
+      // Always force "Assinaturas" category
+      categoria_id: catId,
+      observacoes: initialData?.observacoes ?? "",
+    });
+  }, [open, form, initialData, categorias]);
 
   async function onSubmit(values: FormValues) {
     try {
@@ -576,40 +580,36 @@ export function AssinaturaDialog({ open, onClose, onSuccess, initialData }: Prop
                 )}
               />
 
-              {/* Categoria */}
-              <FormField
-                control={form.control}
-                name="categoria_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <SectionLabel>Categoria (opcional)</SectionLabel>
-                    <Select
-                      value={field.value ?? ""}
-                      onValueChange={field.onChange}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="h-11 border-violet-400/20 focus:ring-violet-400/40">
-                          <SelectValue placeholder="Selecionar categoria..." />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {categorias.map((c) => (
-                          <SelectItem key={c.id} value={String(c.id)}>
-                            <span className="flex items-center gap-2">
-                              <span
-                                className="h-2 w-2 shrink-0 rounded-full"
-                                style={{ background: c.cor ?? "#94a3b8" }}
-                              />
-                              {c.icone ? `${c.icone} ` : ""}{c.nome}
-                            </span>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* Categoria — fixada em "Assinaturas" automaticamente */}
+              <div>
+                <SectionLabel>Categoria</SectionLabel>
+                <div className="flex items-center gap-2.5 rounded-xl border border-violet-400/20 bg-violet-500/[0.06] px-4 h-11">
+                  {(() => {
+                    const cat = categorias.find(
+                      (c) => c.nome.toLowerCase() === "assinaturas",
+                    );
+                    return (
+                      <>
+                        {cat ? (
+                          <span
+                            className="h-2.5 w-2.5 rounded-full shrink-0"
+                            style={{ background: cat.cor ?? "#14B8A6" }}
+                          />
+                        ) : (
+                          <span className="h-2.5 w-2.5 rounded-full shrink-0 bg-teal-400" />
+                        )}
+                        <span className="text-sm text-violet-200/80 font-medium flex-1">
+                          {cat ? `${cat.icone ? cat.icone + " " : ""}${cat.nome}` : "📱 Assinaturas"}
+                        </span>
+                        <Lock className="h-3 w-3 text-violet-400/40 shrink-0" />
+                      </>
+                    );
+                  })()}
+                </div>
+                <p className="mt-1.5 text-[11px] text-white/25">
+                  Categoria definida automaticamente para assinaturas.
+                </p>
+              </div>
 
               {/* Observações */}
               <FormField

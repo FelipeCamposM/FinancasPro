@@ -19,7 +19,8 @@ export const getStats = async (
         COUNT(*) FILTER (WHERE user_level = 'free')::int                    AS free,
         COUNT(*) FILTER (WHERE user_level = 'admin')::int                   AS admin,
         COUNT(*) FILTER (WHERE trial_ends_at > NOW())::int                  AS trial_ativo,
-        COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '30 days')::int AS novos_30d
+        COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '30 days')::int AS novos_30d,
+        (SELECT COUNT(*)::int FROM gastos WHERE via_atalho = TRUE)          AS total_atalho_gastos
       FROM users
     `);
     res.json({ data: rows[0] });
@@ -63,7 +64,10 @@ export const listUsers = async (
       pool.query(
         `SELECT
            id, name, email, avatar, user_level, email_verified,
-           trial_ends_at, subscription_ends_at, subscription_plan, created_at
+           trial_ends_at, subscription_ends_at, subscription_plan,
+           created_at, last_login_at,
+           (SELECT COUNT(*)::int FROM gastos WHERE user_id = users.id AND via_atalho = TRUE) AS shortcut_count,
+           (SELECT MAX(created_at)  FROM gastos WHERE user_id = users.id AND via_atalho = TRUE) AS last_shortcut_at
          FROM users
          ${where}
          ORDER BY created_at DESC

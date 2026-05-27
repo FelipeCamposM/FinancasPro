@@ -47,6 +47,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { AssinaturaDialog } from "./AssinaturaDialog";
+import { AssinaturaDetailDialog } from "./AssinaturaDetailDialog";
 import { PageShell } from "@/components/ui/page-shell";
 import { SectionHeader } from "@/components/ui/section-header";
 
@@ -56,6 +57,9 @@ interface Assinatura {
   valor: number;
   forma_pagamento: "cartao_credito" | "cartao_debito";
   cartao_id?: string;
+  cartao_apelido?: string;
+  cartao_bandeira?: string;
+  cartao_cor?: string;
   categoria_id?: number;
   dia_cobranca: number;
   data_inicio: string;
@@ -63,6 +67,7 @@ interface Assinatura {
   ativa: boolean;
   observacoes?: string;
   categoria?: { nome: string; cor: string };
+  total_lancamentos?: number;
 }
 
 const FORMA_PGTO_LABEL: Record<
@@ -108,6 +113,7 @@ export default function AssinaturasPage() {
   const [reativarTarget, setReativarTarget] = useState<Assinatura | null>(null);
   const [reativando, setReativando] = useState(false);
   const [loadError, setLoadError] = useState(false);
+  const [detailTarget, setDetailTarget] = useState<Assinatura | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -339,13 +345,20 @@ export default function AssinaturasPage() {
                     : "border-white/[0.07] bg-white/[0.025] opacity-55 grayscale-[30%]"
                 }`}
               >
+
                 {/* Top glow bar */}
                 {a.ativa && (
                   <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-violet-400/50 to-transparent" />
                 )}
 
-                {/* Body */}
-                <div className="p-5 flex flex-col gap-3 flex-1">
+                {/* Body — clicável para detalhes */}
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setDetailTarget(a)}
+                  onKeyDown={(e) => e.key === "Enter" && setDetailTarget(a)}
+                  className="p-5 flex flex-col gap-3 flex-1 cursor-pointer"
+                >
                   {/* Status badge */}
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
@@ -460,6 +473,16 @@ export default function AssinaturasPage() {
           })}
         </div>
       )}
+
+      {/* Dialog de detalhes */}
+      <AssinaturaDetailDialog
+        open={!!detailTarget}
+        onClose={() => setDetailTarget(null)}
+        assinatura={detailTarget}
+        onEdit={(a) => setEditTarget(a)}
+        onCancel={(a) => setCancelTarget(a)}
+        onReativar={(a) => setReativarTarget(a)}
+      />
 
       {/* Dialog para criar nova assinatura */}
       <AssinaturaDialog

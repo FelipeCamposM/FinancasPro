@@ -21,7 +21,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Users, Crown, UserCheck, FlaskConical, ChevronLeft, ChevronRight, Search, Copy, Check, ExternalLink, Loader2 } from "lucide-react";
+import { Users, Crown, UserCheck, FlaskConical, ChevronLeft, ChevronRight, Search, Copy, Check, ExternalLink, Loader2, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 
 interface AdminStats {
@@ -31,6 +31,7 @@ interface AdminStats {
   admin: number;
   trial_ativo: number;
   novos_30d: number;
+  total_atalho_gastos: number;
 }
 
 interface AdminUser {
@@ -43,6 +44,9 @@ interface AdminUser {
   trial_ends_at: string | null;
   subscription_ends_at: string | null;
   created_at: string;
+  last_login_at: string | null;
+  shortcut_count: number;
+  last_shortcut_at: string | null;
 }
 
 // Derives the logical "action key" shown in the select from DB state
@@ -79,6 +83,31 @@ function CourtesyBadge() {
 function fmt(dateStr: string | null) {
   if (!dateStr) return "—";
   return new Date(dateStr).toLocaleDateString("pt-BR");
+}
+
+function fmtLogin(dateStr: string | null) {
+  if (!dateStr) return "—";
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMin = Math.floor(diffMs / 60_000);
+  const diffH   = Math.floor(diffMs / 3_600_000);
+  const diffD   = Math.floor(diffMs / 86_400_000);
+
+  let relative: string;
+  if (diffMin < 1)       relative = "agora";
+  else if (diffMin < 60) relative = `${diffMin}min atrás`;
+  else if (diffH < 24)   relative = `${diffH}h atrás`;
+  else if (diffD === 1)  relative = "ontem";
+  else if (diffD < 30)   relative = `${diffD}d atrás`;
+  else if (diffD < 365)  relative = `${Math.floor(diffD / 30)}meses atrás`;
+  else                   relative = `${Math.floor(diffD / 365)}a atrás`;
+
+  return (
+    <span title={date.toLocaleString("pt-BR")} className="cursor-help">
+      {relative}
+    </span>
+  );
 }
 
 interface CheckoutDialogProps {
@@ -219,12 +248,13 @@ export default function AdminPage() {
 
       {/* Stats */}
       {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {[
-            { label: "Total usuários", value: stats.total,       icon: Users,        color: "text-primary" },
-            { label: "Premium",        value: stats.premium,     icon: Crown,        color: "text-amber-400" },
-            { label: "Trial ativo",    value: stats.trial_ativo, icon: FlaskConical, color: "text-violet-400" },
-            { label: "Novos (30d)",    value: stats.novos_30d,   icon: UserCheck,    color: "text-emerald-400" },
+            { label: "Total usuários",   value: stats.total,               icon: Users,        color: "text-primary" },
+            { label: "Premium",          value: stats.premium,             icon: Crown,        color: "text-amber-400" },
+            { label: "Trial ativo",      value: stats.trial_ativo,         icon: FlaskConical, color: "text-violet-400" },
+            { label: "Novos (30d)",      value: stats.novos_30d,           icon: UserCheck,    color: "text-emerald-400" },
+            { label: "Gastos via atalho",value: stats.total_atalho_gastos, icon: Smartphone,   color: "text-sky-400" },
           ].map((s) => (
             <div key={s.label} className="rounded-xl border border-border/60 bg-card p-4 flex items-center gap-3">
               <s.icon className={`h-5 w-5 shrink-0 ${s.color}`} />
@@ -272,6 +302,8 @@ export default function AdminPage() {
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground hidden md:table-cell">Trial até</th>
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground hidden lg:table-cell">Assinatura até</th>
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground hidden md:table-cell">Cadastro</th>
+                <th className="text-left px-4 py-3 font-semibold text-muted-foreground hidden lg:table-cell">Último login</th>
+                <th className="text-left px-4 py-3 font-semibold text-muted-foreground hidden xl:table-cell">Atalho</th>
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Ação</th>
               </tr>
             </thead>
@@ -279,7 +311,7 @@ export default function AdminPage() {
               {loading ? (
                 Array.from({ length: 6 }).map((_, i) => (
                   <tr key={i}>
-                    {Array.from({ length: 6 }).map((__, j) => (
+                    {Array.from({ length: 8 }).map((__, j) => (
                       <td key={j} className="px-4 py-3">
                         <div className="h-4 rounded bg-muted animate-pulse w-24" />
                       </td>
@@ -288,7 +320,7 @@ export default function AdminPage() {
                 ))
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">
+                  <td colSpan={8} className="px-4 py-10 text-center text-muted-foreground">
                     Nenhum usuário encontrado
                   </td>
                 </tr>
@@ -312,6 +344,24 @@ export default function AdminPage() {
                   <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{fmt(u.trial_ends_at)}</td>
                   <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell">{fmt(u.subscription_ends_at)}</td>
                   <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{fmt(u.created_at)}</td>
+                  <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell text-sm">
+                    {fmtLogin(u.last_login_at)}
+                  </td>
+                  <td className="px-4 py-3 hidden xl:table-cell">
+                    {u.shortcut_count > 0 ? (
+                      <div className="flex items-center gap-1.5">
+                        <Smartphone className="h-3.5 w-3.5 text-sky-400/70 shrink-0" />
+                        <span
+                          className="text-sm font-semibold text-sky-300"
+                          title={u.last_shortcut_at ? `Último: ${new Date(u.last_shortcut_at).toLocaleString("pt-BR")}` : undefined}
+                        >
+                          {u.shortcut_count}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground/50 text-sm">—</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3">
                     {updating === u.id ? (
                       <div className="flex h-8 w-36 items-center justify-center">

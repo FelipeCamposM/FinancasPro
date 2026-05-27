@@ -28,8 +28,8 @@ export const createRendaSchema = z
     mes_referencia: z.string().date(),
     data_recebimento: z.string().date(),
     recorrente: z.boolean().default(false),
-    frequencia_recorrencia: z.enum(frequencias).optional(),
-    data_fim_recorrencia: z.string().date().optional(),
+    frequencia_recorrencia: z.enum(frequencias).nullable().optional(),
+    data_fim_recorrencia: z.string().date().nullable().optional(),
     observacoes: z.string().max(1000).optional(),
   })
   .refine((d) => (d.recorrente ? !!d.frequencia_recorrencia : true), {

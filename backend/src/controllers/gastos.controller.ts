@@ -437,8 +437,8 @@ export const createGastoAtalho = async (
          (user_id, descricao, valor_total, categoria_id,
           forma_pagamento, cartao_id,
           tipo_pagamento, quantidade_parcelas,
-          recorrente, data_gasto, status, numero_parcela)
-       VALUES ($1,$2,$3,$4,$5,$6,'a_vista',1,false,$7,'pago',1)
+          recorrente, data_gasto, status, numero_parcela, via_atalho)
+       VALUES ($1,$2,$3,$4,$5,$6,'a_vista',1,false,$7,'pago',1,TRUE)
        RETURNING *`,
       [userId, descricao, valor_total, categoria_id, forma_pagamento ?? "cartao_credito", cartao_id ?? null, data_gasto],
     );

@@ -245,6 +245,8 @@ export const login = async (
 
     const token = signToken({ userId: user.id, email: user.email, userLevel: user.user_level });
     const { password_hash: _, ...safeUser } = user;
+    // Fire-and-forget — não bloqueia resposta
+    void pool.query("UPDATE users SET last_login_at = NOW() WHERE id = $1", [user.id]);
     res.json({ user: safeUser, token });
   } catch (err) {
     next(err);
@@ -345,7 +347,7 @@ export const verifyEmail = async (
     ]);
 
     await pool.query(
-      "UPDATE users SET email_verified = TRUE, email_verified_at = NOW(), updated_at = NOW() WHERE id = $1",
+      "UPDATE users SET email_verified = TRUE, email_verified_at = NOW(), last_login_at = NOW(), updated_at = NOW() WHERE id = $1",
       [user.id],
     );
     user.email_verified = true;
@@ -426,6 +428,7 @@ export const verifyLoginCode = async (
     await pool.query("UPDATE email_auth_codes SET used = TRUE, used_at = NOW() WHERE id = $1", [
       record.id,
     ]);
+    void pool.query("UPDATE users SET last_login_at = NOW() WHERE id = $1", [user.id]);
 
     const token = signToken({ userId: user.id, email: user.email, userLevel: user.user_level });
     res.json({ user, token });

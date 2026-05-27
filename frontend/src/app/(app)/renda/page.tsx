@@ -142,7 +142,9 @@ const LIMIT = 15;
 
 function formatDate(dateStr: string) {
   if (!dateStr) return "-";
-  return new Date(dateStr).toLocaleDateString("pt-BR");
+  // Append time to avoid UTC-to-local offset shifting the date one day back
+  const normalized = dateStr.includes("T") ? dateStr : `${dateStr}T12:00:00`;
+  return new Date(normalized).toLocaleDateString("pt-BR");
 }
 
 function formatMonth(dateStr: string) {
@@ -752,7 +754,10 @@ export default function RendaPage() {
                           Instância
                         </Badge>
                       ) : (
-                        <span className="text-xs text-white/30">–</span>
+                        <Badge variant="amber">
+                          <CalendarCheck className="h-3 w-3" />
+                          Pontual
+                        </Badge>
                       )}
                     </TableCell>
                     <TableCell className="text-white/50">{formatMonth(renda.mes_referencia)}</TableCell>
@@ -955,16 +960,20 @@ function RendaMobileCard({
               {TIPO_ICONS[renda.tipo]}
               {TIPO_LABELS[renda.tipo] ?? renda.tipo}
             </Badge>
-            {renda.recorrente && (
+            {renda.recorrente ? (
               <Badge variant="violet" className="text-[11px] px-2 py-0.5">
                 <Repeat className="h-3 w-3" />
                 {renda.frequencia_recorrencia ? FREQUENCIA_LABELS[renda.frequencia_recorrencia] : "Recorrente"}
               </Badge>
-            )}
-            {renda.renda_origem_id && !renda.recorrente && (
+            ) : renda.renda_origem_id ? (
               <Badge variant="green" className="text-[11px] px-2 py-0.5">
                 <CalendarCheck className="h-3 w-3" />
                 Instância
+              </Badge>
+            ) : (
+              <Badge variant="amber" className="text-[11px] px-2 py-0.5">
+                <CalendarCheck className="h-3 w-3" />
+                Pontual
               </Badge>
             )}
           </div>
@@ -1022,15 +1031,25 @@ function RendaDetailSheet({
                 <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/30 mb-1.5">Mês de referência</p>
                 <p className="text-sm text-white/60">{formatMonth(r.mes_referencia)}</p>
               </div>
-              {r.recorrente && (
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/30 mb-1.5">Recorrência</p>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/30 mb-1.5">Recorrência</p>
+                {r.recorrente ? (
                   <Badge variant="violet" className="text-xs px-2.5 py-1">
                     <Repeat className="h-3.5 w-3.5" />
                     {r.frequencia_recorrencia ? FREQUENCIA_LABELS[r.frequencia_recorrencia] : "Recorrente"}
                   </Badge>
-                </div>
-              )}
+                ) : r.renda_origem_id ? (
+                  <Badge variant="green" className="text-xs px-2.5 py-1">
+                    <CalendarCheck className="h-3.5 w-3.5" />
+                    Instância
+                  </Badge>
+                ) : (
+                  <Badge variant="amber" className="text-xs px-2.5 py-1">
+                    <CalendarCheck className="h-3.5 w-3.5" />
+                    Pontual
+                  </Badge>
+                )}
+              </div>
               {r.renda_origem_id && (
                 <div className="flex items-center gap-2 rounded-lg border border-indigo-400/20 bg-indigo-500/[0.06] px-3 py-2.5">
                   <CalendarCheck className="h-3.5 w-3.5 text-indigo-400 shrink-0" />

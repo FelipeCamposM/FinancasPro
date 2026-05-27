@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -157,6 +157,131 @@ function ParcelasSpinner({ value, onChange }: { value: number; onChange: (v: num
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/35 mb-2">{children}</p>;
+}
+
+const MAX_DAYS = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+function maxDaysInMonth(month: number) { return MAX_DAYS[month] ?? 31; }
+
+function DateInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [display, setDisplay] = useState(() => {
+    if (!value) return "";
+    const [y, m, d] = value.split("-");
+    return `${d}/${m}/${y}`;
+  });
+  const skipSync = useRef(false);
+
+  useEffect(() => {
+    if (skipSync.current) { skipSync.current = false; return; }
+    if (!value) { setDisplay(""); return; }
+    const [y, m, d] = value.split("-");
+    setDisplay(`${d}/${m}/${y}`);
+  }, [value]);
+
+  function handleChange(raw: string) {
+    const digits = raw.replace(/\D/g, "");
+    let validated = "";
+
+    for (let i = 0; i < digits.length && i < 8; i++) {
+      const n = parseInt(digits[i], 10);
+
+      if (i === 0) {
+        // Day tens: 0-3
+        if (n > 3) break;
+      } else if (i === 1) {
+        // Day units
+        const d1 = parseInt(validated[0], 10);
+        if (d1 === 0 && n === 0) break;   // day 00 invalid
+        if (d1 === 3 && n > 1) break;     // day > 31 invalid
+      } else if (i === 2) {
+        // Month tens: 0-1
+        if (n > 1) break;
+      } else if (i === 3) {
+        // Month units
+        const m1 = parseInt(validated[2], 10);
+        if (m1 === 0 && n === 0) break;   // month 00 invalid
+        if (m1 === 1 && n > 2) break;     // month > 12 invalid
+        // Clamp day to fit this month
+        const mm = m1 * 10 + n;
+        const dd = parseInt(validated.slice(0, 2), 10);
+        const maxD = maxDaysInMonth(mm);
+        if (dd > maxD) {
+          validated = String(maxD).padStart(2, "0") + validated.slice(2);
+        }
+      } else if (i === 4) {
+        // Year thousands: 0-2
+        if (n > 2) break;
+      } else if (i === 5) {
+        // Year hundreds: if y1=2, max is 2
+        const y1 = parseInt(validated[4], 10);
+        if (y1 === 2 && n > 2) break;
+      } else if (i === 6) {
+        // Year tens: if y1=2 y2=2, max is 0 (→ 220x)
+        const y1 = parseInt(validated[4], 10);
+        const y2 = parseInt(validated[5], 10);
+        if (y1 === 2 && y2 === 2 && n > 0) break;
+      } else if (i === 7) {
+        // Year units: full year must be ≤ 2200
+        const year = parseInt(validated.slice(4) + digits[i], 10);
+        if (year > 2200) break;
+      }
+
+      validated += digits[i];
+    }
+
+    // Format with slashes
+    let masked = validated;
+    if (validated.length > 4) masked = `${validated.slice(0, 2)}/${validated.slice(2, 4)}/${validated.slice(4)}`;
+    else if (validated.length > 2) masked = `${validated.slice(0, 2)}/${validated.slice(2)}`;
+    setDisplay(masked);
+
+    // Commit to form only when full valid date
+    if (validated.length === 8) {
+      const dd = validated.slice(0, 2), mm = validated.slice(2, 4), yyyy = validated.slice(4);
+      const date = new Date(`${yyyy}-${mm}-${dd}T12:00:00`);
+      if (!isNaN(date.getTime())) {
+        skipSync.current = true;
+        onChange(`${yyyy}-${mm}-${dd}`);
+      }
+    }
+  }
+
+  return (
+    <Popover>
+      <div className="relative">
+        <Input
+          value={display}
+          onChange={(e) => handleChange(e.target.value)}
+          placeholder="DD/MM/AAAA"
+          inputMode="numeric"
+          className="h-12 pr-9 text-sm"
+        />
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-white/40 transition-colors hover:text-white/70"
+          >
+            <CalendarDays className="h-4 w-4" />
+          </button>
+        </PopoverTrigger>
+      </div>
+      <PopoverContent className="ui-popover w-auto p-0 ui-glass-surface-strong border-white/[0.14]" align="start">
+        <Calendar
+          mode="single"
+          className="bg-transparent"
+          selected={value ? new Date(value + "T12:00:00") : undefined}
+          onSelect={(date) => {
+            if (date) {
+              const y = date.getFullYear();
+              const mo = String(date.getMonth() + 1).padStart(2, "0");
+              const d = String(date.getDate()).padStart(2, "0");
+              onChange(`${y}-${mo}-${d}`);
+            }
+          }}
+          initialFocus
+        />
+      </PopoverContent>
+    </Popover>
+  );
 }
 
 function Sep() {
@@ -388,24 +513,9 @@ export function GastoDialog({ open, onClose, onSuccess, gasto, forceAssinatura =
                 <FormField control={form.control} name="data_gasto" render={({ field }) => (
                   <FormItem>
                     <SectionLabel><span className="flex items-center gap-1"><CalendarDays className="h-2.5 w-2.5" />{isAssinatura ? "Início" : "Data"}</span></SectionLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <button type="button" className="ui-control flex h-12 w-full items-center gap-2 px-3">
-                            <CalendarDays className="h-3.5 w-3.5 shrink-0 text-white/40" />
-                            <span className={`text-sm ${field.value ? "text-white/90" : "text-white/35"}`}>
-                              {field.value ? (() => { const [y, m, d] = field.value.split("-"); return `${d}/${m}/${y}`; })() : "Selecionar"}
-                            </span>
-                          </button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="ui-popover w-auto p-0 ui-glass-surface-strong border-white/[0.14]" align="start">
-                        <Calendar mode="single" className="bg-transparent"
-                          selected={field.value ? new Date(field.value + "T12:00:00") : undefined}
-                          onSelect={(date) => { if (date) { const y = date.getFullYear(), mo = String(date.getMonth() + 1).padStart(2, "0"), d = String(date.getDate()).padStart(2, "0"); field.onChange(`${y}-${mo}-${d}`); } }}
-                          initialFocus />
-                      </PopoverContent>
-                    </Popover>
+                    <FormControl>
+                      <DateInput value={field.value} onChange={field.onChange} />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />

@@ -304,7 +304,9 @@ function formatBRL(value: number) {
 
 function formatDate(date: string) {
   try {
-    return format(new Date(date), "dd/MM/yyyy", { locale: ptBR });
+    // Append time to avoid UTC-to-local offset shifting the date one day back
+    const normalized = date.includes("T") ? date : `${date}T12:00:00`;
+    return format(new Date(normalized), "dd/MM/yyyy", { locale: ptBR });
   } catch {
     return date;
   }

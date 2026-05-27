@@ -77,11 +77,22 @@ export const getMyKey = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const { rows } = await pool.query(
-      "SELECT api_key FROM users WHERE id = $1",
-      [req.user!.userId],
-    );
-    res.json({ api_key: rows[0]?.api_key ?? null });
+    const userId = req.user!.userId;
+    const [keyRes, statsRes] = await Promise.all([
+      pool.query("SELECT api_key FROM users WHERE id = $1", [userId]),
+      pool.query(
+        `SELECT COUNT(*)::int AS shortcut_count,
+                MAX(created_at)  AS last_shortcut_at
+         FROM gastos
+         WHERE user_id = $1 AND via_atalho = TRUE`,
+        [userId],
+      ),
+    ]);
+    res.json({
+      api_key:         keyRes.rows[0]?.api_key ?? null,
+      shortcut_count:  statsRes.rows[0]?.shortcut_count  ?? 0,
+      last_shortcut_at: statsRes.rows[0]?.last_shortcut_at ?? null,
+    });
   } catch (err) {
     next(err);
   }

@@ -1,26 +1,22 @@
 import { MetadataRoute } from "next";
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  const base = "https://valorafinancas.com";
+const BASE = "https://valorafinancas.com";
 
-  return [
+/** Apenas rotas públicas e indexáveis (as privadas estão no robots.ts). */
+export default function sitemap(): MetadataRoute.Sitemap {
+  const atualizadoEm = new Date();
+
+  const rotas: Omit<MetadataRoute.Sitemap[number], "lastModified">[] = [
+    { url: BASE, changeFrequency: "weekly", priority: 1 },
+    { url: `${BASE}/register`, changeFrequency: "monthly", priority: 0.9 },
+    { url: `${BASE}/login`, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${BASE}/termos-de-uso`, changeFrequency: "yearly", priority: 0.3 },
     {
-      url: base,
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 1,
-    },
-    {
-      url: `${base}/login`,
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.8,
-    },
-    {
-      url: `${base}/register`,
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.8,
+      url: `${BASE}/politica-de-privacidade`,
+      changeFrequency: "yearly",
+      priority: 0.3,
     },
   ];
+
+  return rotas.map((rota) => ({ ...rota, lastModified: atualizadoEm }));
 }

@@ -106,18 +106,51 @@ const TRUST_ITEMS = [
   { icon: Wallet, label: "100% gratuito para começar" },
 ];
 
+// Grafo com os dois tipos que o Google usa aqui: o app em si e a marca
 const jsonLd = {
   "@context": "https://schema.org",
-  "@type": "WebApplication",
-  name: "Valora Finanças",
-  alternateName: ["Valora Financas", "ValoraFinanças", "valorafinancas"],
-  url: "https://valorafinancas.com",
-  description:
-    "Valora Finanças é uma plataforma de controle financeiro pessoal para gerenciar gastos, renda, cartões e assinaturas em um único lugar.",
-  applicationCategory: "FinanceApplication",
-  operatingSystem: "Web",
-  offers: { "@type": "Offer", price: "0", priceCurrency: "BRL" },
-  inLanguage: "pt-BR",
+  "@graph": [
+    {
+      "@type": "WebApplication",
+      "@id": "https://valorafinancas.com/#app",
+      name: "Valora Finanças",
+      alternateName: ["Valora Financas", "ValoraFinanças", "valorafinancas"],
+      url: "https://valorafinancas.com",
+      description:
+        "Valora Finanças é uma plataforma de controle financeiro pessoal para gerenciar gastos, renda, cartões e assinaturas em um único lugar.",
+      applicationCategory: "FinanceApplication",
+      operatingSystem: "Web, iOS",
+      offers: { "@type": "Offer", price: "0", priceCurrency: "BRL" },
+      featureList: [
+        "Controle de gastos e parcelas",
+        "Gestão de renda recorrente",
+        "Faturas de cartão de crédito",
+        "Assinaturas recorrentes",
+        "Relatórios mensais por categoria",
+        "Registro de gastos pelo atalho do iPhone",
+      ],
+      inLanguage: "pt-BR",
+      publisher: { "@id": "https://valorafinancas.com/#organizacao" },
+    },
+    {
+      "@type": "Organization",
+      "@id": "https://valorafinancas.com/#organizacao",
+      name: "Valora Finanças",
+      url: "https://valorafinancas.com",
+      logo: {
+        "@type": "ImageObject",
+        url: "https://valorafinancas.com/logo-valora.png",
+      },
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://valorafinancas.com/#site",
+      url: "https://valorafinancas.com",
+      name: "Valora Finanças",
+      inLanguage: "pt-BR",
+      publisher: { "@id": "https://valorafinancas.com/#organizacao" },
+    },
+  ],
 };
 
 export default function HomePage() {

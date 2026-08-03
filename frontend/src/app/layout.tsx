@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Bebas_Neue, Inter } from "next/font/google";
 import "./globals.css";
 import { AppBackground } from "@/components/AppBackground";
@@ -81,6 +81,24 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
+  // Código do Search Console via env: trocar não exige mexer no código
+  verification: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+    ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }
+    : undefined,
+  applicationName: "Valora Finanças",
+  category: "finance",
+  manifest: "/manifest.webmanifest",
+};
+
+// No Next 14 viewport e themeColor saem do metadata
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#0a1020" },
+    { media: "(prefers-color-scheme: light)", color: "#1d4ed8" },
+  ],
+  colorScheme: "dark",
 };
 
 export default function RootLayout({

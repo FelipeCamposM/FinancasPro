@@ -100,6 +100,35 @@ const STEPS = [
   },
 ];
 
+/** Perguntas frequentes: também alimentam o FAQPage do JSON-LD. */
+const FAQ = [
+  {
+    pergunta: "O que é o Valora Finanças?",
+    resposta:
+      "O Valora Finanças é uma plataforma brasileira de controle financeiro pessoal. Em um único painel você registra gastos, acompanha renda, controla faturas de cartão de crédito, gerencia assinaturas recorrentes e vê relatórios mensais por categoria.",
+  },
+  {
+    pergunta: "O Valora Finanças é gratuito?",
+    resposta:
+      "Sim, dá para começar de graça e sem cartão de crédito. Você cria a conta, registra seus gastos e sua renda e já usa o dashboard, os relatórios e as categorias.",
+  },
+  {
+    pergunta: "Preciso conectar minha conta bancária?",
+    resposta:
+      "Não. O Valora Finanças não pede acesso ao seu banco nem sincroniza extratos automaticamente. Você lança o que quiser acompanhar, o que mantém seus dados bancários fora da plataforma.",
+  },
+  {
+    pergunta: "Como registrar um gasto pelo iPhone?",
+    resposta:
+      "Pelo app Atalhos do iOS. Você instala o atalho do Valora Finanças, cola a chave que aparece em Configurações e passa a registrar gastos falando com a Siri, sem abrir o aplicativo.",
+  },
+  {
+    pergunta: "Meus dados estão seguros no Valora Finanças?",
+    resposta:
+      "Sim. O acesso é protegido por senha criptografada, cada requisição exige um token autenticado e os dados de cada usuário ficam isolados no banco por políticas de segurança em nível de linha.",
+  },
+];
+
 const TRUST_ITEMS = [
   { icon: Shield, label: "Dados seguros e criptografados" },
   { icon: Zap, label: "Rápido e sempre disponível" },
@@ -149,6 +178,15 @@ const jsonLd = {
       name: "Valora Finanças",
       inLanguage: "pt-BR",
       publisher: { "@id": "https://valorafinancas.com/#organizacao" },
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "https://valorafinancas.com/#faq",
+      mainEntity: FAQ.map(({ pergunta, resposta }) => ({
+        "@type": "Question",
+        name: pergunta,
+        acceptedAnswer: { "@type": "Answer", text: resposta },
+      })),
     },
   ],
 };
@@ -200,6 +238,7 @@ export default function HomePage() {
             <a href="#funcionalidades" className="hover:text-white transition-colors">Funcionalidades</a>
             <a href="#iphone" className="hover:text-white transition-colors">Atalho iPhone</a>
             <a href="#como-funciona" className="hover:text-white transition-colors">Como funciona</a>
+            <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
           </nav>
 
           <div className="flex items-center gap-3">
@@ -220,7 +259,12 @@ export default function HomePage() {
 
         {/* ── HERO ── */}
         <section className="relative z-10 flex flex-col items-center text-center px-6 pt-20 pb-24 md:pt-28 md:pb-32">
+          {/* A marca precisa estar no H1: é o sinal mais direto de que esta
+              página responde pela busca "Valora Finanças" */}
           <h1 className="text-5xl md:text-7xl font-bold text-white leading-tight max-w-4xl mb-6">
+            <span className="mb-3 block font-display text-2xl tracking-[0.18em] text-sky-200 md:text-3xl">
+              VALORA FINANÇAS
+            </span>
             Organize suas finanças<br />
             <span className="text-sky-200">com inteligência</span>
           </h1>
@@ -530,6 +574,37 @@ export default function HomePage() {
                   <h3 className="font-bold text-white text-lg mb-2">{step.title}</h3>
                   <p className="text-sky-100/60 text-sm leading-relaxed">{step.description}</p>
                 </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── FAQ ── */}
+        <section id="faq" className="relative z-10 px-6 md:px-12 pb-24">
+          <div className="mx-auto max-w-3xl">
+            <div className="mb-10 text-center">
+              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+                Perguntas frequentes
+              </h2>
+              <p className="text-sky-100/60 text-lg">
+                O que as pessoas costumam perguntar antes de criar a conta.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              {FAQ.map(({ pergunta, resposta }) => (
+                <details
+                  key={pergunta}
+                  className="group rounded-2xl border border-white/15 bg-white/[0.07] px-5 py-4 backdrop-blur-md transition-colors open:bg-white/[0.11] hover:border-white/25"
+                >
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold text-white marker:content-none">
+                    {pergunta}
+                    <ChevronRight className="h-4 w-4 shrink-0 text-sky-200/70 transition-transform group-open:rotate-90" />
+                  </summary>
+                  <p className="mt-3 text-sm leading-relaxed text-sky-100/70">
+                    {resposta}
+                  </p>
+                </details>
               ))}
             </div>
           </div>

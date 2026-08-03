@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { api, setToken } from "@/lib/api";
+import { toast } from "sonner";
 import { paginaInicial } from "@/lib/preferencias";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,7 +56,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [loginCode, setLoginCode] = useState("");
   const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [codeRequestLoading, setCodeRequestLoading] = useState(false);
   const [codeVerifyLoading, setCodeVerifyLoading] = useState(false);
@@ -102,7 +102,6 @@ export default function LoginPage() {
   async function handlePasswordSubmit(e: FormEvent) {
     e.preventDefault();
     setError("");
-    setMessage("");
     setLoginRedirecting(false);
     setLoading(true);
 
@@ -115,7 +114,7 @@ export default function LoginPage() {
       });
       setToken(data.token);
       setLoginRedirecting(true);
-      setMessage("Login realizado com sucesso. A redirecionar para o painel...");
+      toast.success("Login realizado com sucesso", { description: "Redirecionando para o painel..." });
       await delay(POST_LOGIN_REDIRECT_MS);
       router.push(await paginaInicial());
       navigatedAway = true;
@@ -124,7 +123,7 @@ export default function LoginPage() {
       if (response?.data?.code === "EMAIL_NOT_VERIFIED") {
         const retryAfter = (response.data as { retry_after_seconds?: number }).retry_after_seconds ?? 60;
         setLoginRedirecting(true);
-        setMessage("Conta ainda nao verificada. A redirecionar para confirmar o e-mail...");
+        toast.info("Conta ainda nao verificada", { description: "Redirecionando para confirmar o e-mail..." });
         await delay(900);
         router.push(`/verify-email?email=${encodeURIComponent(email)}&cooldown=${retryAfter}`);
         navigatedAway = true;
@@ -141,13 +140,12 @@ export default function LoginPage() {
 
   async function handleRequestCode() {
     setError("");
-    setMessage("");
     setCodeRequestLoading(true);
 
     try {
       const { data } = await api.post<{ retry_after_seconds?: number }>("/auth/login-code/request", { email });
       setCodeSent(true);
-      setMessage("Enviamos um codigo de acesso para o seu e-mail.");
+      toast.success("Codigo enviado", { description: "Confira a caixa de entrada do seu e-mail." });
       setCodeCooldown(data.retry_after_seconds ?? 60);
     } catch (err: unknown) {
       const response = (err as {
@@ -168,7 +166,6 @@ export default function LoginPage() {
     if (!codeSent || loginCode.length !== 6) return;
 
     setError("");
-    setMessage("");
     setCodeLoginRedirecting(false);
     setCodeVerifyLoading(true);
 
@@ -181,7 +178,7 @@ export default function LoginPage() {
       });
       setToken(data.token);
       setCodeLoginRedirecting(true);
-      setMessage("Login realizado com sucesso. A redirecionar para o painel...");
+      toast.success("Login realizado com sucesso", { description: "Redirecionando para o painel..." });
       await delay(POST_LOGIN_REDIRECT_MS);
       router.push(await paginaInicial());
       navigatedAway = true;
@@ -429,13 +426,6 @@ export default function LoginPage() {
                     </Button>
                   </form>
                 </TabsContent>
-
-                {message && (
-                  <div className="flex items-start gap-2 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2.5 text-sm text-emerald-400">
-                    <Check className="h-4 w-4 mt-0.5 shrink-0" />
-                    <span>{message}</span>
-                  </div>
-                )}
 
                 {error && (
                   <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-sm text-destructive">

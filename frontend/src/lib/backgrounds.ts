@@ -38,4 +38,10 @@ export const BACKGROUNDS: BackgroundOpcao[] = [
     descricao: "Fluido magnético escorrendo",
     fallbackClass: "bg-[#0b1020]",
   },
+  {
+    id: "floatinglines",
+    nome: "Floating Lines",
+    descricao: "Ondas de linhas que seguem o cursor",
+    fallbackClass: "bg-[#050a18]",
+  },
 ];

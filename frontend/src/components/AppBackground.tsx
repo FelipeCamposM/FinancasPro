@@ -18,6 +18,10 @@ const Ferrofluid = dynamic(() => import("@/components/Ferrofluid"), {
   ssr: false,
   loading: () => null,
 });
+const FloatingLines = dynamic(() => import("@/components/FloatingLines"), {
+  ssr: false,
+  loading: () => null,
+});
 
 /**
  * O efeito em si, sem posicionamento — todos preenchem 100% do pai.
@@ -81,6 +85,21 @@ export function BackgroundEfeito({
           mouseInteraction={!preview}
           mouseStrength={1}
           mouseRadius={0.35}
+        />
+      );
+    case "floatinglines":
+      return (
+        <FloatingLines
+          linesGradient={["#06B6D4", "#2F4BC0", "#3B82F6"]}
+          animationSpeed={0.6}
+          // Como fundo o wrapper é pointer-events-none: mouse e parallax só
+          // fazem sentido em tela cheia, e no preview seriam custo à toa.
+          interactive={!preview}
+          bendRadius={5}
+          bendStrength={-0.5}
+          mouseDamping={0.05}
+          parallax={!preview}
+          parallaxStrength={0.2}
         />
       );
     default:

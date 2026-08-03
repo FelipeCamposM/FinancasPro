@@ -6,7 +6,6 @@ import {
   TrendingDown,
   TrendingUp,
   CreditCard,
-  BarChart3,
   Check,
   Shield,
   Zap,
@@ -15,6 +14,15 @@ import {
   ArrowRight,
   Wallet,
   RefreshCcw,
+  Smartphone,
+  ChevronLeft,
+  ChevronRight,
+  Lock,
+  Plus,
+  Copy,
+  Mic,
+  Download,
+  KeyRound,
 } from "lucide-react";
 
 const FEATURES = [
@@ -40,7 +48,7 @@ const FEATURES = [
     icon: RefreshCcw,
     title: "Assinaturas Recorrentes",
     description:
-      "Netflix, Spotify, academia — visualize tudo em um painel e elimine cobranças esquecidas.",
+      "Netflix, Spotify, academia: visualize tudo em um painel e elimine cobranças esquecidas.",
   },
   {
     icon: PieChart,
@@ -53,6 +61,24 @@ const FEATURES = [
     title: "Categorias Personalizadas",
     description:
       "Crie categorias para alimentação, lazer, saúde e muito mais. Organize do seu jeito.",
+  },
+];
+
+const IPHONE_STEPS = [
+  {
+    icon: Download,
+    title: "Baixe o atalho",
+    description: "Um toque instala o atalho oficial no app Atalhos do iPhone.",
+  },
+  {
+    icon: KeyRound,
+    title: "Cole sua chave",
+    description: "A chave fica em Configurações e liga o atalho à sua conta.",
+  },
+  {
+    icon: Mic,
+    title: "Fale o gasto",
+    description: "Diga a descrição e o valor. O lançamento cai direto no painel.",
   },
 ];
 
@@ -139,6 +165,7 @@ export default function HomePage() {
 
           <nav className="hidden md:flex items-center gap-6 text-sm text-sky-100/80">
             <a href="#funcionalidades" className="hover:text-white transition-colors">Funcionalidades</a>
+            <a href="#iphone" className="hover:text-white transition-colors">Atalho iPhone</a>
             <a href="#como-funciona" className="hover:text-white transition-colors">Como funciona</a>
           </nav>
 
@@ -159,12 +186,7 @@ export default function HomePage() {
         </header>
 
         {/* ── HERO ── */}
-        <section className="relative z-10 flex flex-col items-center text-center px-6 pt-16 pb-24 md:pt-24 md:pb-32">
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs text-sky-100 mb-8 backdrop-blur-sm">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-            Gratuito para começar — sem cartão de crédito
-          </div>
-
+        <section className="relative z-10 flex flex-col items-center text-center px-6 pt-20 pb-24 md:pt-28 md:pb-32">
           <h1 className="text-5xl md:text-7xl font-bold text-white leading-tight max-w-4xl mb-6">
             Organize suas finanças<br />
             <span className="text-sky-200">com inteligência</span>
@@ -191,44 +213,142 @@ export default function HomePage() {
             </Link>
           </div>
 
-          {/* Mock dashboard preview */}
-          <div className="w-full max-w-3xl rounded-2xl border border-white/20 bg-white/10 backdrop-blur-md p-6 shadow-2xl shadow-blue-900/40">
-            <div className="flex items-center gap-2 mb-5">
-              <div className="h-3 w-3 rounded-full bg-red-400/70" />
-              <div className="h-3 w-3 rounded-full bg-yellow-400/70" />
-              <div className="h-3 w-3 rounded-full bg-emerald-400/70" />
-              <span className="ml-2 text-xs text-white/40">valorafinancas.com/dashboard</span>
-            </div>
+          <p className="-mt-10 mb-16 text-sm text-sky-100/60">
+            Gratuito para começar. Sem cartão de crédito.
+          </p>
 
-            <div className="grid grid-cols-3 gap-3 mb-4">
-              {[
-                { label: "Saldo do mês", value: "R$ 2.840", color: "text-emerald-300" },
-                { label: "Total gasto", value: "R$ 1.960", color: "text-red-300" },
-                { label: "Renda", value: "R$ 4.800", color: "text-sky-200" },
-              ].map((item) => (
-                <div key={item.label} className="rounded-xl bg-white/10 border border-white/10 p-3 text-left">
-                  <p className="text-[10px] text-white/50 mb-1">{item.label}</p>
-                  <p className={`text-lg font-bold ${item.color}`}>{item.value}</p>
+          {/* Prévia do dashboard: janela flutuante no estilo Safari do macOS,
+              com o tema real de dentro da aplicação no conteúdo */}
+          <div className="w-full max-w-3xl [perspective:1600px]">
+            <div className="group relative rounded-[14px] transition-transform duration-700 ease-out [transform:rotateX(9deg)_scale(0.99)] hover:[transform:rotateX(0deg)_scale(1)]">
+              {/* Halo que sustenta a janela no ar */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -inset-x-10 -bottom-10 h-24 rounded-[50%] opacity-60 blur-2xl"
+                style={{ background: "radial-gradient(ellipse at center, rgba(3,7,18,0.85) 0%, transparent 70%)" }}
+              />
+
+              <div className="relative overflow-hidden rounded-[14px] border border-white/[0.14] shadow-[0_50px_110px_-25px_rgba(2,6,23,0.95),0_10px_30px_-10px_rgba(2,6,23,0.6)] ring-1 ring-black/40">
+                {/* Barra de ferramentas do Safari */}
+                <div className="relative flex items-center gap-3 border-b border-black/40 px-4 py-2.5"
+                  style={{ background: "linear-gradient(180deg, #3a3a3e 0%, #2b2b2f 100%)" }}>
+                  <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/15" />
+
+                  {/* Semáforos */}
+                  <div className="flex items-center gap-2">
+                    <span className="h-3 w-3 rounded-full bg-[#ff5f57] shadow-inner shadow-black/20" />
+                    <span className="h-3 w-3 rounded-full bg-[#febc2e] shadow-inner shadow-black/20" />
+                    <span className="h-3 w-3 rounded-full bg-[#28c840] shadow-inner shadow-black/20" />
+                  </div>
+
+                  <div className="hidden items-center gap-1 text-white/35 sm:flex">
+                    <ChevronLeft className="h-4 w-4" />
+                    <ChevronRight className="h-4 w-4" />
+                  </div>
+
+                  {/* Barra de endereço */}
+                  <div className="mx-auto flex w-full max-w-[300px] items-center justify-center gap-1.5 rounded-md bg-black/25 px-3 py-1 ring-1 ring-white/[0.06]">
+                    <Lock className="h-3 w-3 text-white/40" />
+                    <span className="text-[11px] text-white/60">valorafinancas.com</span>
+                  </div>
+
+                  <div className="hidden items-center gap-3 text-white/30 sm:flex">
+                    <Plus className="h-4 w-4" />
+                    <Copy className="h-4 w-4" />
+                  </div>
                 </div>
-              ))}
-            </div>
 
-            <div className="rounded-xl bg-white/10 border border-white/10 p-4">
-              <p className="text-xs text-white/50 mb-3">Últimos gastos</p>
-              <div className="space-y-2">
+                {/* Conteúdo com o fundo real da aplicação */}
+                <div className="relative bg-[hsl(222_47%_5%)] p-5 text-left">
+                  {/* Brilho de vidro na diagonal, como no app */}
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute -left-1/3 -top-1/2 h-[200%] w-2/3 rotate-12 opacity-[0.06]"
+                    style={{ background: "linear-gradient(90deg, transparent, #fff, transparent)" }}
+                  />
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/35">
+                    Resumo do mês
+                  </p>
+                  <p className="font-display text-lg tracking-wide text-white/90">
+                    Março de 2026
+                  </p>
+                </div>
+                <span className="rounded-lg border border-emerald-400/25 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-300">
+                  59% da renda usada
+                </span>
+              </div>
+
+              <div className="mb-3 grid grid-cols-3 gap-3">
                 {[
-                  { label: "Supermercado", cat: "Alimentação", value: "- R$ 342,00" },
-                  { label: "Spotify", cat: "Assinaturas", value: "- R$ 21,90" },
-                  { label: "Academia", cat: "Saúde", value: "- R$ 99,00" },
-                ].map((item) => (
-                  <div key={item.label} className="flex items-center justify-between text-sm">
-                    <div>
-                      <span className="text-white/80">{item.label}</span>
-                      <span className="ml-2 rounded px-1.5 py-0.5 text-[10px] bg-white/10 text-white/40">{item.cat}</span>
+                  { label: "Saldo", value: "R$ 2.840", ring: "border-emerald-300/25 bg-emerald-500/[0.10]", text: "text-emerald-300", Icon: Wallet },
+                  { label: "Gastos", value: "R$ 1.960", ring: "border-rose-300/25 bg-rose-500/[0.10]", text: "text-rose-300", Icon: TrendingDown },
+                  { label: "Renda", value: "R$ 4.800", ring: "border-blue-300/25 bg-blue-500/[0.10]", text: "text-blue-300", Icon: TrendingUp },
+                ].map(({ label, value, ring, text, Icon }) => (
+                  <div key={label} className={`rounded-xl border p-3 ${ring}`}>
+                    <div className="mb-1.5 flex items-center justify-between">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/45">
+                        {label}
+                      </p>
+                      <Icon className={`h-3.5 w-3.5 ${text}`} />
                     </div>
-                    <span className="text-red-300 font-medium">{item.value}</span>
+                    <p className={`text-lg font-bold tabular-nums ${text}`}>{value}</p>
                   </div>
                 ))}
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-[1.4fr_1fr]">
+                <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-4">
+                  <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.12em] text-white/35">
+                    Últimos gastos
+                  </p>
+                  <div className="space-y-2.5">
+                    {[
+                      { label: "Supermercado", cat: "Alimentação", cor: "#34d399", value: "R$ 342,00" },
+                      { label: "Spotify", cat: "Assinaturas", cor: "#a78bfa", value: "R$ 21,90" },
+                      { label: "Academia", cat: "Saúde", cor: "#60a5fa", value: "R$ 99,00" },
+                    ].map((item) => (
+                      <div key={item.label} className="flex items-center justify-between gap-3 text-sm">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: item.cor }} />
+                          <span className="truncate text-white/85">{item.label}</span>
+                          <span className="shrink-0 rounded-md bg-white/[0.06] px-1.5 py-0.5 text-[10px] text-white/40">
+                            {item.cat}
+                          </span>
+                        </div>
+                        <span className="shrink-0 font-semibold tabular-nums text-rose-300">
+                          {item.value}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-4">
+                  <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.12em] text-white/35">
+                    Por categoria
+                  </p>
+                  <div className="space-y-2.5">
+                    {[
+                      { cat: "Alimentação", pct: 72, cor: "#34d399" },
+                      { cat: "Moradia", pct: 54, cor: "#60a5fa" },
+                      { cat: "Lazer", pct: 28, cor: "#a78bfa" },
+                    ].map((item) => (
+                      <div key={item.cat}>
+                        <div className="mb-1 flex items-center justify-between text-[11px]">
+                          <span className="text-white/55">{item.cat}</span>
+                          <span className="tabular-nums text-white/35">{item.pct}%</span>
+                        </div>
+                        <div className="h-1.5 overflow-hidden rounded-full bg-white/[0.07]">
+                          <div className="h-full rounded-full" style={{ width: `${item.pct}%`, background: item.cor }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+                </div>
               </div>
             </div>
           </div>
@@ -272,6 +392,83 @@ export default function HomePage() {
                   <p className="text-sky-100/60 text-sm leading-relaxed">{description}</p>
                 </article>
               ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── ATALHO DO IPHONE (exclusivo iOS) ── */}
+        <section id="iphone" className="relative z-10 px-6 md:px-12 pb-24">
+          <div className="mx-auto grid max-w-5xl items-center gap-10 rounded-3xl border border-white/20 p-8 md:grid-cols-2 md:p-12 shadow-2xl shadow-blue-900/30"
+            style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.13) 0%, rgba(255,255,255,0.05) 100%)", backdropFilter: "blur(20px)" }}>
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-sky-100">
+                <Smartphone className="h-3.5 w-3.5" />
+                Exclusivo iOS
+              </div>
+
+              <h2 className="mt-5 text-3xl md:text-4xl font-bold text-white leading-tight">
+                Registre um gasto falando com a Siri
+              </h2>
+
+              <p className="mt-4 text-sky-100/70 leading-relaxed">
+                O gasto entra na sua conta pelo app Atalhos do iPhone. Sem abrir o
+                Valora, sem digitar. O lançamento aparece no painel na hora, pronto
+                para você completar o cartão e a categoria quando quiser.
+              </p>
+
+              <ul className="mt-7 space-y-4">
+                {IPHONE_STEPS.map(({ icon: Icon, title, description }) => (
+                  <li key={title} className="flex gap-3.5">
+                    <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/20 bg-white/15">
+                      <Icon className="h-4 w-4 text-sky-200" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-white text-sm">{title}</p>
+                      <p className="text-sky-100/60 text-sm leading-relaxed">{description}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+
+              <Link
+                href="/register"
+                className="mt-8 inline-flex items-center justify-center gap-2 rounded-full bg-white px-7 py-3.5 text-sm font-bold text-blue-700 shadow-xl shadow-blue-900/30 transition-all hover:-translate-y-0.5 hover:bg-sky-50"
+              >
+                Criar conta e configurar
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+
+            {/* Simulação da conversa com a Siri */}
+            <div className="mx-auto w-full max-w-[280px]">
+              <div className="rounded-[2.2rem] border-[6px] border-white/20 bg-blue-950/50 p-4 shadow-2xl shadow-blue-950/50 backdrop-blur-md">
+                <div className="mx-auto mb-5 h-1.5 w-16 rounded-full bg-white/20" />
+
+                <div className="ml-auto w-fit max-w-[85%] rounded-2xl rounded-br-md bg-white/90 px-3.5 py-2.5">
+                  <p className="text-[13px] font-medium leading-snug text-blue-900">
+                    Ei Siri, registrar gasto
+                  </p>
+                </div>
+
+                <div className="mt-3 flex items-center gap-2 text-[11px] text-sky-200/70">
+                  <Mic className="h-3.5 w-3.5" />
+                  Mercado, 84 reais
+                </div>
+
+                <div className="mt-4 rounded-2xl border border-white/15 bg-white/10 p-3.5">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-400/20">
+                      <Check className="h-3.5 w-3.5 text-emerald-300" />
+                    </div>
+                    <p className="text-xs font-semibold text-white">Gasto registrado</p>
+                  </div>
+                  <div className="mt-3 flex items-baseline justify-between">
+                    <span className="text-sm text-white/80">Mercado</span>
+                    <span className="text-base font-bold text-red-300">R$ 84,00</span>
+                  </div>
+                  <p className="mt-1 text-[10px] text-white/40">Hoje · aguardando cartão</p>
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -338,7 +535,7 @@ export default function HomePage() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-4 max-w-5xl mx-auto">
             <div className="flex items-center gap-3">
               <Image src="/logo-valora-branca.png" alt="Valora Finanças" width={28} height={28} className="size-7 opacity-70" />
-              <span className="text-sky-200/50 text-sm">Valora Finanças — valorafinancas.com</span>
+              <span className="text-sky-200/50 text-sm">Valora Finanças · valorafinancas.com</span>
             </div>
             <div className="flex items-center gap-6 text-xs text-sky-200/40">
               <Link href="/login" className="hover:text-sky-200/70 transition-colors">Entrar</Link>

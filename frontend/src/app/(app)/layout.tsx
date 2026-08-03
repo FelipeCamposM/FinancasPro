@@ -4,7 +4,6 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getToken } from "@/lib/api";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { Toaster } from "@/components/ui/sonner";
 import AppSidebar from "@/components/nav/AppSidebar";
 import TopNavbar from "@/components/nav/TopNavbar";
 import BottomNav from "@/components/nav/BottomNav";
@@ -37,7 +36,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
         <BottomNav />
-        <Toaster />
         <TrialWelcomeDialog />
         <FaturaPendenteDialog />
       </SidebarProvider>

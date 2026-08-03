@@ -695,3 +695,202 @@
     --width: calc(100vw - 2rem);
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   iOS: Safari aplica zoom automático ao focar um campo com fonte
+   menor que 16px, e a página fica desalinhada até o usuário desfazer
+   o zoom na mão. Os componentes usam text-sm (14px), então em telas
+   pequenas os campos sobem para 16px.
+
+   Vale só até 640px: no desktop o 14px é o tamanho desejado e não há
+   esse comportamento. `!important` porque precisa vencer as classes
+   utilitárias do Tailwind aplicadas em cada componente.
+
+   Não usar `maximum-scale=1` no viewport para resolver isso: aquilo
+   bloqueia o zoom manual e quebra a acessibilidade.
+   ═══════════════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  textarea,
+  select,
+  [contenteditable="true"] {
+    font-size: 16px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Barra neon dos cards de gasto (mobile).
+   A cor vem por --cor-neon, definida inline com a cor da categoria.
+   ═══════════════════════════════════════════════════════════════ */
+@keyframes ui-neon-desliza {
+  0% {
+    background-position: 0 -70%;
+    opacity: 0;
+  }
+  20%,
+  80% {
+    opacity: 0.9;
+  }
+  100% {
+    background-position: 0 170%;
+    opacity: 0;
+  }
+}
+
+@keyframes ui-neon-respira {
+  0%,
+  100% {
+    box-shadow: 0 0 6px -1px var(--cor-neon);
+  }
+  50% {
+    box-shadow: 0 0 14px 1px var(--cor-neon);
+  }
+}
+
+.ui-barra-neon {
+  position: relative;
+  overflow: hidden;
+  background: var(--cor-neon);
+  animation: ui-neon-respira 3.2s ease-in-out infinite;
+}
+
+/* Faixa de luz que percorre a barra de cima para baixo */
+.ui-barra-neon::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.9) 50%,
+    transparent 100%
+  );
+  background-size: 100% 55%;
+  background-repeat: no-repeat;
+  animation: ui-neon-desliza 2.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-barra-neon,
+  .ui-barra-neon::after {
+    animation: none;
+  }
+  .ui-barra-neon {
+    box-shadow: 0 0 8px -1px var(--cor-neon);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Emoji com aparência de relevo.
+
+   Não dá para trocar o desenho do emoji por CSS — quem desenha é a
+   fonte do sistema (Apple Color Emoji no iPhone/Mac, Segoe UI Emoji
+   no Windows, Noto no Android). O que dá para fazer é iluminá-lo:
+   sombra projetada para descolar do fundo, um respingo de luz no topo
+   e uma inclinação mínima, que juntos leem como volume.
+   ═══════════════════════════════════════════════════════════════ */
+.ui-emoji-3d {
+  display: inline-block;
+  line-height: 1;
+  /* A fonte do sistema vem primeiro: é a que tem os desenhos coloridos */
+  font-family:
+    "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji",
+    var(--font-body), sans-serif;
+  filter: drop-shadow(0 2px 3px rgba(2, 6, 23, 0.75))
+    drop-shadow(0 0 6px rgba(255, 255, 255, 0.12));
+  transform: perspective(120px) rotateX(8deg);
+  transition:
+    transform 0.25s ease,
+    filter 0.25s ease;
+}
+
+/* Reage ao toque/hover no card: o emoji se endireita e sobe um pouco */
+.ui-emoji-3d:hover,
+.ui-emoji-3d-hover:hover .ui-emoji-3d {
+  transform: perspective(120px) rotateX(0deg) scale(1.08);
+  filter: drop-shadow(0 4px 6px rgba(2, 6, 23, 0.8))
+    drop-shadow(0 0 10px rgba(255, 255, 255, 0.18));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-emoji-3d,
+  .ui-emoji-3d:hover {
+    transform: none;
+    transition: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Cards de estatística da lista de gastos.
+   A cor de cada card entra por --cor-stat (definida inline).
+   ═══════════════════════════════════════════════════════════════ */
+@keyframes ui-stat-varredura {
+  0% {
+    transform: translateX(-140%) skewX(-14deg);
+  }
+  100% {
+    transform: translateX(320%) skewX(-14deg);
+  }
+}
+
+@keyframes ui-stat-pulso {
+  0%,
+  100% {
+    box-shadow:
+      inset 0 0 12px -10px var(--cor-stat),
+      0 0 0 0 transparent;
+    border-color: rgba(255, 255, 255, 0.09);
+  }
+  50% {
+    box-shadow:
+      inset 0 0 20px -8px var(--cor-stat),
+      0 0 16px -10px var(--cor-stat);
+    border-color: color-mix(in srgb, var(--cor-stat) 45%, transparent);
+  }
+}
+
+/* A entrada (ui-fade-up) precisa ser repetida aqui: estes cards são filhos de
+   .ui-stagger, que deixa o elemento com opacity 0 e conta com a animação dela
+   para revelar. Como esta regra está fora de @layer, ela vence a do stagger e,
+   sem o fade-up junto, os cards ficariam invisíveis. */
+.ui-stat-neon {
+  position: relative;
+  overflow: hidden;
+  animation:
+    ui-fade-up var(--stagger-duration, 220ms)
+      var(--stagger-ease, cubic-bezier(0.22, 1, 0.36, 1)) both,
+    ui-stat-pulso 4s ease-in-out infinite;
+}
+
+/* Faixa de luz cruzando o card de tempos em tempos */
+.ui-stat-neon::after {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  width: 35%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.09),
+    transparent
+  );
+  animation: ui-stat-varredura 6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Ícone com halo na cor do card */
+.ui-stat-neon .ui-stat-icone {
+  box-shadow: 0 0 14px -6px var(--cor-stat);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-stat-neon,
+  .ui-stat-neon::after {
+    animation: none;
+  }
+  .ui-stat-neon {
+    /* sem animação, o opacity 0 herdado do .ui-stagger precisa ser desfeito */
+    opacity: 1;
+    box-shadow: inset 0 0 16px -10px var(--cor-stat);
+  }
+}

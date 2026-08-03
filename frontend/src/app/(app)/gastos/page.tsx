@@ -42,6 +42,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { GastoDialog } from "./GastoDialog";
 import { ImportGastosDialog } from "./ImportGastosDialog";
 import { fetchPreferencias, usePreferencias } from "@/lib/preferencias";
@@ -95,6 +102,8 @@ import {
   FileSpreadsheet,
   ArrowUp,
   ArrowDown,
+  ArrowUpDown,
+  Layers,
 } from "lucide-react";
 import { PageShell } from "@/components/ui/page-shell";
 import {
@@ -742,9 +751,6 @@ function GastosPageInner() {
     (acc, gasto) => acc + Number(gasto.valor_total || 0),
     0,
   );
-  const pendentesExibidos = displayedGastos.filter(
-    (gasto) => gasto.status === "pendente",
-  ).length;
   const ticketMedio = displayedGastos.length
     ? totalExibido / displayedGastos.length
     : 0;
@@ -781,9 +787,9 @@ function GastosPageInner() {
           </div>
 
           {/* Right: period nav + CTA */}
-          <div className="grid w-full grid-cols-1 gap-2 min-[380px]:grid-cols-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end">
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
             {/* Month navigator */}
-            <div className="flex w-full items-center overflow-hidden rounded-xl border border-white/10 bg-white/[0.05] min-[380px]:col-span-2 sm:w-auto">
+            <div className="flex w-full items-center overflow-hidden rounded-xl border border-white/10 bg-white/[0.05] sm:w-auto">
               <button
                 className="flex h-9 w-9 items-center justify-center border-r border-white/10 text-white/40 transition-colors hover:bg-white/[0.07] hover:text-white/80"
                 aria-label="Mês anterior"
@@ -883,30 +889,34 @@ function GastosPageInner() {
               </button>
             </div>
 
-            {creditCartoes.length > 0 && (
+            {/* Ações: empilhadas no mobile; no desktop o `contents` dissolve o
+                wrapper e os botões voltam a ser filhos diretos do flex */}
+            <div className="flex w-full flex-col gap-2 sm:contents">
+              {creditCartoes.length > 0 && (
+                <Button
+                  onClick={() => setFaturaPickerOpen(true)}
+                  className="h-10 w-full rounded-xl border border-blue-300/30 bg-gradient-to-br from-blue-500/90 via-blue-500/75 to-blue-700/90 px-4 text-white shadow-lg shadow-blue-950/25 ring-1 ring-white/[0.10] transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-200/50 hover:from-blue-400/95 hover:via-blue-500/85 hover:to-blue-600/95 hover:shadow-blue-500/20 sm:w-auto"
+                >
+                  <Receipt className="mr-2 h-4 w-4" />
+                  Fatura do Mês
+                </Button>
+              )}
               <Button
-                onClick={() => setFaturaPickerOpen(true)}
-                className="h-10 w-full rounded-xl border border-blue-300/30 bg-gradient-to-br from-blue-500/90 via-blue-500/75 to-blue-700/90 px-4 text-white shadow-lg shadow-blue-950/25 ring-1 ring-white/[0.10] transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-200/50 hover:from-blue-400/95 hover:via-blue-500/85 hover:to-blue-600/95 hover:shadow-blue-500/20 sm:w-auto"
+                variant="outline"
+                onClick={() => setImportOpen(true)}
+                className="h-10 w-full rounded-xl border-white/15 bg-white/[0.05] px-4 text-white/80 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/[0.1] hover:text-white sm:w-auto"
               >
-                <Receipt className="mr-2 h-4 w-4" />
-                Fatura do Mês
+                <FileSpreadsheet className="mr-2 h-4 w-4" />
+                Importar
               </Button>
-            )}
-            <Button
-              variant="outline"
-              onClick={() => setImportOpen(true)}
-              className="h-10 w-full rounded-xl border-white/15 bg-white/[0.05] px-4 text-white/80 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/[0.1] hover:text-white sm:w-auto"
-            >
-              <FileSpreadsheet className="mr-2 h-4 w-4" />
-              Importar
-            </Button>
-            <Button
-              onClick={() => { setEditingGasto(null); setDialogOpen(true); }}
-              className="h-10 w-full rounded-xl border border-rose-300/30 bg-gradient-to-br from-rose-500/90 via-rose-500/75 to-rose-700/90 px-4 text-white shadow-lg shadow-rose-950/25 ring-1 ring-white/[0.10] transition-all duration-200 hover:-translate-y-0.5 hover:border-rose-200/50 hover:from-rose-400/95 hover:via-rose-500/85 hover:to-rose-600/95 hover:shadow-rose-500/20 sm:w-auto"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Novo Gasto
-            </Button>
+              <Button
+                onClick={() => { setEditingGasto(null); setDialogOpen(true); }}
+                className="h-10 w-full rounded-xl border border-rose-300/30 bg-gradient-to-br from-rose-500/90 via-rose-500/75 to-rose-700/90 px-4 text-white shadow-lg shadow-rose-950/25 ring-1 ring-white/[0.10] transition-all duration-200 hover:-translate-y-0.5 hover:border-rose-200/50 hover:from-rose-400/95 hover:via-rose-500/85 hover:to-rose-600/95 hover:shadow-rose-500/20 sm:w-auto"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Novo Gasto
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -1036,30 +1046,46 @@ function GastosPageInner() {
       <div className="rounded-xl border border-white/10 bg-white/[0.04] backdrop-blur-xl">
         {/* Row 1: search + period */}
         <div className="flex items-center gap-2 border-b border-white/[0.07] p-3">
-          <div className="relative flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/30" />
-            <Input
-              placeholder="Buscar por descrição..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="h-9 pl-8 text-sm"
+          {/* Busca: superfície de vidro que acende ao focar */}
+          <div className="group relative flex-1">
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute -inset-px rounded-2xl bg-gradient-to-r from-rose-500/0 via-rose-500/20 to-blue-500/0 opacity-0 blur-[6px] transition-opacity duration-300 group-focus-within:opacity-100"
             />
-            {search && (
-              <button onClick={() => setSearch("")} className="absolute inset-y-0 right-2.5 flex items-center text-white/30 hover:text-white/70">
-                <X className="h-3.5 w-3.5" />
-              </button>
-            )}
+            <div className="relative flex h-11 items-center gap-2.5 rounded-2xl border border-white/[0.10] bg-[hsl(222_47%_10%/0.65)] px-3.5 shadow-[0_10px_26px_-16px_rgba(2,6,23,0.9)] backdrop-blur-xl transition-colors duration-200 group-focus-within:border-rose-300/35 group-hover:border-white/20">
+              <Search className="h-4 w-4 shrink-0 text-white/35 transition-colors group-focus-within:text-rose-300" />
+              <input
+                type="search"
+                inputMode="search"
+                placeholder="Buscar por descrição..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                aria-label="Buscar gastos por descrição"
+                className="min-w-0 flex-1 border-0 bg-transparent p-0 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-0 [&::-webkit-search-cancel-button]:appearance-none"
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  aria-label="Limpar busca"
+                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-white/35 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
           </div>
 
           <button
             onClick={() => setPeriodoMode((prev) => prev === "custom" ? "mes" : "custom")}
-            className={`flex h-9 shrink-0 items-center gap-1.5 rounded-lg border px-3 text-xs font-medium transition-all ${
+            aria-pressed={periodoMode === "custom"}
+            className={`flex h-11 shrink-0 items-center gap-1.5 rounded-2xl border px-3.5 text-xs font-semibold backdrop-blur-xl transition-all duration-200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 ${
               periodoMode === "custom"
-                ? "border-rose-400/40 bg-rose-500/10 text-rose-300"
-                : "border-white/10 bg-white/[0.04] text-white/45 hover:text-white/70"
+                ? "border-rose-300/40 bg-rose-500/15 text-rose-200 shadow-[0_10px_26px_-16px_rgba(244,63,94,0.8)]"
+                : "border-white/[0.10] bg-[hsl(222_47%_10%/0.65)] text-white/50 hover:border-white/20 hover:text-white/80"
             }`}
           >
-            <CalendarRange className="h-3.5 w-3.5" />
+            <CalendarRange className="h-4 w-4" />
             <span className="hidden sm:inline">Período</span>
           </button>
 
@@ -1079,14 +1105,18 @@ function GastosPageInner() {
           )}
         </div>
 
-        {/* Row 2: combobox filters — always horizontal */}
-        <div className="flex items-center gap-2 overflow-x-auto p-3 scrollbar-none">
-          <SlidersHorizontal className="h-3.5 w-3.5 shrink-0 text-white/25" />
+        {/* Row 2: filtros — quebram de linha em vez de esconder em scroll */}
+        <div className="flex flex-wrap items-center gap-2 p-3">
+          <span className="flex items-center gap-1.5 pr-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white/25">
+            <SlidersHorizontal className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            Filtros
+          </span>
 
           {/* Categoria */}
           <Popover open={openCategoria} onOpenChange={setOpenCategoria}>
             <PopoverTrigger asChild>
-              <button className={`flex h-9 shrink-0 items-center gap-2 rounded-lg border px-3 text-sm transition-all ${filterCategoria ? "border-rose-400/40 bg-rose-500/10 text-rose-300" : "border-white/10 bg-white/[0.04] text-white/55 hover:text-white/80"}`}>
+              <button className={`flex h-10 shrink-0 items-center gap-2 rounded-xl border px-3 text-sm font-medium backdrop-blur-xl transition-all duration-200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/25 ${filterCategoria ? "border-rose-300/40 bg-rose-500/15 text-rose-200 shadow-[0_10px_24px_-16px_rgba(244,63,94,0.9)]" : "border-white/[0.10] bg-[hsl(222_47%_10%/0.6)] text-white/55 hover:border-white/20 hover:text-white/85"}`}>
+                <Tag className="h-4 w-4 shrink-0 opacity-70" aria-hidden="true" />
                 {filterCategoria ? (categorias.find(c => String(c.id) === filterCategoria)?.nome ?? "Categoria") : "Categoria"}
                 <ChevronsUpDown className="h-3 w-3 opacity-40" />
               </button>
@@ -1117,7 +1147,8 @@ function GastosPageInner() {
           {/* Modalidade */}
           <Popover open={openTipoPagto} onOpenChange={setOpenTipoPagto}>
             <PopoverTrigger asChild>
-              <button className={`flex h-9 shrink-0 items-center gap-2 rounded-lg border px-3 text-sm transition-all ${filterTipoPagto ? "border-rose-400/40 bg-rose-500/10 text-rose-300" : "border-white/10 bg-white/[0.04] text-white/55 hover:text-white/80"}`}>
+              <button className={`flex h-10 shrink-0 items-center gap-2 rounded-xl border px-3 text-sm font-medium backdrop-blur-xl transition-all duration-200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/25 ${filterTipoPagto ? "border-rose-300/40 bg-rose-500/15 text-rose-200 shadow-[0_10px_24px_-16px_rgba(244,63,94,0.9)]" : "border-white/[0.10] bg-[hsl(222_47%_10%/0.6)] text-white/55 hover:border-white/20 hover:text-white/85"}`}>
+                <Layers className="h-4 w-4 shrink-0 opacity-70" aria-hidden="true" />
                 {filterTipoPagto === "a_vista" ? "À vista" : filterTipoPagto === "parcelado" ? "A prazo" : "Modalidade"}
                 <ChevronsUpDown className="h-3 w-3 opacity-40" />
               </button>
@@ -1147,7 +1178,8 @@ function GastosPageInner() {
           {/* Pagamento */}
           <Popover open={openForma} onOpenChange={setOpenForma}>
             <PopoverTrigger asChild>
-              <button className={`flex h-9 shrink-0 items-center gap-2 rounded-lg border px-3 text-sm transition-all ${filterForma ? "border-rose-400/40 bg-rose-500/10 text-rose-300" : "border-white/10 bg-white/[0.04] text-white/55 hover:text-white/80"}`}>
+              <button className={`flex h-10 shrink-0 items-center gap-2 rounded-xl border px-3 text-sm font-medium backdrop-blur-xl transition-all duration-200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/25 ${filterForma ? "border-rose-300/40 bg-rose-500/15 text-rose-200 shadow-[0_10px_24px_-16px_rgba(244,63,94,0.9)]" : "border-white/[0.10] bg-[hsl(222_47%_10%/0.6)] text-white/55 hover:border-white/20 hover:text-white/85"}`}>
+                <Wallet className="h-4 w-4 shrink-0 opacity-70" aria-hidden="true" />
                 {filterForma ? (formaLabels[filterForma] ?? filterForma) : "Pagamento"}
                 <ChevronsUpDown className="h-3 w-3 opacity-40" />
               </button>
@@ -1181,7 +1213,8 @@ function GastosPageInner() {
           {/* Status */}
           <Popover open={openStatus} onOpenChange={setOpenStatus}>
             <PopoverTrigger asChild>
-              <button className={`flex h-9 shrink-0 items-center gap-2 rounded-lg border px-3 text-sm transition-all ${filterStatus ? "border-rose-400/40 bg-rose-500/10 text-rose-300" : "border-white/10 bg-white/[0.04] text-white/55 hover:text-white/80"}`}>
+              <button className={`flex h-10 shrink-0 items-center gap-2 rounded-xl border px-3 text-sm font-medium backdrop-blur-xl transition-all duration-200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/25 ${filterStatus ? "border-rose-300/40 bg-rose-500/15 text-rose-200 shadow-[0_10px_24px_-16px_rgba(244,63,94,0.9)]" : "border-white/[0.10] bg-[hsl(222_47%_10%/0.6)] text-white/55 hover:border-white/20 hover:text-white/85"}`}>
+                <CircleCheck className="h-4 w-4 shrink-0 opacity-70" aria-hidden="true" />
                 {filterStatus ? (statusConfig[filterStatus]?.label ?? filterStatus) : "Status"}
                 <ChevronsUpDown className="h-3 w-3 opacity-40" />
               </button>
@@ -1231,28 +1264,75 @@ function GastosPageInner() {
         )}
       </div>
 
-      {/* ── Mini stats strip ────────────────────────────────── */}
+      {/* ── Mini stats strip ──────────────────────────────────
+          Mobile: Exibindo e Total lado a lado (ticket médio fica só no desktop).
+          Cada card acende na própria cor — ver .ui-stat-neon no globals.css. */}
       {!loading && !loadError && displayedGastos.length > 0 && (
-        <div className="flex flex-wrap gap-3 ui-stagger">
-          <div className="flex items-center gap-2 rounded-lg border border-white/[0.07] bg-white/[0.03] px-3.5 py-2 text-xs">
-            <span className="text-white/40">Exibindo</span>
-            <span className="font-semibold text-white">{displayedGastos.length}</span>
-            <span className="text-white/25">de {total}</span>
-          </div>
-          <div className="flex items-center gap-2 rounded-lg border border-white/[0.07] bg-white/[0.03] px-3.5 py-2 text-xs">
-            <span className="text-white/40">Total</span>
-            <span className="font-semibold tabular-nums text-rose-400">{formatBRL(totalExibido)}</span>
-          </div>
-          <div className="flex items-center gap-2 rounded-lg border border-white/[0.07] bg-white/[0.03] px-3.5 py-2 text-xs">
-            <span className="text-white/40">Ticket médio</span>
-            <span className="font-semibold tabular-nums text-white/70">{formatBRL(ticketMedio)}</span>
-          </div>
-          {pendentesExibidos > 0 && (
-            <div className="flex items-center gap-2 rounded-lg border border-amber-400/20 bg-amber-500/[0.06] px-3.5 py-2 text-xs">
-              <Clock className="h-3 w-3 text-amber-400" />
-              <span className="font-semibold text-amber-300">{pendentesExibidos} pendente{pendentesExibidos > 1 ? "s" : ""}</span>
+        <div className="ui-stagger grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3">
+          {[
+            {
+              rotulo: "Exibindo",
+              valor: String(displayedGastos.length),
+              apoio: `de ${total}`,
+              Icon: Receipt,
+              cor: "#7dd3fc",
+              texto: "text-sky-200",
+              anel: "border-sky-300/25 bg-sky-500/[0.12]",
+              soDesktop: false,
+            },
+            {
+              rotulo: "Total",
+              valor: formatBRL(totalExibido),
+              apoio: null,
+              Icon: TrendingDown,
+              cor: "#fda4af",
+              texto: "text-rose-200",
+              anel: "border-rose-300/25 bg-rose-500/[0.12]",
+              soDesktop: false,
+            },
+            {
+              rotulo: "Ticket médio",
+              valor: formatBRL(ticketMedio),
+              apoio: null,
+              Icon: Wallet,
+              cor: "#c4b5fd",
+              texto: "text-violet-200",
+              anel: "border-violet-300/25 bg-violet-500/[0.12]",
+              soDesktop: true,
+            },
+          ].map(({ rotulo, valor, apoio, Icon, cor, texto, anel, soDesktop }) => (
+            <div
+              key={rotulo}
+              style={{ "--cor-stat": cor } as React.CSSProperties}
+              className={`ui-stat-neon flex min-w-0 items-center gap-3 rounded-2xl border border-white/[0.09] bg-[hsl(222_47%_10%/0.65)] px-3.5 py-3 backdrop-blur-xl sm:px-4 ${
+                soDesktop ? "hidden sm:flex" : "flex"
+              }`}
+            >
+              <div
+                className={`ui-stat-icone flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border ${anel}`}
+              >
+                <Icon className={`h-4 w-4 ${texto}`} aria-hidden="true" />
+              </div>
+              <div className="relative min-w-0 flex-1">
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/30">
+                  {rotulo}
+                </p>
+                <p className="mt-0.5 flex items-baseline gap-1.5">
+                  <span
+                    className={`truncate text-[17px] font-bold leading-none tabular-nums ${texto}`}
+                    style={{ textShadow: `0 0 14px ${cor}55` }}
+                  >
+                    {valor}
+                  </span>
+                  {apoio && (
+                    <span className="shrink-0 text-[11px] tabular-nums text-white/25">
+                      {apoio}
+                    </span>
+                  )}
+                </p>
+              </div>
             </div>
-          )}
+          ))}
         </div>
       )}
 
@@ -1260,7 +1340,7 @@ function GastosPageInner() {
       {loading ? (
         <>
           {/* mobile skeleton */}
-          <div className="sm:hidden space-y-2">
+          <div className="sm:hidden space-y-3.5">
             {Array.from({ length: 6 }).map((_, i) => (
               <Skeleton key={i} className="h-[72px] rounded-xl" />
             ))}
@@ -1296,29 +1376,58 @@ function GastosPageInner() {
       ) : (
         <>
           {/* ── Ordenação (mobile — no desktop fica nos cabeçalhos) ── */}
-          <div className="mb-2 flex items-center gap-2 sm:hidden">
-            <span className="text-[11px] uppercase tracking-wider text-white/30">Ordenar</span>
-            <select
-              value={sortBy}
-              onChange={(e) => { setSortBy(e.target.value as SortField); setPage(1); }}
-              className="h-8 flex-1 rounded-lg border border-white/10 bg-white/[0.06] px-2 text-xs text-white/75 outline-none"
-            >
-              {(Object.keys(SORT_LABELS) as SortField[]).map((c) => (
-                <option key={c} value={c} className="bg-neutral-900">{SORT_LABELS[c]}</option>
-              ))}
-            </select>
+          <div className="mb-3 flex items-center gap-2 sm:hidden">
+            <div className="flex h-11 flex-1 items-center gap-2 rounded-2xl border border-white/[0.10] bg-[hsl(222_47%_10%/0.7)] px-3 shadow-[0_10px_26px_-14px_rgba(2,6,23,0.9)] backdrop-blur-xl">
+              <ArrowUpDown className="h-4 w-4 shrink-0 text-white/30" aria-hidden="true" />
+              <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/30">
+                Ordenar
+              </span>
+              <Select
+                value={sortBy}
+                onValueChange={(v) => {
+                  setSortBy(v as SortField);
+                  setPage(1);
+                }}
+              >
+                <SelectTrigger
+                  aria-label="Campo de ordenação"
+                  className="ml-auto h-8 w-auto gap-1.5 border-0 bg-transparent px-1 text-sm font-semibold text-white/85 shadow-none focus:ring-0 focus-visible:ring-2 focus-visible:ring-white/25"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="select-bounce-content">
+                  {(Object.keys(SORT_LABELS) as SortField[]).map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {SORT_LABELS[c]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <button
               type="button"
-              onClick={() => { setSortOrder((o) => (o === "asc" ? "desc" : "asc")); setPage(1); }}
-              aria-label={sortOrder === "asc" ? "Crescente" : "Decrescente"}
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/[0.06] text-white/60"
+              onClick={() => {
+                setSortOrder((o) => (o === "asc" ? "desc" : "asc"));
+                setPage(1);
+              }}
+              aria-label={
+                sortOrder === "asc"
+                  ? "Ordem crescente, tocar para inverter"
+                  : "Ordem decrescente, tocar para inverter"
+              }
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/[0.10] bg-[hsl(222_47%_10%/0.7)] text-white/60 shadow-[0_10px_26px_-14px_rgba(2,6,23,0.9)] backdrop-blur-xl transition-all duration-200 hover:border-white/20 hover:text-white active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
             >
-              {sortOrder === "asc" ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />}
+              {sortOrder === "asc" ? (
+                <ArrowUp className="h-4 w-4" />
+              ) : (
+                <ArrowDown className="h-4 w-4" />
+              )}
             </button>
           </div>
 
           {/* ── Mobile list ── */}
-          <div className="sm:hidden space-y-2">
+          <div className="sm:hidden space-y-3.5">
             {displayedGastos.map((g) => (
               <GastoMobileCard
                 key={g.id}
@@ -1733,8 +1842,6 @@ function GastoMobileCard({
   const moved = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const statusInfo = statusConfig[g.status] ?? { label: g.status, variant: "slate" as const };
-
   const cardWidth = containerRef.current?.getBoundingClientRect().width ?? 320;
   const THRESHOLD = cardWidth * 0.48;
   const swipeAmt = Math.abs(offsetX);
@@ -1776,8 +1883,15 @@ function GastoMobileCard({
     onEdit();
   }
 
+  const corCategoria = g.categoria_cor ?? "#94a3b8";
+  const pendente = g.status === "pendente";
+
   return (
-    <div ref={containerRef} className="relative rounded-xl overflow-hidden bg-[hsl(222,47%,9%)]" style={{ touchAction: "pan-y" }}>
+    <div
+      ref={containerRef}
+      className="relative overflow-hidden rounded-[22px] bg-[hsl(222,47%,9%)]"
+      style={{ touchAction: "pan-y" }}
+    >
       {/* Delete background — fades in as card slides. Opacity tied to swipeAmt = seamless. */}
       <div
         className={`absolute inset-0 flex items-center justify-end pr-5 transition-colors duration-150 ${deleteActive ? "bg-rose-600" : "bg-rose-500"}`}
@@ -1795,75 +1909,116 @@ function GastoMobileCard({
 
       {/* Swipeable card — glass on top of dark container base */}
       <div
-        className="relative z-10 flex gap-3 border border-white/[0.09] bg-white/[0.06] px-4 py-3.5 select-none active:brightness-110"
+        className="relative z-10 select-none rounded-[22px] border border-white/[0.10] bg-[hsl(222_47%_10%/0.72)] p-[18px] shadow-[0_18px_40px_-18px_rgba(2,6,23,0.9)] active:brightness-110"
         style={{
           transform: `translateX(${offsetX}px)`,
           transition: dragging ? "none" : "transform 0.22s cubic-bezier(0.22,1,0.36,1)",
-          backdropFilter: "blur(12px)",
+          backdropFilter: "blur(14px)",
         }}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
         onClick={handleClick}
       >
-        {/* categoria color bar */}
-        <div
-          className="w-1 shrink-0 self-stretch rounded-full"
-          style={{ backgroundColor: g.categoria_cor ?? "#94a3b8" }}
+        {/* Iluminação interna discreta no topo */}
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"
         />
 
-        {/* main info */}
-        <div className="min-w-0 flex-1">
-          {/* Row 1: description + valor */}
-          <div className="flex items-start justify-between gap-2">
-            <p className="truncate text-sm font-semibold text-white/90">{g.descricao}</p>
-            <span className="shrink-0 font-bold tabular-nums text-rose-400 text-sm leading-none">
-              {formatBRL(Number(g.valor_total))}
-            </span>
-          </div>
+        <div className="flex gap-3.5">
+          {/* Barra da categoria com luz percorrendo (ver .ui-barra-neon) */}
+          <div
+            className="ui-barra-neon w-[5px] shrink-0 self-stretch rounded-full"
+            style={{ "--cor-neon": corCategoria } as React.CSSProperties}
+          />
 
-          {/* Row 2: date + forma + parcelas */}
-          <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-white/40">
-            <span>{formatDate(g.data_gasto)}</span>
-            <span className="text-white/20">·</span>
-            <span className="flex items-center gap-1">
-              {getFormaIcon(g.forma_pagamento, "h-3 w-3")}
-              {formaPagtoLabel(g.forma_pagamento, g.tipo_pagamento)}
-            </span>
-            {g.tipo_pagamento === "parcelado" && g.quantidade_parcelas && (
-              <span className="rounded-full border border-white/10 bg-white/[0.06] px-1.5 py-px text-[10px]">
-                {g.numero_parcela ?? 1}/{g.quantidade_parcelas}x
+          {/* Ícone da categoria */}
+          <div
+            className="ui-emoji-3d-hover flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-full border"
+            style={{
+              borderColor: `${corCategoria}55`,
+              background: `radial-gradient(circle at 50% 30%, ${corCategoria}22, hsl(222 47% 7% / 0.9))`,
+            }}
+          >
+            {g.categoria_icone ? (
+              <span className="ui-emoji-3d text-[26px]" aria-hidden="true">
+                {g.categoria_icone}
               </span>
+            ) : (
+              <Tag className="h-5 w-5" style={{ color: corCategoria }} aria-hidden="true" />
             )}
           </div>
 
-          {/* Row 3: cartão */}
-          {g.cartao_apelido && (
-            <div className="mt-1">
-              <CartaoChip
-                apelido={g.cartao_apelido}
-                bandeira={g.cartao_bandeira}
-                cor={g.cartao_cor}
-              />
+          {/* Informações + valor */}
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
+              <p className="min-w-0 flex-1 text-[17px] font-semibold leading-snug text-white [overflow-wrap:anywhere]">
+                {g.descricao}
+              </p>
+              {/* Valor: cópia borrada atrás fazendo o halo, gradiente na frente */}
+              <span className="relative shrink-0 whitespace-nowrap leading-none">
+                <span
+                  aria-hidden="true"
+                  className="absolute inset-0 select-none text-[20px] font-bold leading-none tabular-nums text-rose-500/45 blur-[7px]"
+                >
+                  {formatBRL(Number(g.valor_total))}
+                </span>
+                <span className="relative bg-gradient-to-b from-rose-200 via-rose-400 to-rose-500 bg-clip-text text-[20px] font-bold leading-none tabular-nums text-transparent">
+                  {formatBRL(Number(g.valor_total))}
+                </span>
+              </span>
             </div>
-          )}
 
-          {/* Row 4: categoria */}
-          {g.categoria_nome && (
-            <div className="mt-1 flex items-center gap-1.5">
-              {g.categoria_cor && (
-                <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: g.categoria_cor }} />
+            {/* Data · forma de pagamento */}
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-white/45">
+              <span className="flex items-center gap-1.5">
+                <CalendarDays className="h-3.5 w-3.5 shrink-0 text-white/35" aria-hidden="true" />
+                {formatDate(g.data_gasto)}
+              </span>
+              <span className="text-white/20" aria-hidden="true">·</span>
+              <span className="flex items-center gap-1.5">
+                {getFormaIcon(g.forma_pagamento, "h-3.5 w-3.5 shrink-0 text-white/35")}
+                {formaPagtoLabel(g.forma_pagamento, g.tipo_pagamento)}
+              </span>
+              {g.tipo_pagamento === "parcelado" && g.quantidade_parcelas && (
+                <span className="rounded-full border border-white/10 bg-white/[0.06] px-1.5 py-px text-[11px]">
+                  {g.numero_parcela ?? 1}/{g.quantidade_parcelas}x
+                </span>
               )}
-              <span className="text-[10px] text-white/35">{g.categoria_nome}</span>
             </div>
-          )}
 
-          {/* Row 5: status */}
-          <div className="mt-2">
-            <Badge variant={statusInfo.variant} className="text-[11px] px-2 py-0.5">
-              {getStatusIcon(g.status, "h-3 w-3")}
-              {statusInfo.label}
-            </Badge>
+            {/* Cartão, categoria e status — mesma família de chips discretos */}
+            {(g.cartao_apelido || g.categoria_nome || pendente) && (
+              <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                {g.cartao_apelido && (
+                  <span className="inline-flex items-center gap-1.5 rounded-[10px] border border-white/10 bg-white/[0.04] px-2 py-1 text-[12px] text-white/60">
+                    <CreditCard
+                      className="h-3.5 w-3.5 shrink-0"
+                      style={{ color: g.cartao_cor ?? "#94a3b8" }}
+                      aria-hidden="true"
+                    />
+                    <span className="max-w-[10rem] truncate">{g.cartao_apelido}</span>
+                  </span>
+                )}
+                {g.categoria_nome && (
+                  <span className="inline-flex items-center gap-1.5 rounded-[10px] border border-white/10 bg-white/[0.04] px-2 py-1 text-[12px] text-white/60">
+                    <span
+                      className="h-2 w-2 shrink-0 rounded-full"
+                      style={{ backgroundColor: corCategoria }}
+                      aria-hidden="true"
+                    />
+                    <span className="max-w-[10rem] truncate">{g.categoria_nome}</span>
+                  </span>
+                )}
+                {pendente && (
+                  <span className="inline-flex items-center gap-1.5 rounded-[10px] border border-amber-400/25 bg-amber-500/[0.07] px-2 py-1 text-[12px] text-amber-200/80">
+                    <Clock className="h-3.5 w-3.5 shrink-0 text-amber-400/80" aria-hidden="true" />
+                    Pendente
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

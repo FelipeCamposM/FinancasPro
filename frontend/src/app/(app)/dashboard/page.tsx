@@ -433,7 +433,7 @@ export default function DashboardPage() {
                                 color: topCategoria.cor || "#fda4af",
                               }}
                             >
-                              {topCategoria.icone ?? "📦"}
+                              <span className="ui-emoji-3d text-[19px]">{topCategoria.icone ?? "📦"}</span>
                             </span>
                           ) : null}
                           <p className="truncate font-medium text-lg leading-tight text-white sm:text-xl">

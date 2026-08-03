@@ -11,9 +11,11 @@ import {
   FileBarChart,
   Settings,
   User,
-  Tag,
-  Smartphone,
 } from "lucide-react";
+import {
+  SECOES_CONFIGURACOES,
+  rotaSecao,
+} from "@/lib/configuracoes-secoes";
 
 export type CommandPaletteEntry = {
   id: string;
@@ -112,44 +114,18 @@ export const COMMAND_PALETTE_GROUPS: { heading: string; items: CommandPaletteEnt
           subtitle: "Preferências da conta",
           keywords: ["ajustes", "preferencias", "opcoes", "conta"],
         },
-        {
-          id: "config-categorias",
-          label: "Categorias",
-          href: "/configuracoes?secao=categorias",
-          icon: Tag,
-          subtitle: "Em Configurações — tags de gasto e renda",
-          keywords: [
-            "configuracoes",
-            "tags",
-            "tipos",
-            "gasto",
-            "renda",
-            "cores",
-            "emoji",
-          ],
-        },
-        {
-          id: "config-iphone",
-          label: "Atalho iPhone",
-          href: "/configuracoes?secao=iphone",
-          icon: Smartphone,
-          subtitle: "Em Configurações — Atalhos, API key e voz",
-          keywords: [
-            "atalho",
-            "atalhos",
-            "ios",
-            "apple",
-            "iphone",
-            "siri",
-            "voz",
-            "shortcut",
-            "api",
-            "key",
-            "integracao",
-            "icloud",
-            "configuracoes",
-          ],
-        },
+        // As seções de Configurações entram automaticamente a partir de
+        // SECOES_CONFIGURACOES: a mesma lista que monta a navegação da tela.
+        ...SECOES_CONFIGURACOES.map(
+          ({ id, label, desc, icon, keywords }): CommandPaletteEntry => ({
+            id: `config-${id}`,
+            label,
+            href: rotaSecao(id),
+            icon,
+            subtitle: `Em Configurações · ${desc}`,
+            keywords: [...keywords, "configuracoes", "ajustes", "preferencias"],
+          }),
+        ),
       ],
     },
   ];

@@ -24,7 +24,7 @@ import {
 import {
   Plus, Search, Trash2, Tag, Lock, AlertTriangle, Smartphone,
   Copy, Check, Eye, EyeOff, RefreshCw, ExternalLink, Pencil,
-  ChevronDown, Settings, Crown, CheckCircle2, Clock, XCircle, Loader2, Bell,
+  ChevronDown, ChevronLeft, ChevronRight, Settings, Crown, CheckCircle2, Clock, XCircle, Loader2, Bell,
   Wallet, LayoutGrid, Palette, Database, Download,
 } from "lucide-react";
 import Link from "next/link";
@@ -35,6 +35,7 @@ import {
   fetchPreferencias, salvarPreferencias, type Preferencias,
 } from "@/lib/preferencias";
 import { BACKGROUNDS } from "@/lib/backgrounds";
+import { SECOES_CONFIGURACOES } from "@/lib/configuracoes-secoes";
 import { BackgroundEfeito } from "@/components/AppBackground";
 import { toCSV, downloadFile } from "@/lib/csv";
 
@@ -398,7 +399,7 @@ function CategoriaRow({ cat, onEdit }: { cat: Categoria; onEdit: () => void }) {
         style={{ background: (cat.cor ?? "#94a3b8") + "28" }}
       >
         {cat.icone ? (
-          <span>{cat.icone}</span>
+          <span className="ui-emoji-3d text-[20px]">{cat.icone}</span>
         ) : (
           <span className="h-3 w-3 rounded-full block" style={{ background: cat.cor ?? "#94a3b8" }} />
         )}
@@ -864,7 +865,7 @@ function AlertasSection() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 pl-12">
+          <div className="flex flex-wrap items-center gap-2 pl-0 sm:pl-12">
             <div className="relative w-28">
               <Input
                 type="number"
@@ -882,7 +883,7 @@ function AlertasSection() {
               />
               <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-white/40">%</span>
             </div>
-            <div className="flex gap-1.5">
+            <div className="flex flex-wrap gap-1.5">
               {[70, 80, 90, 100].map((v) => (
                 <button
                   key={v}
@@ -941,7 +942,7 @@ function PreferenciaToggle({
   onChange: (v: boolean) => void;
 }) {
   return (
-    <div className="flex items-start justify-between gap-4 px-5 py-4">
+    <div className="flex items-start justify-between gap-3 px-4 py-4 sm:gap-4 sm:px-5">
       <div className="min-w-0">
         <p className="text-sm font-semibold text-white">{titulo}</p>
         <p className="text-xs text-white/45 mt-0.5">{descricao}</p>
@@ -1385,7 +1386,7 @@ function DadosSection() {
 function SecaoCard({ titulo, descricao, children }: { titulo: string; descricao: string; children: React.ReactNode }) {
   return (
     <div className="rounded-xl border border-white/[0.07] bg-white/[0.035] overflow-hidden">
-      <div className="px-5 py-4 border-b border-white/[0.06]">
+      <div className="border-b border-white/[0.06] px-4 py-4 sm:px-5">
         <h2 className="text-sm font-semibold text-white">{titulo}</h2>
         <p className="text-xs text-white/40 mt-0.5">{descricao}</p>
       </div>
@@ -1415,7 +1416,7 @@ function LinhaSelect({
   onChange: (v: string) => void;
 }) {
   return (
-    <div className="flex flex-col gap-2 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-2 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
       <div className="min-w-0">
         <p className="text-sm font-semibold text-white">{titulo}</p>
         <p className="text-xs text-white/45 mt-0.5">{descricao}</p>
@@ -1434,16 +1435,7 @@ function LinhaSelect({
   );
 }
 
-const NAV_ITEMS = [
-  { id: "plano",      icon: Crown,      label: "Plano",          desc: "Assinatura Premium" },
-  { id: "categorias", icon: Tag,        label: "Categorias",     desc: "Tags para gastos e rendas" },
-  { id: "lancamentos", icon: Wallet,    label: "Lançamentos",    desc: "Padrões de novo gasto" },
-  { id: "telas",      icon: LayoutGrid, label: "Telas",          desc: "Navegação e listas" },
-  { id: "alertas",    icon: Bell,       label: "Alertas",        desc: "Limites e notificações" },
-  { id: "aparencia",  icon: Palette,    label: "Aparência",      desc: "Fundo da aplicação" },
-  { id: "dados",      icon: Database,   label: "Dados",          desc: "Exportar e apagar" },
-  { id: "iphone",     icon: Smartphone, label: "Atalho iPhone",  desc: "Integração iOS" },
-];
+const NAV_ITEMS = SECOES_CONFIGURACOES;
 
 // ─── Main page ─────────────────────────────────────────────────────────────────
 
@@ -1459,6 +1451,19 @@ function ConfiguracoesPageContent() {
   const [form, setForm] = useState({ nome: "", icone: "", cor: "#60A5FA", tipo: "gasto" as "gasto" | "renda", limite_mensal: "" });
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // No mobile a seção abre no lugar do índice; ehMobile evita montar as duas
+  // árvores ao mesmo tempo (cada seção faz suas próprias requisições).
+  const [mobileSecaoAberta, setMobileSecaoAberta] = useState(false);
+  const [ehMobile, setEhMobile] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 639px)");
+    const aplicar = () => setEhMobile(mq.matches);
+    aplicar();
+    mq.addEventListener("change", aplicar);
+    return () => mq.removeEventListener("change", aplicar);
+  }, []);
 
   const fetchCategorias = useCallback(async () => {
     setLoading(true);
@@ -1524,6 +1529,28 @@ function ConfiguracoesPageContent() {
     finally { setDeleting(false); }
   }
 
+  const conteudoSecao = (
+    <>
+      {section === "plano" && <AssinaturaSection />}
+      {section === "categorias" && (
+        <CategoriasSection
+          categorias={categorias}
+          loading={loading}
+          loadError={loadError}
+          onRefetch={fetchCategorias}
+          onEdit={openEdit}
+          onCreate={openCreate}
+        />
+      )}
+      {section === "lancamentos" && <LancamentosSection />}
+      {section === "telas" && <TelasSection />}
+      {section === "alertas" && <AlertasSection />}
+      {section === "aparencia" && <AparenciaSection />}
+      {section === "dados" && <DadosSection />}
+      {section === "iphone" && <IphoneSection />}
+    </>
+  );
+
   return (
     <PageShell contentClassName="space-y-6">
       {/* Page header */}
@@ -1540,30 +1567,60 @@ function ConfiguracoesPageContent() {
         </div>
       </div>
 
-      {/* Mobile nav — horizontal pills above content */}
-      <div className="flex sm:hidden gap-1.5 mb-1">
-        {NAV_ITEMS.map((item) => {
-          const Icon = item.icon;
-          const active = section === item.id;
-          return (
+      {/* ── Mobile: navegação em dois níveis ──────────────────
+          Com 8 seções, abas numa linha só estouram a tela. Aqui o índice
+          ocupa a tela inteira e a seção escolhida abre no lugar dele, com
+          um botão de voltar — o mesmo padrão dos ajustes do próprio iOS. */}
+      {ehMobile ? (
+        !mobileSecaoAberta ? (
+          <nav className="ui-panel overflow-hidden p-1.5">
+            <ul className="divide-y divide-white/[0.05]">
+              {NAV_ITEMS.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <li key={item.id}>
+                    <button
+                      onClick={() => {
+                        setSection(item.id);
+                        setMobileSecaoAberta(true);
+                      }}
+                      className="flex w-full items-center gap-3.5 rounded-xl px-3 py-3.5 text-left transition-colors active:bg-white/[0.06]"
+                    >
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/[0.09] bg-white/[0.05]">
+                        <Icon className="h-[18px] w-[18px] text-white/70" aria-hidden="true" />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-semibold text-white">
+                          {item.label}
+                        </span>
+                        <span className="mt-0.5 block truncate text-[11px] text-white/35">
+                          {item.desc}
+                        </span>
+                      </span>
+                      <ChevronRight className="h-4 w-4 shrink-0 text-white/25" aria-hidden="true" />
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
+        ) : (
+          <div className="space-y-3">
             <button
-              key={item.id}
-              onClick={() => setSection(item.id)}
-              className={cn(
-                "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all",
-                active ? "border-white/20 bg-white/[0.08] text-white" : "border-white/10 text-white/45 hover:text-white/70"
-              )}
+              onClick={() => setMobileSecaoAberta(false)}
+              className="flex items-center gap-2 rounded-xl border border-white/[0.09] bg-white/[0.04] px-3 py-2 text-sm font-medium text-white/70 transition-colors active:bg-white/[0.08]"
             >
-              <Icon className="h-3.5 w-3.5" />{item.label}
+              <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+              Configurações
             </button>
-          );
-        })}
-      </div>
-
-      {/* Painel de fundo: separa as opções do fundo animado escolhido em Aparência */}
-      <div className="ui-panel flex gap-5 p-3 sm:p-5">
-        {/* ── Desktop sidebar nav ── */}
-        <nav className="hidden sm:flex w-48 shrink-0 flex-col gap-0.5 pt-0.5">
+            <div className="ui-panel min-w-0 p-2.5">{conteudoSecao}</div>
+          </div>
+        )
+      ) : (
+        /* Painel de fundo: separa as opções do fundo animado escolhido em Aparência */
+        <div className="ui-panel flex min-w-0 gap-5 p-5">
+          {/* ── Desktop sidebar nav ── */}
+          <nav className="flex w-48 shrink-0 flex-col gap-0.5 pt-0.5">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const active = section === item.id;
@@ -1584,29 +1641,12 @@ function ConfiguracoesPageContent() {
               </button>
             );
           })}
-        </nav>
+          </nav>
 
-        {/* ── Content — full width on mobile ── */}
-        <div className="flex-1 min-w-0 w-full">
-          {section === "plano" && <AssinaturaSection />}
-          {section === "categorias" && (
-            <CategoriasSection
-              categorias={categorias}
-              loading={loading}
-              loadError={loadError}
-              onRefetch={fetchCategorias}
-              onEdit={openEdit}
-              onCreate={openCreate}
-            />
-          )}
-          {section === "lancamentos" && <LancamentosSection />}
-          {section === "telas" && <TelasSection />}
-          {section === "alertas" && <AlertasSection />}
-          {section === "aparencia" && <AparenciaSection />}
-          {section === "dados" && <DadosSection />}
-          {section === "iphone" && <IphoneSection />}
+          {/* ── Conteúdo (desktop) ── */}
+          <div className="w-full min-w-0 flex-1">{conteudoSecao}</div>
         </div>
-      </div>
+      )}
 
       {/* ── Dialog criar/editar ── */}
       <Dialog open={dialogOpen} onOpenChange={(v) => !v && setDialogOpen(false)}>

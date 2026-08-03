@@ -56,37 +56,45 @@ export default function BottomNav() {
   }
 
   return (
+    // Barra flutuante: fica descolada das bordas e respeita a safe area do iPhone
     <nav
-      className="sm:hidden fixed bottom-0 inset-x-0 z-50 flex items-end justify-around
-        border-t border-white/10 bg-[hsl(222_47%_5%/0.85)] backdrop-blur-xl
-        pb-[env(safe-area-inset-bottom)]"
-      style={{ paddingBottom: "max(env(safe-area-inset-bottom), 0px)" }}
+      className="sm:hidden fixed inset-x-4 z-50 flex items-end justify-around
+        rounded-[28px] border border-white/[0.12] bg-[hsl(222_47%_7%/0.78)]
+        shadow-[0_20px_50px_-12px_rgba(2,6,23,0.95)] backdrop-blur-2xl"
+      style={{ bottom: "max(env(safe-area-inset-bottom), 12px)" }}
     >
-      {NAV_ITEMS.map((item, i) => {
+      {NAV_ITEMS.map((item) => {
         if (!item) {
           return (
-            <div key="cta" className="flex flex-col items-center justify-center pb-2 pt-1 -mt-5">
+            <div
+              key="cta"
+              className="flex flex-col items-center justify-center pb-2 pt-1 -mt-7"
+            >
               <button
                 type="button"
                 aria-label="Registrar gasto"
                 onClick={handleCtaClick}
                 className={cn(
-                  "relative flex h-14 w-14 items-center justify-center rounded-full overflow-hidden",
-                  "bg-gradient-to-br from-rose-400 via-rose-500 to-pink-600",
-                  "shadow-[0_0_18px_4px_rgba(244,63,94,0.45)]",
-                  "ring-[3px] ring-[hsl(222_47%_5%)]",
+                  "relative flex h-[68px] w-[68px] items-center justify-center overflow-hidden rounded-full",
+                  "bg-gradient-to-b from-rose-400 to-rose-600",
+                  "shadow-[0_10px_28px_-6px_rgba(244,63,94,0.55)]",
+                  "ring-4 ring-[hsl(222_47%_6%)]",
+                  "transition-transform duration-200 hover:scale-105 active:scale-95",
+                  "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-rose-300",
                   bouncing ? "cta-bounce" : "",
                 )}
               >
-                {/* shimmer sweep */}
-                <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-full">
-                  <span className="cta-shimmer absolute inset-y-0 w-10 bg-gradient-to-r from-transparent via-white/35 to-transparent" />
-                </span>
-                {/* subtle inner highlight */}
-                <span className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-b from-white/15 to-transparent" />
-                <Plus className="relative h-6 w-6 text-white drop-shadow-sm" strokeWidth={2.5} />
+                {/* brilho interno discreto no topo */}
+                <span className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-b from-white/20 to-transparent" />
+                <Plus
+                  className="relative h-7 w-7 text-white"
+                  strokeWidth={2.5}
+                  aria-hidden="true"
+                />
               </button>
-              <span className="mt-1 text-[10px] font-semibold text-rose-400/80 tracking-wide">Gasto</span>
+              <span className="mt-1.5 text-[12px] font-semibold tracking-wide text-rose-300">
+                Gasto
+              </span>
             </div>
           );
         }
@@ -98,22 +106,33 @@ export default function BottomNav() {
           <Link
             key={item.href}
             href={item.href}
-            className="flex flex-1 flex-col items-center justify-center gap-0.5 py-3 min-w-0"
+            aria-current={isActive ? "page" : undefined}
+            className="flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-2xl py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
           >
             <item.icon
               className={cn(
-                "h-5 w-5 transition-colors",
-                isActive ? item.activeColor : "text-white/35",
+                "h-6 w-6 transition-all duration-200",
+                isActive ? `${item.activeColor} scale-110` : "text-white/40",
               )}
+              aria-hidden="true"
             />
             <span
               className={cn(
-                "text-[10px] font-medium transition-colors",
-                isActive ? item.activeColor : "text-white/35",
+                "text-[12px] font-medium transition-colors duration-200",
+                isActive ? item.activeColor : "text-white/40",
               )}
             >
               {item.label}
             </span>
+            {/* indicador do item ativo */}
+            <span
+              aria-hidden="true"
+              className={cn(
+                "h-1 w-1 rounded-full transition-opacity duration-200",
+                isActive ? "bg-current opacity-100" : "opacity-0",
+                isActive ? item.activeColor : "",
+              )}
+            />
           </Link>
         );
       })}

@@ -76,14 +76,14 @@ export default function TopNavbar() {
 
   return (
     <>
-      <header className="flex h-14 shrink-0 items-center gap-2 border-b border-white/10 bg-white/[0.05] backdrop-blur-xl px-4 shadow-md ring-1 ring-white/5">
+      <header className="flex h-16 shrink-0 items-center gap-2 border-b border-white/10 bg-white/[0.05] px-4 shadow-md ring-1 ring-white/5 backdrop-blur-xl sm:h-[72px] sm:px-5">
         <SidebarTrigger className="-ml-1" />
         <Separator orientation="vertical" className="mr-2 h-4" />
 
         <div className="flex flex-1 items-center gap-2">
           <Button
             variant="outline"
-            className="relative h-9 w-full max-w-xs justify-start text-sm text-white/50 hover:text-white bg-white/[0.06] border-white/10 hover:bg-white/[0.10]"
+            className="relative h-10 w-full max-w-xs justify-start rounded-xl border-white/10 bg-white/[0.06] text-sm text-white/50 hover:bg-white/[0.10] hover:text-white"
             onClick={() => setOpen(true)}
           >
             <Search className="mr-2 h-4 w-4 shrink-0" />
@@ -101,9 +101,9 @@ export default function TopNavbar() {
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              className="flex items-center gap-2 h-9 px-2 rounded-full hover:bg-white/[0.10] text-white transition-colors"
+              className="flex h-11 items-center gap-2 rounded-full px-2 text-white transition-colors hover:bg-white/[0.10]"
             >
-              <Avatar className="h-8 w-8 ring-2 ring-white/10">
+              <Avatar className="h-9 w-9 ring-2 ring-white/10">
                 {user?.avatar && (
                   <AvatarImage src={user.avatar} alt={user.name} />
                 )}

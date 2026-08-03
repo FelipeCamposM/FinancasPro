@@ -32,7 +32,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <AppSidebar />
           <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
             <TopNavbar />
-            <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 pb-24 sm:p-6 sm:pb-6">{children}</main>
+            <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 pb-36 sm:p-6 sm:pb-6">{children}</main>
           </div>
         </div>
         <BottomNav />

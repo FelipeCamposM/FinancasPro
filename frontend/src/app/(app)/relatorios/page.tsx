@@ -702,7 +702,7 @@ function MensalTab() {
                           <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0">
                               <div className="flex items-center gap-2">
-                                <span style={{ color: c.cor }}>
+                                <span className="ui-emoji-3d text-[17px]" style={{ color: c.cor }}>
                                   {c.icone ?? "📦"}
                                 </span>
                                 <p className="truncate text-sm font-semibold text-white/85">
@@ -780,7 +780,7 @@ function MensalTab() {
                             >
                               <td className="px-4 py-3">
                                 <div className="flex items-center gap-2">
-                                  <span style={{ color: c.cor }}>
+                                  <span className="ui-emoji-3d text-[17px]" style={{ color: c.cor }}>
                                     {c.icone ?? "📦"}
                                   </span>
                                   <span className="font-medium text-white/80">

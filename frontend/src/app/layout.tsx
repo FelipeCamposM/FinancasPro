@@ -56,10 +56,11 @@ export const metadata: Metadata = {
       "Controle inteligente de gastos, renda, cartões e assinaturas. Organize suas finanças pessoais em um só lugar com Valora Finanças.",
     images: [
       {
-        url: "/og-image.png",
+        url: "/og-image.webp",
         width: 1200,
         height: 630,
-        alt: "Valora Finanças — Controle Financeiro Pessoal",
+        type: "image/webp",
+        alt: "Valora Finanças: controle financeiro pessoal",
       },
     ],
   },
@@ -68,7 +69,7 @@ export const metadata: Metadata = {
     title: "Valora Finanças | Controle Financeiro Pessoal",
     description:
       "Controle inteligente de gastos, renda, cartões e assinaturas. Organize suas finanças pessoais.",
-    images: ["/og-image.png"],
+    images: ["/og-image.webp"],
   },
   robots: {
     index: true,

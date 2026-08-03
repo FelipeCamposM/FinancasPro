@@ -43,6 +43,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GastoDialog } from "./GastoDialog";
+import { ImportGastosDialog } from "./ImportGastosDialog";
+import { fetchPreferencias, usePreferencias } from "@/lib/preferencias";
+import { useMesSugerido, mesRefParaDate } from "@/lib/mes-sugerido";
 import { FaturaDetailDialog } from "./FaturaDetailDialog";
 import {
   Plus,
@@ -89,6 +92,9 @@ import {
   CalendarDays,
   AlertTriangle,
   Repeat,
+  FileSpreadsheet,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import { PageShell } from "@/components/ui/page-shell";
 import {
@@ -380,8 +386,68 @@ function FaturaMonthPicker({ value, onChange }: { value: Date; onChange: (d: Dat
   );
 }
 
+type SortField =
+  | "data"
+  | "descricao"
+  | "categoria"
+  | "status"
+  | "pagamento"
+  | "valor";
+
+const SORT_LABELS: Record<SortField, string> = {
+  data: "Data",
+  descricao: "Descrição",
+  categoria: "Categoria",
+  status: "Status",
+  pagamento: "Pagamento",
+  valor: "Valor",
+};
+
+function SortableHead({
+  campo,
+  sortBy,
+  sortOrder,
+  onSort,
+  className = "",
+  align = "left",
+}: {
+  campo: SortField;
+  sortBy: SortField;
+  sortOrder: "asc" | "desc";
+  onSort: (c: SortField) => void;
+  className?: string;
+  align?: "left" | "right";
+}) {
+  const ativo = sortBy === campo;
+  return (
+    <TableHead className={`text-xs font-semibold uppercase tracking-[0.08em] ${ativo ? "text-white/70" : "text-white/30"} ${align === "right" ? "text-right" : ""} ${className}`}>
+      <button
+        type="button"
+        onClick={() => onSort(campo)}
+        aria-label={`Ordenar por ${SORT_LABELS[campo]}`}
+        className={`inline-flex items-center gap-1 uppercase tracking-[0.08em] transition-colors hover:text-white ${align === "right" ? "flex-row-reverse" : ""}`}
+      >
+        {SORT_LABELS[campo]}
+        {ativo ? (
+          sortOrder === "asc" ? (
+            <ArrowUp className="h-3 w-3" />
+          ) : (
+            <ArrowDown className="h-3 w-3" />
+          )
+        ) : (
+          <ChevronsUpDown className="h-3 w-3 opacity-40" />
+        )}
+      </button>
+    </TableHead>
+  );
+}
+
 function GastosPageInner() {
   const [gastos, setGastos] = useState<Gasto[]>([]);
+  const prefs = usePreferencias();
+  const [importOpen, setImportOpen] = useState(false);
+  const [sortBy, setSortBy] = useState<SortField>("data");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [page, setPage] = useState(1);
@@ -417,6 +483,8 @@ function GastosPageInner() {
 
   // Filtros
   const [search, setSearch] = useState("");
+  // Busca vai ao backend (todas as páginas) — atrasada para não disparar por tecla
+  const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [filterForma, setFilterForma] = useState("");
   const [filterCategoria, setFilterCategoria] = useState("");
@@ -429,6 +497,23 @@ function GastosPageInner() {
   const [mesAtual, setMesAtual] = useState<Date>(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
+  // Ordenação e período padrão configurados pelo usuário
+  const padroesAplicados = useRef(false);
+  useEffect(() => {
+    if (padroesAplicados.current) return;
+    padroesAplicados.current = true;
+    fetchPreferencias().then((prefs) => {
+      setSortBy(prefs.ordenacao_gastos.campo);
+      setSortOrder(prefs.ordenacao_gastos.direcao);
+      if (prefs.periodo_padrao === "todos") setPeriodoMode("todos");
+    });
+  }, []);
+
+  // Enquanto a fatura do mês anterior não fecha, a página abre nele
+  useMesSugerido((mesRef) => {
+    setPeriodoMode("mes");
+    setMesAtual(mesRefParaDate(mesRef));
   });
 
   // Combobox open state
@@ -483,7 +568,13 @@ function GastosPageInner() {
   const fetchGastos = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ page: String(page), limit: "15" });
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: String(prefs.itens_por_pagina),
+        sort: sortBy,
+        order: sortOrder,
+      });
+      if (searchQuery) params.set("search", searchQuery);
       if (filterStatus) params.set("status", filterStatus);
       if (filterForma) params.set("forma_pagamento", filterForma);
       if (filterCategoria) params.set("categoria_id", filterCategoria);
@@ -512,6 +603,10 @@ function GastosPageInner() {
     }
   }, [
     page,
+    prefs.itens_por_pagina,
+    sortBy,
+    sortOrder,
+    searchQuery,
     filterStatus,
     filterForma,
     filterCategoria,
@@ -552,6 +647,7 @@ function GastosPageInner() {
   useEffect(() => {
     setPage(1);
   }, [
+    searchQuery,
     filterStatus,
     filterForma,
     filterCategoria,
@@ -561,6 +657,12 @@ function GastosPageInner() {
     filterDataInicio,
     filterDataFim,
   ]);
+
+  // Debounce da busca: só consulta o backend depois que o usuário para de digitar
+  useEffect(() => {
+    const t = setTimeout(() => setSearchQuery(search.trim()), 350);
+    return () => clearTimeout(t);
+  }, [search]);
 
   async function handleDelete() {
     if (!deleteTarget) return;
@@ -576,12 +678,19 @@ function GastosPageInner() {
     }
   }
 
-  // Filtragem local por busca (nome)
-  const displayedGastos = search
-    ? gastos.filter((g) =>
-        g.descricao.toLowerCase().includes(search.toLowerCase()),
-      )
-    : gastos;
+  /** Alterna direção quando é o mesmo campo; troca de campo começa em desc. */
+  function ordenarPor(campo: SortField) {
+    if (campo === sortBy) {
+      setSortOrder((o) => (o === "asc" ? "desc" : "asc"));
+    } else {
+      setSortBy(campo);
+      setSortOrder("desc");
+    }
+    setPage(1);
+  }
+
+  // Busca é feita no backend (todas as páginas), não localmente
+  const displayedGastos = gastos;
 
   const activeFilterCount = [
     filterStatus,
@@ -783,6 +892,14 @@ function GastosPageInner() {
                 Fatura do Mês
               </Button>
             )}
+            <Button
+              variant="outline"
+              onClick={() => setImportOpen(true)}
+              className="h-10 w-full rounded-xl border-white/15 bg-white/[0.05] px-4 text-white/80 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/[0.1] hover:text-white sm:w-auto"
+            >
+              <FileSpreadsheet className="mr-2 h-4 w-4" />
+              Importar
+            </Button>
             <Button
               onClick={() => { setEditingGasto(null); setDialogOpen(true); }}
               className="h-10 w-full rounded-xl border border-rose-300/30 bg-gradient-to-br from-rose-500/90 via-rose-500/75 to-rose-700/90 px-4 text-white shadow-lg shadow-rose-950/25 ring-1 ring-white/[0.10] transition-all duration-200 hover:-translate-y-0.5 hover:border-rose-200/50 hover:from-rose-400/95 hover:via-rose-500/85 hover:to-rose-600/95 hover:shadow-rose-500/20 sm:w-auto"
@@ -1178,6 +1295,28 @@ function GastosPageInner() {
         <PageDataState mode="empty" icon={Receipt} title="Nenhum gasto encontrado" description="Ajuste os filtros ou cadastre um novo gasto." />
       ) : (
         <>
+          {/* ── Ordenação (mobile — no desktop fica nos cabeçalhos) ── */}
+          <div className="mb-2 flex items-center gap-2 sm:hidden">
+            <span className="text-[11px] uppercase tracking-wider text-white/30">Ordenar</span>
+            <select
+              value={sortBy}
+              onChange={(e) => { setSortBy(e.target.value as SortField); setPage(1); }}
+              className="h-8 flex-1 rounded-lg border border-white/10 bg-white/[0.06] px-2 text-xs text-white/75 outline-none"
+            >
+              {(Object.keys(SORT_LABELS) as SortField[]).map((c) => (
+                <option key={c} value={c} className="bg-neutral-900">{SORT_LABELS[c]}</option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={() => { setSortOrder((o) => (o === "asc" ? "desc" : "asc")); setPage(1); }}
+              aria-label={sortOrder === "asc" ? "Crescente" : "Decrescente"}
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/[0.06] text-white/60"
+            >
+              {sortOrder === "asc" ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />}
+            </button>
+          </div>
+
           {/* ── Mobile list ── */}
           <div className="sm:hidden space-y-2">
             {displayedGastos.map((g) => (
@@ -1196,12 +1335,12 @@ function GastosPageInner() {
               <Table>
                 <TableHeader>
                   <TableRow className="border-b border-white/[0.07] hover:bg-transparent">
-                    <TableHead className="text-xs font-semibold text-white/30 uppercase tracking-[0.08em]">Descrição</TableHead>
-                    <TableHead className="text-xs font-semibold text-white/30 uppercase tracking-[0.08em]">Data</TableHead>
-                    <TableHead className="hidden md:table-cell text-xs font-semibold text-white/30 uppercase tracking-[0.08em]">Categoria</TableHead>
-                    <TableHead className="hidden sm:table-cell text-xs font-semibold text-white/30 uppercase tracking-[0.08em]">Pagamento</TableHead>
-                    <TableHead className="text-xs font-semibold text-white/30 uppercase tracking-[0.08em]">Status</TableHead>
-                    <TableHead className="text-right text-xs font-semibold text-white/30 uppercase tracking-[0.08em]">Valor</TableHead>
+                    <SortableHead campo="descricao" sortBy={sortBy} sortOrder={sortOrder} onSort={ordenarPor} />
+                    <SortableHead campo="data" sortBy={sortBy} sortOrder={sortOrder} onSort={ordenarPor} />
+                    <SortableHead campo="categoria" sortBy={sortBy} sortOrder={sortOrder} onSort={ordenarPor} className="hidden md:table-cell" />
+                    <SortableHead campo="pagamento" sortBy={sortBy} sortOrder={sortOrder} onSort={ordenarPor} className="hidden sm:table-cell" />
+                    <SortableHead campo="status" sortBy={sortBy} sortOrder={sortOrder} onSort={ordenarPor} />
+                    <SortableHead campo="valor" sortBy={sortBy} sortOrder={sortOrder} onSort={ordenarPor} align="right" />
                     <TableHead className="w-20" />
                   </TableRow>
                 </TableHeader>
@@ -1313,6 +1452,12 @@ function GastosPageInner() {
       />
 
       {/* Dialogs */}
+      <ImportGastosDialog
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onSuccess={() => { fetchGastos(); fetchSummary(); }}
+      />
+
       <GastoDialog
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}

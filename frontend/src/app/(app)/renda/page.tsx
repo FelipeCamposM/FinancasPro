@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { api } from "@/lib/api";
+import { usePreferencias, fetchPreferencias } from "@/lib/preferencias";
+import { useMesSugerido, mesRefParaDate } from "@/lib/mes-sugerido";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -138,7 +140,7 @@ const FREQUENCIA_LABELS: Record<string, string> = {
   anual:      "Anual",
 };
 
-const LIMIT = 15;
+const LIMIT_PADRAO = 15;
 
 function formatDate(dateStr: string) {
   if (!dateStr) return "-";
@@ -219,6 +221,12 @@ export default function RendaPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
 
+  const [monthPickerOpen, setMonthPickerOpen] = useState(false);
+  const [pickerYear, setPickerYear] = useState(() => new Date().getFullYear());
+
+  const prefs = usePreferencias();
+  const LIMIT = prefs.itens_por_pagina ?? LIMIT_PADRAO;
+
   const [search, setSearch] = useState("");
   const [filterTipo, setFilterTipo] = useState("todos");
 
@@ -229,6 +237,12 @@ export default function RendaPage() {
   });
   const [filterDataInicio, setFilterDataInicio] = useState("");
   const [filterDataFim, setFilterDataFim] = useState("");
+
+  // Abre no mês anterior enquanto a fatura dele não fecha
+  useMesSugerido((mesRef) => {
+    setPeriodoMode("mes");
+    setMesAtual(mesRefParaDate(mesRef));
+  });
 
   const [summary, setSummary] = useState<{
     total_gastos: number;
@@ -250,7 +264,10 @@ export default function RendaPage() {
     if (autoLancarCalled.current) return;
     autoLancarCalled.current = true;
     const mes = new Date().toISOString().slice(0, 7);
-    api.post("/renda/auto-lancar-mes", { mes }).catch(() => {});
+    fetchPreferencias().then((p) => {
+      if (!p.auto_lancar_renda) return;
+      api.post("/renda/auto-lancar-mes", { mes }).catch(() => {});
+    });
   }, []);
 
   const fetchRendas = useCallback(async () => {
@@ -275,7 +292,7 @@ export default function RendaPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, filterTipo, periodoMode, mesAtual, filterDataInicio, filterDataFim]);
+  }, [page, LIMIT, filterTipo, periodoMode, mesAtual, filterDataInicio, filterDataFim]);
 
   const fetchSummary = useCallback(async () => {
     setLoadingSummary(true);
@@ -379,19 +396,86 @@ export default function RendaPage() {
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
-              <button
-                type="button"
-                onClick={() => setPeriodoMode((prev) => prev === "todos" ? "mes" : "todos")}
-                className="flex h-9 min-w-0 flex-1 items-center justify-center px-3 transition-colors hover:bg-white/[0.04] focus-visible:outline-none sm:min-w-[140px]"
+              <Popover
+                open={monthPickerOpen}
+                onOpenChange={(v) => {
+                  setMonthPickerOpen(v);
+                  if (v) setPickerYear(mesAtual.getFullYear());
+                }}
               >
-                {periodoMode === "todos" ? (
-                  <span className="text-xs text-white/35">Todos os meses</span>
-                ) : (
-                  <span className="text-sm font-semibold capitalize text-white/80">
-                    {format(mesAtual, "MMM yyyy", { locale: ptBR })}
-                  </span>
-                )}
-              </button>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className="flex h-9 min-w-0 flex-1 items-center justify-center px-3 transition-colors hover:bg-white/[0.04] focus-visible:outline-none sm:min-w-[140px]"
+                  >
+                    {periodoMode === "todos" ? (
+                      <span className="text-xs text-white/35">Todos os meses</span>
+                    ) : (
+                      <span className="text-sm font-semibold capitalize text-white/80">
+                        {format(mesAtual, "MMM yyyy", { locale: ptBR })}
+                      </span>
+                    )}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent
+                  className="ui-popover w-56 p-3 ui-glass-surface-strong border-white/[0.14]"
+                  align="center"
+                >
+                  <div className="mb-2.5 flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={() => setPickerYear((y) => y - 1)}
+                      className="flex h-7 w-7 items-center justify-center rounded-lg text-white/40 transition-colors hover:bg-white/10 hover:text-white/80"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+                    <span className="text-sm font-bold text-white">{pickerYear}</span>
+                    <button
+                      type="button"
+                      onClick={() => setPickerYear((y) => y + 1)}
+                      className="flex h-7 w-7 items-center justify-center rounded-lg text-white/40 transition-colors hover:bg-white/10 hover:text-white/80"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1">
+                    {["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"].map((label, i) => {
+                      const isSelected = periodoMode === "mes" && mesAtual.getFullYear() === pickerYear && mesAtual.getMonth() === i;
+                      return (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => {
+                            setMesAtual(new Date(pickerYear, i, 1));
+                            setPeriodoMode("mes");
+                            setMonthPickerOpen(false);
+                          }}
+                          className={`rounded-lg py-1.5 text-xs font-medium transition-colors ${
+                            isSelected
+                              ? "bg-emerald-500/30 text-emerald-300 ring-1 ring-emerald-400/40"
+                              : "text-white/55 hover:bg-white/10 hover:text-white/90"
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="mt-2 border-t border-white/[0.07] pt-2">
+                    <button
+                      type="button"
+                      onClick={() => { setPeriodoMode("todos"); setMonthPickerOpen(false); }}
+                      className={`w-full rounded-lg py-1.5 text-xs font-medium transition-colors ${
+                        periodoMode === "todos"
+                          ? "bg-white/10 text-white/80"
+                          : "text-white/40 hover:bg-white/[0.06] hover:text-white/70"
+                      }`}
+                    >
+                      Todos os meses
+                    </button>
+                  </div>
+                </PopoverContent>
+              </Popover>
               <button
                 className="flex h-9 w-9 items-center justify-center border-l border-white/10 text-white/40 transition-colors hover:bg-white/[0.07] hover:text-white/80"
                 aria-label="Próximo mês"

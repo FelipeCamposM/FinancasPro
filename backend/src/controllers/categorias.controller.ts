@@ -87,10 +87,11 @@ export const createCategoria = async (
 ): Promise<void> => {
   try {
     const userId = req.user!.userId;
-    const { nome, cor, icone, tipo }: CreateCategoriaInput = req.body;
+    const { nome, cor, icone, tipo, limite_mensal }: CreateCategoriaInput =
+      req.body;
     const { rows } = await pool.query(
-      "INSERT INTO categorias (user_id, nome, cor, icone, tipo) VALUES ($1,$2,$3,$4,$5) RETURNING *",
-      [userId, nome, cor ?? null, icone ?? null, tipo],
+      "INSERT INTO categorias (user_id, nome, cor, icone, tipo, limite_mensal) VALUES ($1,$2,$3,$4,$5,$6) RETURNING *",
+      [userId, nome, cor ?? null, icone ?? null, tipo, limite_mensal ?? null],
     );
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -136,6 +137,10 @@ export const updateCategoria = async (
     if (body.tipo !== undefined) {
       fields.push(`tipo = $${idx++}`);
       values.push(body.tipo);
+    }
+    if (body.limite_mensal !== undefined) {
+      fields.push(`limite_mensal = $${idx++}`);
+      values.push(body.limite_mensal);
     }
     if (!fields.length) {
       res.status(400).json({ error: "Nenhum campo para atualizar" });

@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { AlertCircle, Check, Loader2, Mail } from "lucide-react";
 import { api, setToken } from "@/lib/api";
+import { paginaInicial } from "@/lib/preferencias";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -126,7 +127,7 @@ function VerifyEmailContent() {
         code,
       });
       setToken(data.token);
-      router.push("/dashboard");
+      router.push(await paginaInicial());
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } }).response?.data?.error;
       setError(msg || "Codigo invalido ou expirado.");

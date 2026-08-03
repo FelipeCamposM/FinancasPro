@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { api } from "@/lib/api";
+import { usePreferencias } from "@/lib/preferencias";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -294,6 +295,7 @@ interface Props {
 }
 
 export function GastoDialog({ open, onClose, onSuccess, gasto, forceAssinatura = false }: Props) {
+  const prefs = usePreferencias();
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [cartoes, setCartoes] = useState<Cartao[]>([]);
   const [isAssinatura, setIsAssinatura] = useState(forceAssinatura);
@@ -379,16 +381,24 @@ export function GastoDialog({ open, onClose, onSuccess, gasto, forceAssinatura =
         status: gasto.status as FormValues["status"], observacoes: gasto.observacoes ?? "", dia_cobranca: 1,
       });
     } else {
+      // Novo gasto começa com os padrões configurados em Configurações → Lançamentos
+      const usaCartao =
+        prefs.forma_pagamento_padrao === "cartao_credito" ||
+        prefs.forma_pagamento_padrao === "cartao_debito";
       form.reset({
         descricao: "", valor_total: undefined, valor_parcela: undefined,
         data_gasto: new Date().toISOString().split("T")[0],
-        categoria_id: undefined, cartao_id: undefined,
-        forma_pagamento: "dinheiro", tipo_pagamento: "a_vista",
+        categoria_id: prefs.categoria_gasto_padrao
+          ? String(prefs.categoria_gasto_padrao)
+          : undefined,
+        cartao_id: usaCartao ? (prefs.cartao_padrao_id ?? undefined) : undefined,
+        forma_pagamento: prefs.forma_pagamento_padrao as FormValues["forma_pagamento"],
+        tipo_pagamento: "a_vista",
         quantidade_parcelas: 1, status: "pago", observacoes: "", dia_cobranca: 1,
       });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, gasto, forceAssinatura]);
+  }, [open, gasto, forceAssinatura, prefs]);
 
   async function onSubmit(values: FormValues) {
     const isParcelado = values.tipo_pagamento === "parcelado";

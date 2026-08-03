@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import pool from "../config/database";
+import { getPreferenciasUsuario } from "../utils/preferencias";
 
 /**
  * GET /api/dashboard/summary?mes=2026-03-01
@@ -551,11 +552,16 @@ export const periodSummary = async (
           `SELECT COALESCE(SUM(valor), 0)::float AS total
            FROM renda r
            WHERE r.user_id = $1
-             AND r.renda_origem_id IS NULL
              AND (
-               DATE_TRUNC('month', r.mes_referencia) = DATE_TRUNC('month', $2::date)
+               -- Lançamentos concretos do mês: avulsos e instâncias já geradas
+               (
+                 r.recorrente = false
+                 AND DATE_TRUNC('month', r.mes_referencia) = DATE_TRUNC('month', $2::date)
+               )
                OR (
+                 -- Template recorrente ativo no mês, quando ainda não há instância
                  r.recorrente = true
+                 AND r.renda_origem_id IS NULL
                  AND DATE_TRUNC('month', r.mes_referencia) <= DATE_TRUNC('month', $2::date)
                  AND (r.data_fim_recorrencia IS NULL OR r.data_fim_recorrencia >= DATE_TRUNC('month', $2::date))
                  AND NOT EXISTS (
@@ -571,9 +577,18 @@ export const periodSummary = async (
     } else {
       // Modo período customizado: filtra por data_gasto / data_recebimento
       const gastoFilters: string[] = ["user_id = $1", "status != 'cancelado'"];
+      // Conta lançamentos concretos (avulsos e instâncias) e o template apenas
+      // quando o mês dele ainda não tem instância — nunca os dois juntos.
       const rendaFilters: string[] = [
         "user_id = $1",
-        "renda_origem_id IS NULL",
+        `(
+           recorrente = false
+           OR NOT EXISTS (
+             SELECT 1 FROM renda inst
+             WHERE inst.renda_origem_id = renda.id
+               AND DATE_TRUNC('month', inst.mes_referencia) = DATE_TRUNC('month', renda.mes_referencia)
+           )
+         )`,
       ];
       const gastoValues: unknown[] = [userId];
       const rendaValues: unknown[] = [userId];
@@ -865,6 +880,100 @@ export const insights = async (
         variacao_saldo_pct_vs_anterior: variacaoSaldoMesPct,
       },
       recompensa,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * GET /api/dashboard/alertas?mes=YYYY-MM
+ * Consolida os alertas do mês num único payload: estouro do limite de gastos
+ * sobre a renda, categorias acima do teto e projeção de saldo negativo.
+ * Respeita as preferências do usuário (limites, o que está ligado e o silêncio).
+ */
+export const getAlertas = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const userId = req.user!.userId;
+    const mesRaw =
+      (req.query.mes as string) ?? new Date().toISOString().slice(0, 7);
+    const mes = mesRaw.length === 7 ? mesRaw + "-01" : mesRaw;
+    const mesRef = mes.slice(0, 7);
+
+    const prefs = await getPreferenciasUsuario(userId);
+
+    const silenciado =
+      !!prefs.alertas_silenciados_ate &&
+      new Date(prefs.alertas_silenciados_ate + "T23:59:59") >= new Date();
+
+    const [totalGastos, totalRenda, categoriasRes] = await Promise.all([
+      totalGastosMes(userId, mes),
+      totalRendaMes(userId, mes),
+      pool.query(
+        `SELECT c.id, c.nome, c.cor, c.icone, c.limite_mensal::float AS limite_mensal,
+                COALESCE(SUM(g.valor_total), 0)::float AS gasto
+         FROM categorias c
+         JOIN gastos g
+           ON g.categoria_id = c.id
+          AND g.user_id = $1
+          AND g.status != 'cancelado'
+          AND DATE_TRUNC('month', g.data_gasto) = DATE_TRUNC('month', $2::date)
+         WHERE c.user_id = $1
+           AND c.limite_mensal IS NOT NULL
+         GROUP BY c.id, c.nome, c.cor, c.icone, c.limite_mensal
+         HAVING COALESCE(SUM(g.valor_total), 0) > c.limite_mensal`,
+        [userId, mes],
+      ),
+    ]);
+
+    // Projeção simples: ritmo diário do mês corrente extrapolado até o último dia.
+    // Antes do 7º dia a amostra é pequena demais e a extrapolação vira alarme falso.
+    const DIAS_MINIMOS_PROJECAO = 7;
+    const hoje = new Date();
+    const [ano, mesNum] = mesRef.split("-").map(Number);
+    const ehMesCorrente =
+      hoje.getFullYear() === ano && hoje.getMonth() + 1 === mesNum;
+    const diasNoMes = new Date(ano, mesNum, 0).getDate();
+    const diasCorridos = ehMesCorrente ? hoje.getDate() : diasNoMes;
+    const projecaoConfiavel =
+      ehMesCorrente && diasCorridos >= DIAS_MINIMOS_PROJECAO;
+    const gastoProjetado = projecaoConfiavel
+      ? (totalGastos / diasCorridos) * diasNoMes
+      : totalGastos;
+
+    const limitePercentual = prefs.limite_gastos_percentual ?? 100;
+    const teto = totalRenda * (limitePercentual / 100);
+
+    res.json({
+      data: {
+        mes: mesRef,
+        silenciado,
+        total_gastos: totalGastos,
+        total_renda: totalRenda,
+        limite_percentual: limitePercentual,
+        // Estouro já consumado
+        gastos_acima_limite:
+          prefs.alerta_gastos_ativo && totalGastos > teto && totalGastos > 0,
+        excedente: Math.max(totalGastos - teto, 0),
+        // Ainda dentro do limite, mas o ritmo do mês leva a estourar
+        projecao_negativa:
+          prefs.alerta_saldo_projetado &&
+          projecaoConfiavel &&
+          totalGastos <= teto &&
+          gastoProjetado > teto,
+        gasto_projetado: Number(gastoProjetado.toFixed(2)),
+        categorias_estouradas: prefs.alerta_categoria_ativo
+          ? categoriasRes.rows.map((c) => ({
+              ...c,
+              excedente: Number((c.gasto - c.limite_mensal).toFixed(2)),
+              percentual: Number(((c.gasto / c.limite_mensal) * 100).toFixed(0)),
+            }))
+          : [],
+      },
     });
   } catch (err) {
     next(err);

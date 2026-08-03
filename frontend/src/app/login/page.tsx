@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { api, setToken } from "@/lib/api";
+import { paginaInicial } from "@/lib/preferencias";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -116,7 +117,7 @@ export default function LoginPage() {
       setLoginRedirecting(true);
       setMessage("Login realizado com sucesso. A redirecionar para o painel...");
       await delay(POST_LOGIN_REDIRECT_MS);
-      router.push("/dashboard");
+      router.push(await paginaInicial());
       navigatedAway = true;
     } catch (err: unknown) {
       const response = (err as { response?: { data?: { error?: string; code?: string } } }).response;
@@ -182,7 +183,7 @@ export default function LoginPage() {
       setCodeLoginRedirecting(true);
       setMessage("Login realizado com sucesso. A redirecionar para o painel...");
       await delay(POST_LOGIN_REDIRECT_MS);
-      router.push("/dashboard");
+      router.push(await paginaInicial());
       navigatedAway = true;
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } }).response?.data?.error;

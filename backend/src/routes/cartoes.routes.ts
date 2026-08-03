@@ -11,6 +11,7 @@ import {
   getFaturas,
   getFaturaDetail,
   pagarFatura,
+  getFaturasStatus,
 } from "../controllers/faturas.controller";
 import { authenticateAny } from "../middlewares/auth.middleware";
 import { paginate } from "../middlewares/pagination.middleware";
@@ -110,6 +111,48 @@ router.post("/", authenticateAny, validate(createCartaoSchema), createCartao);
  *       401: { description: Token não fornecido ou inválido }
  */
 router.get("/iphone", authenticateAny, listFormasPagamentoIphone);
+
+/**
+ * @swagger
+ * /cartoes/faturas-status:
+ *   get:
+ *     tags: [Cartoes]
+ *     summary: Mês que a interface deve abrir e faturas fechadas ainda não pagas
+ *     description: |
+ *       Enquanto a fatura que fecha no mês corrente (referente aos gastos do mês
+ *       anterior) não fechou, `mes_sugerido` continua sendo o mês anterior.
+ *       `pendentes` traz as faturas já fechadas com valor em aberto, com os dias
+ *       restantes até o vencimento (negativo quando já venceu).
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     mes_sugerido:          { type: string, example: '2026-07' }
+ *                     aguardando_fechamento: { type: boolean }
+ *                     pendentes:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           cartao_id:        { type: string, format: uuid }
+ *                           apelido:          { type: string }
+ *                           mes:              { type: string, example: '2026-07' }
+ *                           total:            { type: number }
+ *                           pendente:         { type: number }
+ *                           fechamento:       { type: string, format: date }
+ *                           vencimento:       { type: string, format: date }
+ *                           dias_para_vencer: { type: integer, example: 3 }
+ *                           vencida:          { type: boolean }
+ */
+router.get("/faturas-status", authenticateAny, getFaturasStatus);
 
 /**
  * @swagger

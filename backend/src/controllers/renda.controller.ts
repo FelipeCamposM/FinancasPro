@@ -14,10 +14,7 @@ export const listRenda = async (
     const mesQuery = req.query.mes as string | undefined;
 
     // Filtros base — excluindo o filtro de mês para aplicá-lo de forma especial
-    const baseFilters: string[] = [
-      "r.user_id = $1",
-      "r.renda_origem_id IS NULL",
-    ];
+    const baseFilters: string[] = ["r.user_id = $1"];
     const values: unknown[] = [userId];
     let idx = 2;
 
@@ -38,8 +35,9 @@ export const listRenda = async (
       values.push(req.query.data_fim);
     }
 
-    // Quando há filtro de mês: retorna entradas do mês OU templates recorrentes ativos
-    // Templates recorrentes = recorrente=true, sem data_fim OU data_fim >= início do mês
+    // Com filtro de mês: mostra os lançamentos concretos daquele mês (avulsos e
+    // instâncias geradas) e o template recorrente apenas enquanto não houver
+    // instância lançada — mesma regra usada nos totais do dashboard.
     let whereClause: string;
     let mesParamIdx: number | null = null;
     if (mesQuery) {
@@ -48,14 +46,25 @@ export const listRenda = async (
       idx++;
       const m = mesParamIdx;
       whereClause = `(${baseFilters.join(" AND ")}) AND (
-          DATE_TRUNC('month', r.mes_referencia) = DATE_TRUNC('month', $${m}::date)
+          (
+            r.recorrente = false
+            AND DATE_TRUNC('month', r.mes_referencia) = DATE_TRUNC('month', $${m}::date)
+          )
           OR (
             r.recorrente = true
+            AND r.renda_origem_id IS NULL
+            AND DATE_TRUNC('month', r.mes_referencia) <= DATE_TRUNC('month', $${m}::date)
             AND (r.data_fim_recorrencia IS NULL OR r.data_fim_recorrencia >= DATE_TRUNC('month', $${m}::date))
+            AND NOT EXISTS (
+              SELECT 1 FROM renda inst
+              WHERE inst.renda_origem_id = r.id
+                AND DATE_TRUNC('month', inst.mes_referencia) = DATE_TRUNC('month', $${m}::date)
+            )
           )
         )`;
     } else {
-      whereClause = baseFilters.join(" AND ");
+      // Sem mês: lista só os registros "raiz" para não repetir cada instância
+      whereClause = `${baseFilters.join(" AND ")} AND r.renda_origem_id IS NULL`;
     }
 
     // Campo computado: se o template recorrente já foi lançado naquele mês
@@ -155,9 +164,10 @@ export const updateRenda = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
+    const userId = req.user!.userId;
     const { rows: existing } = await pool.query(
-      "SELECT id FROM renda WHERE id = $1 AND user_id = $2",
-      [req.params.id, req.user!.userId],
+      "SELECT id, recorrente, renda_origem_id FROM renda WHERE id = $1 AND user_id = $2",
+      [req.params.id, userId],
     );
     if (!existing[0]) {
       res.status(404).json({ error: "Renda não encontrada" });
@@ -198,6 +208,40 @@ export const updateRenda = async (
       `UPDATE renda SET ${fields.join(", ")} WHERE id = $${idx} RETURNING *`,
       values,
     );
+
+    // Editar o template recorrente propaga os campos descritivos para as
+    // instâncias já lançadas. mes_referencia e data_recebimento são de cada
+    // instância e por isso ficam de fora.
+    const ehTemplate =
+      existing[0].recorrente === true && existing[0].renda_origem_id === null;
+    if (ehTemplate) {
+      const propagaveis = [
+        "descricao",
+        "valor",
+        "tipo",
+        "origem",
+        "categoria_id",
+        "observacoes",
+      ];
+      const propFields: string[] = [];
+      const propValues: unknown[] = [];
+      let pi = 1;
+      for (const key of propagaveis) {
+        if (key in typedBody) {
+          propFields.push(`${key} = $${pi++}`);
+          propValues.push(typedBody[key] ?? null);
+        }
+      }
+      if (propFields.length) {
+        propValues.push(req.params.id, userId);
+        await pool.query(
+          `UPDATE renda SET ${propFields.join(", ")}
+           WHERE renda_origem_id = $${pi} AND user_id = $${pi + 1}`,
+          propValues,
+        );
+      }
+    }
+
     res.json(rows[0]);
   } catch (err) {
     next(err);

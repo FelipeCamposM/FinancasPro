@@ -173,6 +173,58 @@
     100% { transform: translate(60px, -100px) scale(1.08); }
   }
 
+  /* ── Alerta crítico (gastos acima do limite) ──
+     Pulso lento na borda + halo. Chama atenção sem virar estrobo. */
+  @keyframes ui-alerta-pulso {
+    0%,
+    100% {
+      border-color: rgba(251, 113, 133, 0.3);
+      box-shadow: 0 0 0 0 rgba(244, 63, 94, 0);
+    }
+    50% {
+      border-color: rgba(251, 113, 133, 0.8);
+      box-shadow: 0 0 0 5px rgba(244, 63, 94, 0.12);
+    }
+  }
+
+  @keyframes ui-alerta-icone {
+    0%,
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.12);
+      opacity: 0.75;
+    }
+  }
+
+  .ui-alerta-critico {
+    animation: ui-alerta-pulso 1.8s ease-in-out infinite;
+  }
+
+  .ui-alerta-critico [data-alerta-icone] {
+    animation: ui-alerta-icone 1.8s ease-in-out infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ui-alerta-critico,
+    .ui-alerta-critico [data-alerta-icone] {
+      animation: none;
+      border-color: rgba(251, 113, 133, 0.6);
+    }
+  }
+
+  /* Modo privacidade: borra os números na tela (Configurações → Telas).
+     Aplicado no <body>; passar o mouse revela o valor sob o cursor. */
+  .ui-valores-ocultos .tabular-nums {
+    filter: blur(7px);
+    transition: filter 0.15s ease;
+  }
+  .ui-valores-ocultos .tabular-nums:hover {
+    filter: none;
+  }
+
   .ui-bg-blobs {
     position: fixed;
     inset: 0;
@@ -240,6 +292,22 @@
     box-shadow: var(--glass-shadow);
     backdrop-filter: blur(calc(var(--glass-blur) + 2px));
     -webkit-backdrop-filter: blur(calc(var(--glass-blur) + 2px));
+  }
+
+  /* Painel de conteúdo denso (listas, formulários longos).
+     Base escura em vez do vidro claro: sobre os fundos animados o vidro sozinho
+     deixa o texto competir com o efeito. */
+  .ui-panel {
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: calc(var(--glass-radius) + 0.35rem);
+    background: linear-gradient(
+      165deg,
+      hsl(222 47% 9% / 0.88) 0%,
+      hsl(222 47% 6% / 0.93) 100%
+    );
+    box-shadow: var(--glass-shadow-soft);
+    backdrop-filter: blur(calc(var(--glass-blur) + 6px));
+    -webkit-backdrop-filter: blur(calc(var(--glass-blur) + 6px));
   }
 
   /* ── Controles de formulário ───────────────── */
@@ -453,5 +521,177 @@
     .ui-sheet-left,
     .ui-sheet-top,
     .ui-popover { animation: none !important; opacity: 1 !important; transform: none !important; }
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Toasts (sonner) — fora de @layer de propósito: o Sonner injeta o CSS
+   dele sem camada, e estilo sem camada sempre vence estilo em camada.
+   ═══════════════════════════════════════════════════════════════ */
+/* ── Toasts (sonner) ───────────────────────────
+   Alcança os elementos internos do Sonner por data-attribute. As cores por
+   tipo entram como variáveis, então a estrutura é escrita uma vez só. */
+[data-sonner-toaster] {
+  --width: 400px;
+  --toast-borda: rgba(255, 255, 255, 0.12);
+  --toast-icone-bg: rgba(255, 255, 255, 0.09);
+  --toast-icone-cor: rgba(255, 255, 255, 0.75);
+  --toast-tint: rgba(255, 255, 255, 0.02);
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-type="success"] {
+  --toast-borda: rgba(16, 185, 129, 0.34);
+  --toast-icone-bg: rgba(16, 185, 129, 0.16);
+  --toast-icone-cor: rgb(52, 211, 153);
+  --toast-tint: rgba(16, 185, 129, 0.10);
+}
+[data-sonner-toaster] [data-sonner-toast][data-type="error"] {
+  --toast-borda: rgba(244, 63, 94, 0.34);
+  --toast-icone-bg: rgba(244, 63, 94, 0.16);
+  --toast-icone-cor: rgb(251, 113, 133);
+  --toast-tint: rgba(244, 63, 94, 0.10);
+}
+[data-sonner-toaster] [data-sonner-toast][data-type="warning"] {
+  --toast-borda: rgba(245, 158, 11, 0.34);
+  --toast-icone-bg: rgba(245, 158, 11, 0.16);
+  --toast-icone-cor: rgb(251, 191, 36);
+  --toast-tint: rgba(245, 158, 11, 0.10);
+}
+[data-sonner-toaster] [data-sonner-toast][data-type="info"] {
+  --toast-borda: rgba(59, 130, 246, 0.34);
+  --toast-icone-bg: rgba(59, 130, 246, 0.16);
+  --toast-icone-cor: rgb(96, 165, 250);
+  --toast-tint: rgba(59, 130, 246, 0.10);
+}
+
+/* Fluid glass: vidro translúcido de verdade — o fundo da aplicação atravessa,
+   com blur e saturação por cima. Camadas do topo para a base:
+   brilho do vidro → tonalidade do tipo → véu escuro que garante o contraste. */
+/* `[data-styled]` no seletor não é decoração: é o mesmo que o Sonner usa para
+   pintar o fundo sólido. Sem ele a especificidade empata e, como o CSS dele é
+   injetado depois, o fundo opaco ganha e o vidro não aparece. */
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.8125rem 2.75rem 0.8125rem 0.875rem;
+  border-radius: var(--glass-radius);
+  border: 1px solid var(--toast-borda);
+  /* 1ª camada = fio de luz no topo. Fica no background porque o Sonner usa o
+     ::before como área de swipe e o redimensiona ao clicar. */
+  background:
+    linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.28),
+        transparent
+      )
+      no-repeat 50% 0 / calc(100% - 1.5rem) 1px,
+    var(--glass-bg-strong),
+    linear-gradient(0deg, var(--toast-tint), var(--toast-tint)),
+    hsl(222 47% 8% / 0.58);
+  box-shadow:
+    var(--glass-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(calc(var(--glass-blur) + 6px)) saturate(1.4);
+  -webkit-backdrop-filter: blur(calc(var(--glass-blur) + 6px)) saturate(1.4);
+  color: #fff;
+}
+
+
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-icon] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  margin: 0;
+  border-radius: 9999px;
+  background: var(--toast-icone-bg);
+  color: var(--toast-icone-cor);
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-content] {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-title] {
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #fff;
+  overflow-wrap: anywhere;
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-description] {
+  margin-top: 0.15rem;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.55);
+  overflow-wrap: anywhere;
+}
+
+/* Botão de fechar: circular, à direita, centralizado na vertical */
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-close-button] {
+  position: absolute;
+  top: 50%;
+  right: 0.5rem;
+  left: auto;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: none;
+  border-radius: 9999px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.4);
+  opacity: 1;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"]:hover [data-close-button]:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-close-button]:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.5);
+  outline-offset: 1px;
+}
+
+/* Ações dentro do toast seguem o tema escuro */
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-button] {
+  height: 1.9rem;
+  padding: 0 0.7rem;
+  border-radius: 0.55rem;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-button]:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-cancel] {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.5);
+}
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-cancel]:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+/* Mobile: largura da tela menos 16px de cada lado */
+@media (max-width: 640px) {
+  [data-sonner-toaster] {
+    --width: calc(100vw - 2rem);
   }
 }

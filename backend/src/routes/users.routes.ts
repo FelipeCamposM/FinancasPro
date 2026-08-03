@@ -7,6 +7,10 @@ import {
   deleteUser,
   getApiKey,
   rotateApiKey,
+  getPreferencias,
+  updatePreferencias,
+  exportarDados,
+  apagarLancamentos,
 } from "../controllers/users.controller";
 import { authenticate } from "../middlewares/auth.middleware";
 import { paginate } from "../middlewares/pagination.middleware";
@@ -14,6 +18,7 @@ import { validate } from "../middlewares/validate.middleware";
 import {
   updateUserSchema,
   updatePasswordSchema,
+  preferenciasSchema,
 } from "../schemas/users.schema";
 
 const router = Router();
@@ -88,6 +93,112 @@ router.get("/", authenticate, paginate, listUsers);
  */
 router.get("/me/api-key", authenticate, getApiKey);
 router.post("/me/api-key/rotate", authenticate, rotateApiKey);
+
+/**
+ * @swagger
+ * /users/me/preferencias:
+ *   get:
+ *     tags: [Users]
+ *     summary: Preferências do usuário (já mescladas com os padrões)
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data: { $ref: '#/components/schemas/Preferencias' }
+ *   put:
+ *     tags: [Users]
+ *     summary: Atualizar preferências (merge parcial)
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema: { $ref: '#/components/schemas/Preferencias' }
+ *     responses:
+ *       200:
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data: { $ref: '#/components/schemas/Preferencias' }
+ *       422: { description: Dados inválidos }
+ *
+ * components:
+ *   schemas:
+ *     Preferencias:
+ *       type: object
+ *       properties:
+ *         limite_gastos_percentual:  { type: integer, minimum: 10, maximum: 300, example: 90 }
+ *         alerta_gastos_ativo:       { type: boolean }
+ *         alerta_fatura_ativo:       { type: boolean }
+ *         abrir_mes_apos_fechamento: { type: boolean }
+ */
+/**
+ * @swagger
+ * /users/me/export:
+ *   get:
+ *     tags: [Users]
+ *     summary: Exportar todos os lançamentos do usuário (para CSV)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: de
+ *         schema: { type: string, format: date }
+ *       - in: query
+ *         name: ate
+ *         schema: { type: string, format: date }
+ *     responses:
+ *       200:
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     gastos: { type: array, items: { type: object } }
+ *                     renda:  { type: array, items: { type: object } }
+ *
+ * /users/me/lancamentos:
+ *   delete:
+ *     tags: [Users]
+ *     summary: Apagar todos os gastos, rendas e assinaturas do usuário
+ *     description: Destrutivo e irreversível. Mantém a conta, categorias e cartões.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     gastos:      { type: integer }
+ *                     renda:       { type: integer }
+ *                     assinaturas: { type: integer }
+ */
+router.get("/me/export", authenticate, exportarDados);
+router.delete("/me/lancamentos", authenticate, apagarLancamentos);
+
+router.get("/me/preferencias", authenticate, getPreferencias);
+router.put(
+  "/me/preferencias",
+  authenticate,
+  validate(preferenciasSchema),
+  updatePreferencias,
+);
 
 /**
  * @swagger

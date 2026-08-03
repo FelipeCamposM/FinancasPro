@@ -1,8 +1,104 @@
 import { Request, Response, NextFunction } from "express";
+import { PoolClient } from "pg";
 import { z } from "zod";
 import pool from "../config/database";
 import { paginated } from "../utils/response";
-import { CreateGastoInput, UpdateGastoInput } from "../schemas/gastos.schema";
+import {
+  CreateGastoInput,
+  UpdateGastoInput,
+  createGastoSchema,
+} from "../schemas/gastos.schema";
+
+/**
+ * Insere um gasto e, se parcelado, as cobranças futuras (parcelas 2..N)
+ * como registros independentes. Deve rodar dentro de uma transação.
+ */
+const insertGastoComParcelas = async (
+  client: PoolClient,
+  userId: string,
+  body: CreateGastoInput,
+): Promise<Record<string, unknown>> => {
+  const statusFinal =
+    body.forma_pagamento === "cartao_credito" ? "pendente" : "pago";
+
+  const { rows } = await client.query(
+    `INSERT INTO gastos
+      (user_id, descricao, valor_total, categoria_id, forma_pagamento, cartao_id,
+       tipo_pagamento, quantidade_parcelas, recorrente, frequencia_recorrencia,
+       data_fim_recorrencia, data_gasto, observacoes, status, gasto_origem_id, numero_parcela)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+     RETURNING *`,
+    [
+      userId,
+      body.descricao,
+      body.valor_total,
+      body.categoria_id ?? null,
+      body.forma_pagamento,
+      body.cartao_id ?? null,
+      body.tipo_pagamento,
+      body.quantidade_parcelas,
+      body.recorrente,
+      body.frequencia_recorrencia ?? null,
+      body.data_fim_recorrencia ?? null,
+      body.data_gasto,
+      body.observacoes ?? null,
+      statusFinal,
+      body.gasto_origem_id ?? null,
+      1,
+    ],
+  );
+
+  const gasto = rows[0];
+
+  // Criar cobranças futuras como registros independentes em gastos (parcelas 2..N).
+  // O gasto original já representa a 1ª parcela.
+  if (body.tipo_pagamento === "parcelado" && body.quantidade_parcelas > 1) {
+    const [anoBase, mesBase, diaBase] = body.data_gasto.split("-").map(Number);
+    for (let i = 1; i < body.quantidade_parcelas; i++) {
+      const dataFutura = new Date(anoBase, mesBase - 1 + i, diaBase, 12);
+      const dataStr = [
+        dataFutura.getFullYear(),
+        String(dataFutura.getMonth() + 1).padStart(2, "0"),
+        String(dataFutura.getDate()).padStart(2, "0"),
+      ].join("-");
+      await client.query(
+        `INSERT INTO gastos
+          (user_id, descricao, valor_total, categoria_id, forma_pagamento, cartao_id,
+           tipo_pagamento, quantidade_parcelas, recorrente,
+           data_gasto, observacoes, status, gasto_origem_id, numero_parcela)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+        [
+          userId,
+          body.descricao,
+          body.valor_total,
+          body.categoria_id ?? null,
+          body.forma_pagamento,
+          body.cartao_id ?? null,
+          body.tipo_pagamento,
+          body.quantidade_parcelas,
+          false,
+          dataStr,
+          body.observacoes ?? null,
+          statusFinal,
+          gasto.id,
+          i + 1,
+        ],
+      );
+    }
+  }
+
+  return gasto;
+};
+
+/** Colunas liberadas para ordenação — evita injeção no ORDER BY. */
+const SORT_GASTOS: Record<string, string> = {
+  data: "g.data_gasto",
+  descricao: "g.descricao",
+  categoria: "c.nome",
+  status: "g.status",
+  pagamento: "g.forma_pagamento",
+  valor: "g.valor_total",
+};
 
 export const listGastos = async (
   req: Request,
@@ -38,6 +134,10 @@ export const listGastos = async (
       filters.push(`g.tipo_pagamento = $${idx++}`);
       values.push(req.query.tipo_pagamento);
     }
+    if (req.query.search) {
+      filters.push(`g.descricao ILIKE $${idx++}`);
+      values.push(`%${String(req.query.search)}%`);
+    }
     if (req.query.data_inicio) {
       filters.push(`g.data_gasto >= $${idx++}`);
       values.push(req.query.data_inicio);
@@ -48,6 +148,12 @@ export const listGastos = async (
     }
 
     const where = filters.join(" AND ");
+
+    const sortCol = SORT_GASTOS[String(req.query.sort ?? "")] ?? "g.data_gasto";
+    const sortDir =
+      String(req.query.order ?? "").toLowerCase() === "asc" ? "ASC" : "DESC";
+    // g.id como desempate mantém a paginação estável entre requisições
+    const orderBy = `${sortCol} ${sortDir} NULLS LAST, g.id`;
 
     const [{ rows: total }, { rows }] = await Promise.all([
       pool.query(
@@ -61,7 +167,7 @@ export const listGastos = async (
          LEFT JOIN categorias c ON c.id = g.categoria_id
          LEFT JOIN cartoes ct ON ct.id = g.cartao_id
          WHERE ${where}
-         ORDER BY g.data_gasto DESC
+         ORDER BY ${orderBy}
          LIMIT $${idx++} OFFSET $${idx}`,
         [...values, limit, offset],
       ),
@@ -111,76 +217,7 @@ export const createGasto = async (
     try {
       await client.query("BEGIN");
 
-      const statusFinal =
-        body.forma_pagamento === "cartao_credito" ? "pendente" : "pago";
-
-      const { rows } = await client.query(
-        `INSERT INTO gastos
-          (user_id, descricao, valor_total, categoria_id, forma_pagamento, cartao_id,
-           tipo_pagamento, quantidade_parcelas, recorrente, frequencia_recorrencia,
-           data_fim_recorrencia, data_gasto, observacoes, status, gasto_origem_id, numero_parcela)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
-         RETURNING *`,
-        [
-          userId,
-          body.descricao,
-          body.valor_total,
-          body.categoria_id ?? null,
-          body.forma_pagamento,
-          body.cartao_id ?? null,
-          body.tipo_pagamento,
-          body.quantidade_parcelas,
-          body.recorrente,
-          body.frequencia_recorrencia ?? null,
-          body.data_fim_recorrencia ?? null,
-          body.data_gasto,
-          body.observacoes ?? null,
-          statusFinal,
-          body.gasto_origem_id ?? null,
-          1,
-        ],
-      );
-
-      const gasto = rows[0];
-
-      // Criar cobranças futuras como registros independentes em gastos (parcelas 2..N).
-      // O gasto original já representa a 1ª parcela.
-      if (body.tipo_pagamento === "parcelado" && body.quantidade_parcelas > 1) {
-        const [anoBase, mesBase, diaBase] = body.data_gasto
-          .split("-")
-          .map(Number);
-        for (let i = 1; i < body.quantidade_parcelas; i++) {
-          const dataFutura = new Date(anoBase, mesBase - 1 + i, diaBase, 12);
-          const dataStr = [
-            dataFutura.getFullYear(),
-            String(dataFutura.getMonth() + 1).padStart(2, "0"),
-            String(dataFutura.getDate()).padStart(2, "0"),
-          ].join("-");
-          await client.query(
-            `INSERT INTO gastos
-              (user_id, descricao, valor_total, categoria_id, forma_pagamento, cartao_id,
-               tipo_pagamento, quantidade_parcelas, recorrente,
-               data_gasto, observacoes, status, gasto_origem_id, numero_parcela)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
-            [
-              userId,
-              body.descricao,
-              body.valor_total,
-              body.categoria_id ?? null,
-              body.forma_pagamento,
-              body.cartao_id ?? null,
-              body.tipo_pagamento,
-              body.quantidade_parcelas,
-              false,
-              dataStr,
-              body.observacoes ?? null,
-              statusFinal,
-              gasto.id,
-              i + 1,
-            ],
-          );
-        }
-      }
+      const gasto = await insertGastoComParcelas(client, userId, body);
 
       await client.query("COMMIT");
       res.status(201).json(gasto);
@@ -354,6 +391,76 @@ export const deleteGasto = async (
       return;
     }
     res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+};
+
+const IMPORT_MAX_LINHAS = 500;
+
+/**
+ * POST /api/gastos/import
+ * Importa vários gastos de uma vez (planilha CSV convertida no frontend).
+ * Tudo ou nada: se qualquer linha for inválida, nada é gravado.
+ */
+export const importGastos = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const userId = req.user!.userId;
+    const lista = (req.body as { gastos?: unknown }).gastos;
+
+    if (!Array.isArray(lista) || lista.length === 0) {
+      res.status(422).json({ error: "Nenhum gasto para importar" });
+      return;
+    }
+    if (lista.length > IMPORT_MAX_LINHAS) {
+      res.status(422).json({
+        error: `Limite de ${IMPORT_MAX_LINHAS} gastos por importação`,
+      });
+      return;
+    }
+
+    const validos: CreateGastoInput[] = [];
+    const linhasInvalidas: { linha: number; erros: string[] }[] = [];
+
+    lista.forEach((row, i) => {
+      const parsed = createGastoSchema.safeParse(row);
+      if (parsed.success) {
+        validos.push(parsed.data);
+      } else {
+        linhasInvalidas.push({
+          linha: i + 1,
+          erros: parsed.error.errors.map(
+            (e) => `${e.path.join(".")}: ${e.message}`,
+          ),
+        });
+      }
+    });
+
+    if (linhasInvalidas.length) {
+      res
+        .status(422)
+        .json({ error: "Dados inválidos", linhas: linhasInvalidas });
+      return;
+    }
+
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      for (const gasto of validos) {
+        await insertGastoComParcelas(client, userId, gasto);
+      }
+      await client.query("COMMIT");
+      res.status(201).json({ data: { importados: validos.length } });
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
   } catch (err) {
     next(err);
   }

@@ -10,6 +10,7 @@ import TopNavbar from "@/components/nav/TopNavbar";
 import BottomNav from "@/components/nav/BottomNav";
 import { UserProvider } from "@/contexts/UserContext";
 import { TrialWelcomeDialog } from "@/components/ui/trial-welcome-dialog";
+import { FaturaPendenteDialog } from "@/components/ui/fatura-pendente-dialog";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -36,8 +37,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
         <BottomNav />
-        <Toaster richColors position="bottom-right" />
+        <Toaster />
         <TrialWelcomeDialog />
+        <FaturaPendenteDialog />
       </SidebarProvider>
     </UserProvider>
   );

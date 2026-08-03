@@ -24,15 +24,24 @@ import {
 import {
   Plus, Search, Trash2, Tag, Lock, AlertTriangle, Smartphone,
   Copy, Check, Eye, EyeOff, RefreshCw, ExternalLink, Pencil,
-  ChevronDown, Settings, Crown, CheckCircle2, Clock, XCircle, Loader2,
+  ChevronDown, Settings, Crown, CheckCircle2, Clock, XCircle, Loader2, Bell,
+  Wallet, LayoutGrid, Palette, Database, Download,
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useUser } from "@/contexts/UserContext";
+import { Switch } from "@/components/ui/switch";
+import {
+  fetchPreferencias, salvarPreferencias, type Preferencias,
+} from "@/lib/preferencias";
+import { BACKGROUNDS } from "@/lib/backgrounds";
+import { BackgroundEfeito } from "@/components/AppBackground";
+import { toCSV, downloadFile } from "@/lib/csv";
 
 interface Categoria {
   id: number; nome: string; cor: string | null;
   icone: string | null; tipo: "gasto" | "renda"; user_id: string | null;
+  limite_mensal?: number | null;
 }
 interface ApiResponse {
   data: Categoria[];
@@ -110,7 +119,7 @@ function IphoneSection() {
   const masked = apiKey ? apiKey.slice(0, 8) + "••••••••••••••" + apiKey.slice(-4) : null;
 
   return (
-    <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] overflow-hidden">
+    <div className="rounded-xl border border-white/[0.07] bg-white/[0.035] overflow-hidden">
       <div className="px-5 py-4 border-b border-white/[0.06]">
         <h2 className="text-sm font-semibold text-white">Atalho iPhone</h2>
         <p className="text-xs text-white/40 mt-0.5">Integre com o app Atalhos do iOS para registrar gastos por voz</p>
@@ -258,7 +267,7 @@ function CategoriasSection({ categorias, loading, loadError, onRefetch, onEdit, 
   ];
 
   return (
-    <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] overflow-hidden">
+    <div className="rounded-xl border border-white/[0.07] bg-white/[0.035] overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
         <div>
@@ -490,7 +499,7 @@ function AssinaturaSection() {
   const planPrice   = isAnnual ? "R$ 94,90/ano" : "R$ 9,90/mês";
 
   return (
-    <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] overflow-hidden">
+    <div className="rounded-xl border border-white/[0.07] bg-white/[0.035] overflow-hidden">
       <div className="px-5 py-4 border-b border-white/[0.06]">
         <h2 className="text-sm font-semibold text-white">Plano atual</h2>
         <p className="text-xs text-white/40 mt-0.5">Gerencie sua assinatura Valora Premium</p>
@@ -652,7 +661,7 @@ function AssinaturaSection() {
 
             {/* ── Change plan (only for active non-courtesy premium) ── */}
             {isPremium && !isCourtesy && !isCancelled && !inTrial && (
-              <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-4 space-y-3">
+              <div className="rounded-xl border border-white/[0.07] bg-white/[0.035] p-4 space-y-3">
                 <p className="text-xs font-semibold text-white/50 uppercase tracking-widest">Alterar plano</p>
                 <div className="grid grid-cols-2 gap-2">
                   <button
@@ -783,9 +792,656 @@ function AssinaturaSection() {
 
 // ─── Settings nav ─────────────────────────────────────────────────────────────
 
+
+// ─── Alertas e preferências ────────────────────────────────────────────────────
+
+function AlertasSection() {
+  const [prefs, setPrefs] = useState<Preferencias | null>(null);
+  const [percentual, setPercentual] = useState("100");
+  const [salvando, setSalvando] = useState(false);
+
+  useEffect(() => {
+    fetchPreferencias().then((p) => {
+      setPrefs(p);
+      setPercentual(String(p.limite_gastos_percentual));
+    });
+  }, []);
+
+  async function aplicar(patch: Partial<Preferencias>) {
+    setSalvando(true);
+    try {
+      const atualizadas = await salvarPreferencias(patch);
+      setPrefs(atualizadas);
+      setPercentual(String(atualizadas.limite_gastos_percentual));
+      toast.success("Preferências salvas");
+    } catch {
+      toast.error("Erro ao salvar preferências");
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  function salvarPercentual() {
+    const valor = Number(percentual);
+    if (!Number.isInteger(valor) || valor < 10 || valor > 300) {
+      toast.error("Informe um percentual inteiro entre 10 e 300");
+      setPercentual(String(prefs?.limite_gastos_percentual ?? 100));
+      return;
+    }
+    if (valor === prefs?.limite_gastos_percentual) return;
+    aplicar({ limite_gastos_percentual: valor });
+  }
+
+  if (!prefs) {
+    return (
+      <div className="rounded-xl border border-white/[0.07] bg-white/[0.035] p-5 space-y-3">
+        <Skeleton className="h-5 w-40 bg-white/10" />
+        <Skeleton className="h-16 w-full bg-white/10" />
+        <Skeleton className="h-16 w-full bg-white/10" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-white/[0.07] bg-white/[0.035] overflow-hidden">
+      <div className="px-5 py-4 border-b border-white/[0.06]">
+        <h2 className="text-sm font-semibold text-white">Alertas</h2>
+        <p className="text-xs text-white/40 mt-0.5">Quando o sino e os avisos críticos devem aparecer</p>
+      </div>
+
+      <div className="divide-y divide-white/[0.04]">
+        {/* Limite de gastos */}
+        <div className="px-5 py-5 space-y-3">
+          <div className="flex items-start gap-4">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-rose-500/15">
+              <Bell className="h-4 w-4 text-rose-400" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-white">Limite de gastos sobre a renda</p>
+              <p className="text-xs text-white/45 mt-0.5">
+                Dispara o alerta crítico quando os gastos do mês passam desse percentual da renda.
+                100% = gastar tudo que entrou.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 pl-12">
+            <div className="relative w-28">
+              <Input
+                type="number"
+                min={10}
+                max={300}
+                step={5}
+                inputMode="numeric"
+                value={percentual}
+                disabled={salvando}
+                onChange={(e) => setPercentual(e.target.value)}
+                onBlur={salvarPercentual}
+                onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+                aria-label="Percentual máximo de gastos sobre a renda"
+                className="pr-7 tabular-nums"
+              />
+              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-white/40">%</span>
+            </div>
+            <div className="flex gap-1.5">
+              {[70, 80, 90, 100].map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => aplicar({ limite_gastos_percentual: v })}
+                  disabled={salvando}
+                  className={cn(
+                    "rounded-lg border px-2.5 py-1 text-[11px] font-semibold transition-colors",
+                    prefs.limite_gastos_percentual === v
+                      ? "border-rose-400/40 bg-rose-500/15 text-rose-200"
+                      : "border-white/10 text-white/45 hover:text-white/80",
+                  )}
+                >
+                  {v}%
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <PreferenciaToggle
+          titulo="Alerta de gastos acima do limite"
+          descricao="Mostra o sino com aviso e o banner crítico no dashboard e nos relatórios."
+          checked={prefs.alerta_gastos_ativo}
+          disabled={salvando}
+          onChange={(v) => aplicar({ alerta_gastos_ativo: v })}
+        />
+
+        <PreferenciaToggle
+          titulo="Aviso de fatura fechada sem pagamento"
+          descricao="Abre o lembrete com os dias restantes até o vencimento da fatura."
+          checked={prefs.alerta_fatura_ativo}
+          disabled={salvando}
+          onChange={(v) => aplicar({ alerta_fatura_ativo: v })}
+        />
+
+        <PreferenciaToggle
+          titulo="Abrir mês anterior até a fatura fechar"
+          descricao="Enquanto a fatura do mês anterior não fecha, a tela de gastos abre nele."
+          checked={prefs.abrir_mes_apos_fechamento}
+          disabled={salvando}
+          onChange={(v) => aplicar({ abrir_mes_apos_fechamento: v })}
+        />
+      </div>
+    </div>
+  );
+}
+
+function PreferenciaToggle({
+  titulo, descricao, checked, disabled, onChange,
+}: {
+  titulo: string;
+  descricao: string;
+  checked: boolean;
+  disabled: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-4 px-5 py-4">
+      <div className="min-w-0">
+        <p className="text-sm font-semibold text-white">{titulo}</p>
+        <p className="text-xs text-white/45 mt-0.5">{descricao}</p>
+      </div>
+      <Switch
+        checked={checked}
+        disabled={disabled}
+        onCheckedChange={onChange}
+        aria-label={titulo}
+        className="mt-0.5 shrink-0"
+      />
+    </div>
+  );
+}
+
+
+interface CartaoOpcao { id: string; apelido: string; }
+
+// ─── Lançamentos: padrões do formulário de gasto ───────────────────────────────
+
+function LancamentosSection() {
+  const [prefs, setPrefs] = useState<Preferencias | null>(null);
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [cartoes, setCartoes] = useState<CartaoOpcao[]>([]);
+  const [salvando, setSalvando] = useState(false);
+
+  useEffect(() => {
+    fetchPreferencias().then(setPrefs);
+    api.get<ApiResponse>("/categorias", { params: { limit: 200 } })
+      .then((r) => setCategorias(r.data.data))
+      .catch(() => {});
+    api.get<{ data: CartaoOpcao[] }>("/cartoes", { params: { limit: 100 } })
+      .then((r) => setCartoes(r.data.data ?? []))
+      .catch(() => {});
+  }, []);
+
+  async function aplicar(patch: Partial<Preferencias>) {
+    setSalvando(true);
+    try {
+      setPrefs(await salvarPreferencias(patch));
+      toast.success("Preferências salvas");
+    } catch {
+      toast.error("Erro ao salvar preferências");
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  if (!prefs) return <SecaoSkeleton />;
+
+  const usaCartao =
+    prefs.forma_pagamento_padrao === "cartao_credito" ||
+    prefs.forma_pagamento_padrao === "cartao_debito";
+
+  return (
+    <SecaoCard titulo="Lançamentos" descricao="Como um novo gasto ou renda já vem preenchido">
+      <LinhaSelect
+        titulo="Forma de pagamento padrão"
+        descricao="Pré-selecionada ao abrir o formulário de novo gasto."
+        value={prefs.forma_pagamento_padrao}
+        disabled={salvando}
+        onChange={(v) => aplicar({ forma_pagamento_padrao: v as Preferencias["forma_pagamento_padrao"] })}
+        options={[
+          { value: "dinheiro", label: "Dinheiro" },
+          { value: "pix", label: "Pix" },
+          { value: "cartao_credito", label: "Cartão de crédito" },
+          { value: "cartao_debito", label: "Cartão de débito" },
+          { value: "transferencia", label: "Transferência" },
+          { value: "outro", label: "Outro" },
+        ]}
+      />
+
+      {usaCartao && (
+        <LinhaSelect
+          titulo="Cartão padrão"
+          descricao="Usado quando a forma de pagamento padrão é cartão."
+          value={prefs.cartao_padrao_id ?? "__none__"}
+          disabled={salvando}
+          onChange={(v) => aplicar({ cartao_padrao_id: v === "__none__" ? null : v })}
+          options={[
+            { value: "__none__", label: "Nenhum" },
+            ...cartoes.map((c) => ({ value: c.id, label: c.apelido })),
+          ]}
+        />
+      )}
+
+      <LinhaSelect
+        titulo="Categoria padrão de gasto"
+        descricao="Vem marcada em todo novo gasto."
+        value={prefs.categoria_gasto_padrao ? String(prefs.categoria_gasto_padrao) : "__none__"}
+        disabled={salvando}
+        onChange={(v) => aplicar({ categoria_gasto_padrao: v === "__none__" ? null : Number(v) })}
+        options={[
+          { value: "__none__", label: "Nenhuma" },
+          ...categorias.filter((c) => c.tipo === "gasto").map((c) => ({ value: String(c.id), label: c.nome })),
+        ]}
+      />
+
+      <LinhaSelect
+        titulo="Categoria padrão de renda"
+        descricao="Vem marcada em toda nova entrada de renda."
+        value={prefs.categoria_renda_padrao ? String(prefs.categoria_renda_padrao) : "__none__"}
+        disabled={salvando}
+        onChange={(v) => aplicar({ categoria_renda_padrao: v === "__none__" ? null : Number(v) })}
+        options={[
+          { value: "__none__", label: "Nenhuma" },
+          ...categorias.filter((c) => c.tipo === "renda").map((c) => ({ value: String(c.id), label: c.nome })),
+        ]}
+      />
+
+      <LinhaSelect
+        titulo="Meses lançados por assinatura"
+        descricao="Quantas cobranças futuras são criadas ao cadastrar uma assinatura."
+        value={String(prefs.assinatura_meses_antecipados)}
+        disabled={salvando}
+        onChange={(v) => aplicar({ assinatura_meses_antecipados: Number(v) })}
+        options={[6, 12, 24, 36, 60].map((n) => ({ value: String(n), label: `${n} meses` }))}
+      />
+
+      <PreferenciaToggle
+        titulo="Lançar renda recorrente automaticamente"
+        descricao="Ao abrir a tela de renda, cria as entradas recorrentes do mês que ainda faltam."
+        checked={prefs.auto_lancar_renda}
+        disabled={salvando}
+        onChange={(v) => aplicar({ auto_lancar_renda: v })}
+      />
+    </SecaoCard>
+  );
+}
+
+// ─── Telas: comportamento de navegação e listagem ──────────────────────────────
+
+function TelasSection() {
+  const [prefs, setPrefs] = useState<Preferencias | null>(null);
+  const [salvando, setSalvando] = useState(false);
+
+  useEffect(() => { fetchPreferencias().then(setPrefs); }, []);
+
+  async function aplicar(patch: Partial<Preferencias>) {
+    setSalvando(true);
+    try {
+      setPrefs(await salvarPreferencias(patch));
+      toast.success("Preferências salvas");
+    } catch {
+      toast.error("Erro ao salvar preferências");
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  if (!prefs) return <SecaoSkeleton />;
+
+  return (
+    <SecaoCard titulo="Telas" descricao="Onde o app abre e como as listas aparecem">
+      <LinhaSelect
+        titulo="Página inicial"
+        descricao="Para onde ir logo depois do login."
+        value={prefs.pagina_inicial}
+        disabled={salvando}
+        onChange={(v) => aplicar({ pagina_inicial: v as Preferencias["pagina_inicial"] })}
+        options={[
+          { value: "dashboard", label: "Dashboard" },
+          { value: "gastos", label: "Gastos" },
+          { value: "renda", label: "Renda" },
+          { value: "relatorios", label: "Relatórios" },
+        ]}
+      />
+
+      <LinhaSelect
+        titulo="Itens por página"
+        descricao="Tamanho das listas de gastos e renda."
+        value={String(prefs.itens_por_pagina)}
+        disabled={salvando}
+        onChange={(v) => aplicar({ itens_por_pagina: Number(v) as Preferencias["itens_por_pagina"] })}
+        options={[10, 15, 25, 50].map((n) => ({ value: String(n), label: `${n} itens` }))}
+      />
+
+      <LinhaSelect
+        titulo="Período padrão"
+        descricao="Se as listas abrem filtradas pelo mês ou mostrando tudo."
+        value={prefs.periodo_padrao}
+        disabled={salvando}
+        onChange={(v) => aplicar({ periodo_padrao: v as Preferencias["periodo_padrao"] })}
+        options={[
+          { value: "mes", label: "Mês atual" },
+          { value: "todos", label: "Todos os meses" },
+        ]}
+      />
+
+      <LinhaSelect
+        titulo="Ordenar gastos por"
+        descricao="Ordenação inicial da lista de gastos."
+        value={`${prefs.ordenacao_gastos.campo}:${prefs.ordenacao_gastos.direcao}`}
+        disabled={salvando}
+        onChange={(v) => {
+          const [campo, direcao] = v.split(":");
+          aplicar({
+            ordenacao_gastos: {
+              campo: campo as Preferencias["ordenacao_gastos"]["campo"],
+              direcao: direcao as "asc" | "desc",
+            },
+          });
+        }}
+        options={[
+          { value: "data:desc", label: "Data (mais recente)" },
+          { value: "data:asc", label: "Data (mais antiga)" },
+          { value: "valor:desc", label: "Valor (maior)" },
+          { value: "valor:asc", label: "Valor (menor)" },
+          { value: "descricao:asc", label: "Descrição (A-Z)" },
+          { value: "categoria:asc", label: "Categoria (A-Z)" },
+          { value: "status:asc", label: "Status" },
+          { value: "pagamento:asc", label: "Forma de pagamento" },
+        ]}
+      />
+
+      <PreferenciaToggle
+        titulo="Modo privacidade"
+        descricao="Borra os valores na tela. Também dá para ligar pelo ícone de olho no topo."
+        checked={prefs.modo_privacidade}
+        disabled={salvando}
+        onChange={(v) => {
+          document.body.classList.toggle("ui-valores-ocultos", v);
+          aplicar({ modo_privacidade: v });
+        }}
+      />
+
+      <PreferenciaToggle
+        titulo="Abrir mês anterior até a fatura fechar"
+        descricao="Enquanto a fatura do mês anterior não fecha, a tela de gastos abre nele."
+        checked={prefs.abrir_mes_apos_fechamento}
+        disabled={salvando}
+        onChange={(v) => aplicar({ abrir_mes_apos_fechamento: v })}
+      />
+    </SecaoCard>
+  );
+}
+
+// ─── Aparência: fundo animado ──────────────────────────────────────────────────
+
+function AparenciaSection() {
+  const [prefs, setPrefs] = useState<Preferencias | null>(null);
+  const [salvando, setSalvando] = useState(false);
+
+  useEffect(() => { fetchPreferencias().then(setPrefs); }, []);
+
+  async function escolher(id: string) {
+    setSalvando(true);
+    try {
+      setPrefs(await salvarPreferencias({ background: id }));
+      toast.success("Fundo alterado");
+    } catch {
+      toast.error("Erro ao salvar preferências");
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  if (!prefs) return <SecaoSkeleton />;
+
+  return (
+    <SecaoCard titulo="Aparência" descricao="Fundo animado da aplicação">
+      <div className="grid grid-cols-1 gap-3 p-5 sm:grid-cols-3">
+        {BACKGROUNDS.map((bg) => {
+          const ativo = prefs.background === bg.id;
+          return (
+            <button
+              key={bg.id}
+              type="button"
+              disabled={salvando}
+              onClick={() => escolher(bg.id)}
+              aria-pressed={ativo}
+              className={cn(
+                "group overflow-hidden rounded-xl border text-left transition-all",
+                ativo
+                  ? "border-blue-400/50 ring-2 ring-blue-400/30"
+                  : "border-white/10 hover:border-white/25",
+              )}
+            >
+              {/* Preview roda o efeito de verdade, em miniatura */}
+              <div
+                className={cn(
+                  "relative h-28 w-full overflow-hidden",
+                  bg.fallbackClass,
+                )}
+              >
+                <div className="pointer-events-none absolute inset-0">
+                  <BackgroundEfeito id={bg.id} preview />
+                </div>
+              </div>
+              <div className="flex items-center justify-between px-3 py-2.5">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-white">{bg.nome}</p>
+                  <p className="truncate text-[11px] text-white/40">{bg.descricao}</p>
+                </div>
+                {ativo && <CheckCircle2 className="h-4 w-4 shrink-0 text-blue-400" />}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </SecaoCard>
+  );
+}
+
+// ─── Dados: exportar e apagar ──────────────────────────────────────────────────
+
+function DadosSection() {
+  const [exportando, setExportando] = useState<"gastos" | "renda" | null>(null);
+  const [confirmando, setConfirmando] = useState(false);
+  const [texto, setTexto] = useState("");
+  const [apagando, setApagando] = useState(false);
+
+  async function exportar(tipo: "gastos" | "renda") {
+    setExportando(tipo);
+    try {
+      const { data } = await api.get<{
+        data: { gastos: Record<string, unknown>[]; renda: Record<string, unknown>[] };
+      }>("/users/me/export");
+      const linhas = data.data[tipo];
+      if (!linhas.length) {
+        toast.error(`Nenhum registro de ${tipo} para exportar`);
+        return;
+      }
+      const colunas = Object.keys(linhas[0]);
+      const matriz = [
+        colunas,
+        ...linhas.map((l) => colunas.map((c) => (l[c] == null ? "" : String(l[c])))),
+      ];
+      downloadFile(`${tipo}-${new Date().toISOString().slice(0, 10)}.csv`, toCSV(matriz), "text/csv;charset=utf-8");
+      toast.success(`${linhas.length} ${tipo} exportados`);
+    } catch {
+      toast.error("Erro ao exportar dados");
+    } finally {
+      setExportando(null);
+    }
+  }
+
+  async function apagarTudo() {
+    setApagando(true);
+    try {
+      const { data } = await api.delete<{
+        data: { gastos: number; renda: number; assinaturas: number };
+      }>("/users/me/lancamentos");
+      toast.success(
+        `Removidos: ${data.data.gastos} gastos, ${data.data.renda} rendas, ${data.data.assinaturas} assinaturas`,
+      );
+      setConfirmando(false);
+      setTexto("");
+    } catch {
+      toast.error("Erro ao apagar lançamentos");
+    } finally {
+      setApagando(false);
+    }
+  }
+
+  return (
+    <>
+      <SecaoCard titulo="Dados" descricao="Leve seus lançamentos embora ou comece do zero">
+        <div className="flex flex-col gap-3 px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-white">Exportar em CSV</p>
+            <p className="mt-0.5 text-xs text-white/45">
+              Abre direto no Excel. Inclui categoria, cartão, status e observações.
+            </p>
+          </div>
+          <div className="flex shrink-0 gap-2">
+            <Button
+              variant="outline"
+              disabled={exportando !== null}
+              onClick={() => exportar("gastos")}
+              className="h-9 rounded-lg border-white/15 bg-white/[0.05] text-white/80 hover:bg-white/[0.1] hover:text-white"
+            >
+              {exportando === "gastos" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+              Gastos
+            </Button>
+            <Button
+              variant="outline"
+              disabled={exportando !== null}
+              onClick={() => exportar("renda")}
+              className="h-9 rounded-lg border-white/15 bg-white/[0.05] text-white/80 hover:bg-white/[0.1] hover:text-white"
+            >
+              {exportando === "renda" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+              Renda
+            </Button>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3 px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-rose-200">Apagar todos os lançamentos</p>
+            <p className="mt-0.5 text-xs text-white/45">
+              Remove gastos, rendas e assinaturas. Mantém conta, categorias e cartões. Não dá para desfazer.
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => setConfirmando(true)}
+            className="h-9 shrink-0 rounded-lg border-rose-400/30 bg-rose-500/10 text-rose-200 hover:bg-rose-500/20 hover:text-white"
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            Apagar tudo
+          </Button>
+        </div>
+      </SecaoCard>
+
+      <AlertDialog open={confirmando} onOpenChange={(v) => { if (!v) { setConfirmando(false); setTexto(""); } }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Apagar todos os lançamentos?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Gastos, parcelas, rendas e assinaturas serão removidos permanentemente.
+              Digite <span className="font-mono font-semibold text-rose-300">APAGAR</span> para confirmar.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <Input
+            value={texto}
+            onChange={(e) => setTexto(e.target.value)}
+            placeholder="APAGAR"
+            aria-label="Confirmação"
+            className="font-mono"
+          />
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={texto !== "APAGAR" || apagando}
+              onClick={(e) => { e.preventDefault(); apagarTudo(); }}
+              className="bg-rose-600 hover:bg-rose-500"
+            >
+              {apagando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Apagar definitivamente
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
+
+// ─── Blocos reutilizados pelas seções de preferências ──────────────────────────
+
+function SecaoCard({ titulo, descricao, children }: { titulo: string; descricao: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-xl border border-white/[0.07] bg-white/[0.035] overflow-hidden">
+      <div className="px-5 py-4 border-b border-white/[0.06]">
+        <h2 className="text-sm font-semibold text-white">{titulo}</h2>
+        <p className="text-xs text-white/40 mt-0.5">{descricao}</p>
+      </div>
+      <div className="divide-y divide-white/[0.04]">{children}</div>
+    </div>
+  );
+}
+
+function SecaoSkeleton() {
+  return (
+    <div className="rounded-xl border border-white/[0.07] bg-white/[0.035] p-5 space-y-3">
+      <Skeleton className="h-5 w-40 bg-white/10" />
+      <Skeleton className="h-16 w-full bg-white/10" />
+      <Skeleton className="h-16 w-full bg-white/10" />
+    </div>
+  );
+}
+
+function LinhaSelect({
+  titulo, descricao, value, options, disabled, onChange,
+}: {
+  titulo: string;
+  descricao: string;
+  value: string;
+  options: { value: string; label: string }[];
+  disabled: boolean;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-2 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0">
+        <p className="text-sm font-semibold text-white">{titulo}</p>
+        <p className="text-xs text-white/45 mt-0.5">{descricao}</p>
+      </div>
+      <Select value={value} onValueChange={onChange} disabled={disabled}>
+        <SelectTrigger className="h-9 w-full shrink-0 sm:w-56" aria-label={titulo}>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((o) => (
+            <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
 const NAV_ITEMS = [
   { id: "plano",      icon: Crown,      label: "Plano",          desc: "Assinatura Premium" },
   { id: "categorias", icon: Tag,        label: "Categorias",     desc: "Tags para gastos e rendas" },
+  { id: "lancamentos", icon: Wallet,    label: "Lançamentos",    desc: "Padrões de novo gasto" },
+  { id: "telas",      icon: LayoutGrid, label: "Telas",          desc: "Navegação e listas" },
+  { id: "alertas",    icon: Bell,       label: "Alertas",        desc: "Limites e notificações" },
+  { id: "aparencia",  icon: Palette,    label: "Aparência",      desc: "Fundo da aplicação" },
+  { id: "dados",      icon: Database,   label: "Dados",          desc: "Exportar e apagar" },
   { id: "iphone",     icon: Smartphone, label: "Atalho iPhone",  desc: "Integração iOS" },
 ];
 
@@ -800,7 +1456,7 @@ function ConfiguracoesPageContent() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Categoria | null>(null);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ nome: "", icone: "", cor: "#60A5FA", tipo: "gasto" as "gasto" | "renda" });
+  const [form, setForm] = useState({ nome: "", icone: "", cor: "#60A5FA", tipo: "gasto" as "gasto" | "renda", limite_mensal: "" });
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -827,13 +1483,13 @@ function ConfiguracoesPageContent() {
 
   function openCreate() {
     setEditing(null);
-    setForm({ nome: "", icone: "", cor: "#60A5FA", tipo: "gasto" });
+    setForm({ nome: "", icone: "", cor: "#60A5FA", tipo: "gasto", limite_mensal: "" });
     setDialogOpen(true);
   }
 
   function openEdit(cat: Categoria) {
     setEditing(cat);
-    setForm({ nome: cat.nome, icone: cat.icone ?? "", cor: cat.cor ?? "#60A5FA", tipo: cat.tipo });
+    setForm({ nome: cat.nome, icone: cat.icone ?? "", cor: cat.cor ?? "#60A5FA", tipo: cat.tipo, limite_mensal: cat.limite_mensal != null ? String(cat.limite_mensal) : "" });
     setDialogOpen(true);
   }
 
@@ -841,7 +1497,13 @@ function ConfiguracoesPageContent() {
     if (!form.nome.trim()) { toast.error("Nome é obrigatório"); return; }
     setSaving(true);
     try {
-      const payload = { nome: form.nome.trim(), tipo: form.tipo, cor: form.cor || undefined, icone: form.icone.trim() || undefined };
+      // "1.234,56" → "1234.56" (remove separador de milhar, vírgula vira ponto)
+      const limite = form.limite_mensal.trim().replace(/\./g, "").replace(",", ".");
+      const payload = {
+        nome: form.nome.trim(), tipo: form.tipo,
+        cor: form.cor || undefined, icone: form.icone.trim() || undefined,
+        limite_mensal: limite ? Number(limite) : null,
+      };
       if (editing) { await api.put(`/categorias/${editing.id}`, payload); toast.success("Categoria atualizada"); }
       else { await api.post("/categorias", payload); toast.success("Categoria criada"); }
       setDialogOpen(false);
@@ -898,7 +1560,8 @@ function ConfiguracoesPageContent() {
         })}
       </div>
 
-      <div className="flex gap-5">
+      {/* Painel de fundo: separa as opções do fundo animado escolhido em Aparência */}
+      <div className="ui-panel flex gap-5 p-3 sm:p-5">
         {/* ── Desktop sidebar nav ── */}
         <nav className="hidden sm:flex w-48 shrink-0 flex-col gap-0.5 pt-0.5">
           {NAV_ITEMS.map((item) => {
@@ -936,6 +1599,11 @@ function ConfiguracoesPageContent() {
               onCreate={openCreate}
             />
           )}
+          {section === "lancamentos" && <LancamentosSection />}
+          {section === "telas" && <TelasSection />}
+          {section === "alertas" && <AlertasSection />}
+          {section === "aparencia" && <AparenciaSection />}
+          {section === "dados" && <DadosSection />}
           {section === "iphone" && <IphoneSection />}
         </div>
       </div>
@@ -965,6 +1633,15 @@ function ConfiguracoesPageContent() {
                   <SelectItem value="renda">Renda</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="cat-limite">Teto mensal (opcional)</Label>
+              <div className="relative">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-white/30">R$</span>
+                <Input id="cat-limite" inputMode="decimal" placeholder="Ex: 800,00" value={form.limite_mensal}
+                  onChange={(e) => setForm((f) => ({ ...f, limite_mensal: e.target.value }))} className="pl-9 tabular-nums" />
+              </div>
+              <p className="text-xs text-white/35">O sino avisa quando os gastos do mês passarem desse valor.</p>
             </div>
             <div className="space-y-2">
               <Label>Cor</Label>

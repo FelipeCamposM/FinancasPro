@@ -1,21 +1,25 @@
 import { Request, Response, NextFunction } from "express";
 import pool from "../config/database";
+import { getPreferenciasUsuario } from "../utils/preferencias";
+
+/** YYYY-MM-DD no fuso local — toISOString() jogaria a data um dia para trás em UTC-3. */
+const isoLocal = (d: Date): string =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+/** Dia do mês respeitando meses curtos (fechamento 31 em fevereiro vira 28/29). */
+const diaEfetivoNoMes = (ano: number, mes1a12: number, dia: number): number =>
+  Math.min(dia, new Date(ano, mes1a12, 0).getDate());
 
 function faturaRange(
   diaFechamento: number,
   mesRef: string,
 ): { inicio: string; fim: string } {
   const [year, month] = mesRef.split("-").map(Number);
-  const lastDay = new Date(year, month, 0).getDate();
-  const diaEfetivo = Math.min(diaFechamento, lastDay);
-  const fim = new Date(year, month - 1, diaEfetivo);
+  const fim = new Date(year, month - 1, diaEfetivoNoMes(year, month, diaFechamento));
   const inicio = new Date(fim);
   inicio.setMonth(inicio.getMonth() - 1);
   inicio.setDate(inicio.getDate() + 1);
-  return {
-    inicio: inicio.toISOString().slice(0, 10),
-    fim: fim.toISOString().slice(0, 10),
-  };
+  return { inicio: isoLocal(inicio), fim: isoLocal(fim) };
 }
 
 async function getCartaoOrFail(
@@ -231,5 +235,145 @@ export const pagarFatura = async (
     next(err);
   } finally {
     client.release();
+  }
+};
+
+/**
+ * GET /api/cartoes/faturas-status
+ * Diz qual mês a interface deve abrir e quais faturas já fechadas seguem sem
+ * pagamento. Enquanto a fatura que fecha no mês corrente (a dos gastos do mês
+ * anterior) não fechou, o mês sugerido continua sendo o anterior.
+ */
+export const getFaturasStatus = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const userId = req.user!.userId;
+
+    const { rows: cartoes } = await pool.query(
+      `SELECT id, apelido, cor, bandeira, ultimos_4_digitos,
+              dia_fechamento, dia_vencimento
+       FROM cartoes
+       WHERE user_id = $1
+         AND tipo IN ('credito', 'credito_debito')
+         AND COALESCE(ativo, true) = true
+         AND dia_fechamento IS NOT NULL`,
+      [userId],
+    );
+
+    const agora = new Date();
+    const hoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
+    const ano = hoje.getFullYear();
+    const mes1 = hoje.getMonth() + 1;
+    const mesAtualRef = `${ano}-${String(mes1).padStart(2, "0")}`;
+    const anteriorDate = new Date(ano, hoje.getMonth() - 1, 1);
+    const mesAnteriorRef = `${anteriorDate.getFullYear()}-${String(anteriorDate.getMonth() + 1).padStart(2, "0")}`;
+
+    const prefs = await getPreferenciasUsuario(userId);
+    const diasAntes = prefs.alerta_fatura_dias_antes ?? 0;
+
+    let aguardandoFechamento = false;
+    const pendentes: unknown[] = [];
+
+    /** Totais em aberto de uma fatura (período fechado por dia de fechamento). */
+    const totaisFatura = async (cartaoId: string, inicio: string, fim: string) => {
+      const { rows } = await pool.query(
+        `SELECT
+           COALESCE(SUM(g.valor_total), 0)::float AS total,
+           COALESCE(SUM(CASE WHEN g.status = 'pendente' THEN g.valor_total ELSE 0 END), 0)::float AS pendente,
+           COUNT(*)::int AS itens_count
+         FROM gastos g
+         WHERE g.cartao_id = $1 AND g.user_id = $2
+           AND g.forma_pagamento = 'cartao_credito'
+           AND g.data_gasto BETWEEN $3 AND $4
+           AND (
+             g.assinatura_id IS NULL
+             OR g.status = 'pago'
+             OR (g.data_gasto <= CURRENT_DATE AND EXISTS (
+               SELECT 1 FROM assinaturas a WHERE a.id = g.assinatura_id AND a.ativa = TRUE
+             ))
+           )`,
+        [cartaoId, userId, inicio, fim],
+      );
+      return rows[0] as { total: number; pendente: number; itens_count: number };
+    };
+
+    for (const c of cartoes) {
+      const diaFechamento = Number(c.dia_fechamento);
+      const diaVencimento = Number(c.dia_vencimento ?? diaFechamento);
+      const fechamentoEsteMes = new Date(
+        ano,
+        hoje.getMonth(),
+        diaEfetivoNoMes(ano, mes1, diaFechamento),
+      );
+      const jaFechou = hoje > fechamentoEsteMes;
+      if (!jaFechou) aguardandoFechamento = true;
+
+      const diasAteFechar = Math.round(
+        (fechamentoEsteMes.getTime() - hoje.getTime()) / 86400000,
+      );
+
+      /** Vencimento: mesmo mês do fechamento quando cai depois dele, senão no mês seguinte. */
+      const vencimentoDe = (mesFatura: string) => {
+        const [anoFat, mesFat] = mesFatura.split("-").map(Number);
+        const mesVenc = diaVencimento > diaFechamento ? mesFat : mesFat + 1;
+        return new Date(
+          anoFat,
+          mesVenc - 1,
+          diaEfetivoNoMes(anoFat, mesVenc, diaVencimento),
+        );
+      };
+
+      const montar = async (mesFatura: string, fechada: boolean) => {
+        const { inicio, fim } = faturaRange(diaFechamento, mesFatura);
+        const totals = await totaisFatura(c.id, inicio, fim);
+        const pendente = Number(totals.pendente);
+        if (pendente <= 0) return;
+
+        const vencimento = vencimentoDe(mesFatura);
+        const diasParaVencer = Math.round(
+          (vencimento.getTime() - hoje.getTime()) / 86400000,
+        );
+
+        pendentes.push({
+          cartao_id: c.id,
+          apelido: c.apelido,
+          cor: c.cor,
+          bandeira: c.bandeira,
+          ultimos_4_digitos: c.ultimos_4_digitos,
+          mes: mesFatura,
+          /** false = fatura ainda aberta, avisada por antecedência */
+          fechada,
+          dias_ate_fechar: diasAteFechar,
+          total: Number(totals.total),
+          pendente,
+          itens_count: totals.itens_count,
+          fechamento: fim,
+          vencimento: isoLocal(vencimento),
+          dias_para_vencer: diasParaVencer,
+          vencida: fechada && diasParaVencer < 0,
+        });
+      };
+
+      // Última fatura já fechada deste cartão
+      await montar(jaFechou ? mesAtualRef : mesAnteriorRef, true);
+
+      // Aviso antecipado: fatura ainda aberta prestes a fechar
+      if (!jaFechou && diasAntes > 0 && diasAteFechar <= diasAntes) {
+        await montar(mesAtualRef, false);
+      }
+    }
+
+    res.json({
+      data: {
+        mes_sugerido: aguardandoFechamento ? mesAnteriorRef : mesAtualRef,
+        aguardando_fechamento: aguardandoFechamento,
+        pendentes,
+      },
+    });
+  } catch (err) {
+    next(err);
   }
 };

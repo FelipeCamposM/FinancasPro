@@ -1,0 +1,10 @@
+{
+  "name": "gerenciar-gastos",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n back,front -c blue,green \"npm --prefix backend run dev\" \"npm --prefix frontend run dev\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

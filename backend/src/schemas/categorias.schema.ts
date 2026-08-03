@@ -8,6 +8,8 @@ export const createCategoriaSchema = z.object({
     .optional(),
   icone: z.string().max(50).optional(),
   tipo: z.enum(["gasto", "renda"]),
+  /** Teto mensal de gastos da categoria (null = sem limite). */
+  limite_mensal: z.number().positive().nullable().optional(),
 });
 
 export const updateCategoriaSchema = createCategoriaSchema.partial();

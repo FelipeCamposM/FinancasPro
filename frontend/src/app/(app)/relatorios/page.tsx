@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { api } from "@/lib/api";
+import { useMesSugerido } from "@/lib/mes-sugerido";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageDataState } from "@/components/ui/page-data-state";
@@ -14,6 +15,7 @@ import { EvolucaoDiariaChart } from "@/components/dashboard/EvolucaoDiariaChart"
 import type { EvolucaoDiariaPoint } from "@/components/dashboard/EvolucaoDiariaChart";
 import { StatCard } from "@/components/ui/stat-card";
 import { PageShell } from "@/components/ui/page-shell";
+import { OrcamentoAlertaBanner } from "@/components/ui/orcamento-alerta";
 import { SectionHeader } from "@/components/ui/section-header";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -280,6 +282,9 @@ function SectionLabel({
 
 function MensalTab() {
   const [mes, setMes] = useState(getMesAtual());
+
+  // Abre no mês anterior enquanto a fatura dele não fecha
+  useMesSugerido(setMes);
   const [categoriaId, setCategoriaId] = useState<string>("__all__");
   const [cartaoId, setCartaoId] = useState<string>("__all__");
   const [formaPagamento, setFormaPagamento] = useState<string>("__all__");
@@ -462,6 +467,14 @@ function MensalTab() {
         />
       ) : (
         <>
+          {!loading && data && (
+            <OrcamentoAlertaBanner
+              mes={mes}
+              totalGastos={data.resumo.total_gastos}
+              totalRenda={data.resumo.total_renda}
+            />
+          )}
+
           {/* KPIs principais */}
           <div className="space-y-3">
             <SectionLabel title="Resumo do mês" />

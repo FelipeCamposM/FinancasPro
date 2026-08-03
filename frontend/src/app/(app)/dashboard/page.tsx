@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { api } from "@/lib/api";
+import { useMesSugerido } from "@/lib/mes-sugerido";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageDataState } from "@/components/ui/page-data-state";
@@ -33,8 +34,10 @@ import {
   Gauge,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { PageShell } from "@/components/ui/page-shell";
+import { OrcamentoAlertaBanner } from "@/components/ui/orcamento-alerta";
 import { SectionHeader } from "@/components/ui/section-header";
 
 interface Summary {
@@ -104,6 +107,11 @@ function formatPercent(value: number) {
 
 export default function DashboardPage() {
   const [mes, setMes] = useState(getMesAtual());
+
+  // Abre no mês anterior enquanto a fatura dele não fecha
+  useMesSugerido(setMes);
+  const [monthPickerOpen, setMonthPickerOpen] = useState(false);
+  const [pickerYear, setPickerYear] = useState(() => new Date().getFullYear());
   const [summary, setSummary] = useState<Summary | null>(null);
   const [rendaVsGastos, setRendaVsGastos] = useState<RendaVsGastos[]>([]);
   const [porCategoria, setPorCategoria] = useState<GastoCategoria[]>([]);
@@ -216,12 +224,70 @@ export default function DashboardPage() {
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <div className="flex min-w-0 flex-1 items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/[0.06] px-3 py-2 text-sm backdrop-blur-sm sm:min-w-[180px]">
-              <CalendarDays className="h-4 w-4 shrink-0 text-white/40" />
-              <span className="select-none font-medium capitalize text-white/80">
-                {mesDisplay}
-              </span>
-            </div>
+            <Popover
+              open={monthPickerOpen}
+              onOpenChange={(v) => {
+                setMonthPickerOpen(v);
+                if (v) setPickerYear(Number(mes.split("-")[0]));
+              }}
+            >
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="flex min-w-0 flex-1 items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/[0.06] px-3 py-2 text-sm backdrop-blur-sm transition-colors hover:bg-white/10 sm:min-w-[180px]"
+                >
+                  <CalendarDays className="h-4 w-4 shrink-0 text-white/40" />
+                  <span className="select-none font-medium capitalize text-white/80">
+                    {mesDisplay}
+                  </span>
+                </button>
+              </PopoverTrigger>
+              <PopoverContent
+                className="ui-popover w-56 p-3 ui-glass-surface-strong border-white/[0.14]"
+                align="center"
+              >
+                <div className="mb-2.5 flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={() => setPickerYear((y) => y - 1)}
+                    className="flex h-7 w-7 items-center justify-center rounded-lg text-white/40 transition-colors hover:bg-white/10 hover:text-white/80"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  <span className="text-sm font-bold text-white">{pickerYear}</span>
+                  <button
+                    type="button"
+                    onClick={() => setPickerYear((y) => y + 1)}
+                    className="flex h-7 w-7 items-center justify-center rounded-lg text-white/40 transition-colors hover:bg-white/10 hover:text-white/80"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="grid grid-cols-3 gap-1">
+                  {["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"].map((label, i) => {
+                    const [mesY, mesM] = mes.split("-").map(Number);
+                    const isSelected = mesY === pickerYear && mesM === i + 1;
+                    return (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => {
+                          setMes(format(new Date(pickerYear, i, 1), "yyyy-MM"));
+                          setMonthPickerOpen(false);
+                        }}
+                        className={`rounded-lg py-1.5 text-xs font-medium transition-colors ${
+                          isSelected
+                            ? "bg-violet-500/30 text-violet-300 ring-1 ring-violet-400/40"
+                            : "text-white/55 hover:bg-white/10 hover:text-white/90"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </PopoverContent>
+            </Popover>
             <Button
               variant="ghost"
               size="icon"
@@ -254,6 +320,15 @@ export default function DashboardPage() {
         />
       ) : (
         <>
+          {!loading && summary && (
+            <OrcamentoAlertaBanner
+              mes={mes}
+              totalGastos={summary.total_gastos}
+              totalRenda={summary.total_renda}
+              className="ui-alerta-critico"
+            />
+          )}
+
           <DashboardHeroInsights
             data={insights}
             loading={insightsLoading}

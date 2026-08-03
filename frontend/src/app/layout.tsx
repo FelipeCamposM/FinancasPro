@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Bebas_Neue, Inter } from "next/font/google";
 import "./globals.css";
-import { SilkBackground } from "@/components/SilkBackground";
+import { AppBackground } from "@/components/AppBackground";
 
 const bebasNeue = Bebas_Neue({
   weight: "400",
@@ -90,7 +90,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body className={`${bebasNeue.variable} ${inter.variable}`}>
-        <SilkBackground />
+        <AppBackground />
         {children}
       </body>
     </html>

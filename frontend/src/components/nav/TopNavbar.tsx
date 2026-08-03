@@ -25,6 +25,8 @@ import {
 } from "@/components/ui/command";
 import { Search, LogOut, User, Settings, ChevronDown } from "lucide-react";
 import { clearToken } from "@/lib/api";
+import { OrcamentoAlertaSino } from "@/components/ui/orcamento-alerta";
+import { PrivacidadeToggle } from "@/components/ui/privacidade-toggle";
 import { useUser } from "@/contexts/UserContext";
 import {
   COMMAND_PALETTE_GROUPS,
@@ -91,6 +93,9 @@ export default function TopNavbar() {
             </kbd>
           </Button>
         </div>
+
+        <PrivacidadeToggle />
+        <OrcamentoAlertaSino />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

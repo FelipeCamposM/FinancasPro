@@ -6,6 +6,7 @@ import {
   updateGasto,
   deleteGasto,
   createGastoAtalho,
+  importGastos,
 } from "../controllers/gastos.controller";
 import { listParcelasByGasto } from "../controllers/parcelas.controller";
 import { authenticateAny } from "../middlewares/auth.middleware";
@@ -53,6 +54,18 @@ const router = Router();
  *       - in: query
  *         name: data_fim
  *         schema: { type: string, format: date }
+ *       - in: query
+ *         name: search
+ *         description: Busca parcial na descrição (case-insensitive)
+ *         schema: { type: string }
+ *       - in: query
+ *         name: sort
+ *         description: Campo de ordenação (padrão data)
+ *         schema: { type: string, enum: [data, descricao, categoria, status, pagamento, valor] }
+ *       - in: query
+ *         name: order
+ *         description: Direção da ordenação (padrão desc)
+ *         schema: { type: string, enum: [asc, desc] }
  *     responses:
  *       200:
  *         content:
@@ -96,6 +109,73 @@ const router = Router();
  */
 router.get("/", authenticateAny, paginate, listGastos);
 router.post("/", authenticateAny, validate(createGastoSchema), createGasto);
+
+/**
+ * @swagger
+ * /gastos/import:
+ *   post:
+ *     tags: [Gastos]
+ *     summary: Importar vários gastos de uma vez (planilha CSV)
+ *     description: |
+ *       Recebe uma lista de gastos já normalizados pelo frontend (nomes de
+ *       categoria/cartão resolvidos em IDs). Tudo ou nada: se alguma linha
+ *       for inválida, nenhum gasto é gravado e as linhas com erro são retornadas.
+ *       Limite de 500 gastos por chamada. Parcelamentos geram as parcelas futuras
+ *       normalmente.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [gastos]
+ *             properties:
+ *               gastos:
+ *                 type: array
+ *                 maxItems: 500
+ *                 items:
+ *                   type: object
+ *                   required: [descricao, valor_total, forma_pagamento, data_gasto]
+ *                   properties:
+ *                     descricao:           { type: string, example: Supermercado }
+ *                     valor_total:         { type: number, example: 300.00 }
+ *                     categoria_id:        { type: integer }
+ *                     forma_pagamento:     { type: string, enum: [dinheiro, cartao_credito, cartao_debito, pix, transferencia, outro] }
+ *                     cartao_id:           { type: string, format: uuid }
+ *                     tipo_pagamento:      { type: string, enum: [a_vista, parcelado] }
+ *                     quantidade_parcelas: { type: integer, example: 3 }
+ *                     data_gasto:          { type: string, format: date, example: '2026-03-19' }
+ *                     observacoes:         { type: string }
+ *     responses:
+ *       201:
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     importados: { type: integer, example: 42 }
+ *       422:
+ *         description: Linhas inválidas — nada foi gravado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error: { type: string }
+ *                 linhas:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       linha: { type: integer }
+ *                       erros: { type: array, items: { type: string } }
+ */
+router.post("/import", authenticateAny, importGastos);
 
 /**
  * @swagger

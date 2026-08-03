@@ -4,9 +4,16 @@ import {
   CreateAssinaturaInput,
   UpdateAssinaturaInput,
 } from "../schemas/assinaturas.schema";
+import { getPreferenciasUsuario } from "../utils/preferencias";
 
 // Quantos meses à frente gerar gastos ao criar uma assinatura
-const MESES_ANTECIPADOS = 24;
+const MESES_ANTECIPADOS_PADRAO = 24;
+
+/** Horizonte de lançamento configurado pelo usuário (cai no padrão em caso de falha). */
+async function mesesAntecipadosDe(userId: string): Promise<number> {
+  const prefs = await getPreferenciasUsuario(userId);
+  return prefs.assinatura_meses_antecipados ?? MESES_ANTECIPADOS_PADRAO;
+}
 
 /** Retorna a data YYYY-MM-DD para o dia `dia` do mês/ano informado.
  *  Se o dia for maior que o último dia do mês, usa o último dia. */
@@ -133,12 +140,13 @@ export const createAssinatura = async (
     );
     const assinatura = rows[0];
 
-    // Gera os gastos mensais: mês de data_inicio até MESES_ANTECIPADOS à frente
+    // Gera os gastos mensais: do mês de data_inicio até o horizonte configurado
+    const mesesAntecipados = await mesesAntecipadosDe(userId);
     const inicio = new Date(body.data_inicio + "T12:00:00Z");
     const anoBase = inicio.getUTCFullYear();
     const mesBase = inicio.getUTCMonth() + 1; // 1-12
 
-    for (let i = 0; i < MESES_ANTECIPADOS; i++) {
+    for (let i = 0; i < mesesAntecipados; i++) {
       const totalMeses = mesBase - 1 + i;
       const ano = anoBase + Math.floor(totalMeses / 12);
       const mes = (totalMeses % 12) + 1;
@@ -246,10 +254,11 @@ export const updateAssinatura = async (
           [id, todayStr],
         );
 
+        const mesesAntecipados = await mesesAntecipadosDe(userId);
         const anoBase = today.getFullYear();
         const mesBase = today.getMonth() + 1;
 
-        for (let i = 0; i < MESES_ANTECIPADOS; i++) {
+        for (let i = 0; i < mesesAntecipados; i++) {
           const totalMeses = mesBase - 1 + i;
           const ano = anoBase + Math.floor(totalMeses / 12);
           const mes = (totalMeses % 12) + 1;
@@ -435,11 +444,12 @@ export const reativarAssinatura = async (
     );
 
     // Gera gastos pendentes a partir do mês atual
+    const mesesAntecipados = await mesesAntecipadosDe(userId);
     const today = new Date();
     const anoBase = today.getFullYear();
     const mesBase = today.getMonth() + 1;
 
-    for (let i = 0; i < MESES_ANTECIPADOS; i++) {
+    for (let i = 0; i < mesesAntecipados; i++) {
       const totalMeses = mesBase - 1 + i;
       const ano = anoBase + Math.floor(totalMeses / 12);
       const mes = (totalMeses % 12) + 1;
@@ -466,7 +476,7 @@ export const reativarAssinatura = async (
     }
 
     await client.query("COMMIT");
-    res.json({ assinatura: rows[0], lancamentos_gerados: MESES_ANTECIPADOS });
+    res.json({ assinatura: rows[0], lancamentos_gerados: mesesAntecipados });
   } catch (err) {
     await client.query("ROLLBACK");
     next(err);

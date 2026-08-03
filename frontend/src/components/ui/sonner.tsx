@@ -1,45 +1,59 @@
-"use client"
+"use client";
 
+import { useEffect, useState } from "react";
 import {
   CircleCheck,
+  CircleX,
   Info,
   LoaderCircle,
-  OctagonX,
   TriangleAlert,
-} from "lucide-react"
-import { useTheme } from "next-themes"
-import { Toaster as Sonner } from "sonner"
+} from "lucide-react";
+import { Toaster as Sonner, type ToasterProps } from "sonner";
 
-type ToasterProps = React.ComponentProps<typeof Sonner>
-
+/**
+ * Toasts do sistema.
+ *
+ * A aparência fica em `globals.css` (bloco `[data-sonner-toast]`), que é onde dá
+ * para alcançar os elementos internos do Sonner — ícone, título, descrição e
+ * botão de fechar — sem envolver cada toast num wrapper próprio.
+ *
+ * Sem `richColors`: aquele preset traz fundos claros que destoam do tema.
+ */
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme()
+  // Desktop: canto inferior direito. Mobile: rodapé, centralizado.
+  const [position, setPosition] =
+    useState<ToasterProps["position"]>("bottom-right");
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 640px)");
+    const aplicar = () =>
+      setPosition(mq.matches ? "bottom-right" : "bottom-center");
+    aplicar();
+    mq.addEventListener("change", aplicar);
+    return () => mq.removeEventListener("change", aplicar);
+  }, []);
 
   return (
     <Sonner
-      theme={theme as ToasterProps["theme"]}
-      className="toaster group"
+      theme="dark"
+      position={position}
+      closeButton
+      gap={10}
+      offset={16}
+      visibleToasts={4}
+      className="ui-toaster"
       icons={{
-        success: <CircleCheck className="h-4 w-4" />,
-        info: <Info className="h-4 w-4" />,
-        warning: <TriangleAlert className="h-4 w-4" />,
-        error: <OctagonX className="h-4 w-4" />,
-        loading: <LoaderCircle className="h-4 w-4 animate-spin" />,
-      }}
-      toastOptions={{
-        classNames: {
-          toast:
-            "group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg",
-          description: "group-[.toast]:text-muted-foreground",
-          actionButton:
-            "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",
-          cancelButton:
-            "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
-        },
+        success: <CircleCheck className="h-[18px] w-[18px]" aria-hidden="true" />,
+        error: <CircleX className="h-[18px] w-[18px]" aria-hidden="true" />,
+        warning: <TriangleAlert className="h-[18px] w-[18px]" aria-hidden="true" />,
+        info: <Info className="h-[18px] w-[18px]" aria-hidden="true" />,
+        loading: (
+          <LoaderCircle className="h-[18px] w-[18px] animate-spin" aria-hidden="true" />
+        ),
       }}
       {...props}
     />
-  )
-}
+  );
+};
 
-export { Toaster }
+export { Toaster };

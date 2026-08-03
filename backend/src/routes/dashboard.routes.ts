@@ -9,6 +9,7 @@ import {
   projecoes as getProjecoes,
   relatorioAnual as getRelatorioAnual,
   insights as getInsights,
+  getAlertas,
 } from "../controllers/dashboard.controller";
 import { authenticateAny } from "../middlewares/auth.middleware";
 
@@ -177,6 +178,53 @@ router.get(
  *                 diferenca:    { type: number }
  */
 router.get("/period-summary", authenticateAny, getPeriodSummary);
+
+/**
+ * @swagger
+ * /dashboard/alertas:
+ *   get:
+ *     tags: [Dashboard]
+ *     summary: Alertas do mês (limite de gastos, categorias estouradas, projeção)
+ *     description: |
+ *       Respeita as preferências do usuário — cada alerta só vem marcado se
+ *       estiver ligado, e `silenciado` indica que o usuário pediu para adiar.
+ *     parameters:
+ *       - in: query
+ *         name: mes
+ *         schema: { type: string, example: '2026-08' }
+ *     responses:
+ *       200:
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     mes:                  { type: string }
+ *                     silenciado:           { type: boolean }
+ *                     total_gastos:         { type: number }
+ *                     total_renda:          { type: number }
+ *                     limite_percentual:    { type: integer }
+ *                     gastos_acima_limite:  { type: boolean }
+ *                     excedente:            { type: number }
+ *                     projecao_negativa:    { type: boolean }
+ *                     gasto_projetado:      { type: number }
+ *                     categorias_estouradas:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id:            { type: integer }
+ *                           nome:          { type: string }
+ *                           cor:           { type: string }
+ *                           limite_mensal: { type: number }
+ *                           gasto:         { type: number }
+ *                           excedente:     { type: number }
+ *                           percentual:    { type: integer }
+ */
+router.get("/alertas", authenticateAny, getAlertas);
 
 router.get("/relatorio-mensal", authenticateAny, getRelatorioMensal);
 

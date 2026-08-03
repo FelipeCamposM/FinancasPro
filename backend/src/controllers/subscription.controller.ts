@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { MercadoPagoConfig, PreApproval, PreApprovalPlan } from "mercadopago";
+import { MercadoPagoConfig, PreApproval } from "mercadopago";
 import crypto from "crypto";
 import pool from "../config/database";
 
@@ -16,28 +16,6 @@ const MONTHLY_RATE_OF_ANNUAL = parseFloat((PRICE_ANNUAL / 12).toFixed(4)); // 7.
 void MONTHLY_RATE_OF_ANNUAL; // unused now — kept for reference
 
 // ── helpers ───────────────────────────────────────────────────────────────────
-
-async function getOrCreatePlan(): Promise<string> {
-  const envPlanId = process.env.MP_PLAN_ID;
-  if (envPlanId) return envPlanId;
-
-  const planApi = new PreApprovalPlan(client);
-  const plan = await planApi.create({
-    body: {
-      reason: "Valora Premium",
-      auto_recurring: {
-        frequency: 1,
-        frequency_type: "months",
-        transaction_amount: PRICE_MONTHLY,
-        currency_id: "BRL",
-        free_trial: { frequency: 7, frequency_type: "days" },
-      },
-      back_url: `${PUBLIC_URL}/assinatura`,
-    },
-  });
-
-  return plan.id as string;
-}
 
 // ── endpoints ─────────────────────────────────────────────────────────────────
 
@@ -65,8 +43,15 @@ export const createCheckout = async (
     const isAnnual     = plan === "annual";
     const amount       = isAnnual ? PRICE_ANNUAL : PRICE_MONTHLY;
     const frequency    = isAnnual ? 12 : 1;
-    const planId       = await getOrCreatePlan();
-    void planId;
+
+    if (!process.env.MP_ACCESS_TOKEN) {
+      console.error("[MP] MP_ACCESS_TOKEN ausente — checkout indisponível");
+      res.status(503).json({
+        error:
+          "Pagamento temporariamente indisponível. Tente novamente em instantes.",
+      });
+      return;
+    }
 
     console.log("[MP] plan:", plan, "amount:", amount, "hasUsedTrial:", hasUsedTrial);
 
@@ -80,30 +65,50 @@ export const createCheckout = async (
       autoRecurring.free_trial = { frequency: 7, frequency_type: "days" };
     }
 
-    const response = await fetch("https://api.mercadopago.com/preapproval", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        reason: isAnnual ? "Valora Premium Anual" : "Valora Premium Mensal",
-        payer_email: email,
-        back_url: `${PUBLIC_URL}/assinatura`,
-        external_reference: `${userId}|${plan}`,
-        auto_recurring: autoRecurring,
-      }),
-    });
+    // Falha de rede com o Mercado Pago não deve virar 500 genérico.
+    // O tipo vem do próprio fetch: `Response` aqui é o do Express.
+    let respostaMp: Awaited<ReturnType<typeof fetch>>;
+    let data: Record<string, unknown>;
+    try {
+      respostaMp = await fetch("https://api.mercadopago.com/preapproval", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          reason: isAnnual ? "Valora Premium Anual" : "Valora Premium Mensal",
+          payer_email: email,
+          back_url: `${PUBLIC_URL}/assinatura`,
+          external_reference: `${userId}|${plan}`,
+          auto_recurring: autoRecurring,
+        }),
+      });
+      data = (await respostaMp.json()) as Record<string, unknown>;
+    } catch (erroRede) {
+      console.error("[MP] falha ao contatar o Mercado Pago:", erroRede);
+      res.status(502).json({
+        error: "Não foi possível falar com o Mercado Pago. Tente novamente.",
+      });
+      return;
+    }
 
-    const data = await response.json() as Record<string, unknown>;
     console.log("[MP] preapproval response:", JSON.stringify(data));
 
-    if (!response.ok) {
+    if (!respostaMp.ok) {
       res.status(400).json({ error: (data.message as string) ?? "Erro ao criar assinatura" });
       return;
     }
 
-    const initPoint = data.init_point as string;
+    const initPoint = data.init_point as string | undefined;
+    if (!initPoint) {
+      console.error("[MP] resposta sem init_point:", JSON.stringify(data));
+      res.status(502).json({
+        error: "O Mercado Pago não devolveu o link de pagamento. Tente novamente.",
+      });
+      return;
+    }
+
     res.json({ url: initPoint });
   } catch (err) {
     next(err);

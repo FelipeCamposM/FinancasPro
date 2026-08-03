@@ -68,6 +68,9 @@ function ConfirmModal({ open, plan, hasUsedTrial, loading, onConfirm, onClose }:
 
   const policies = [
     { icon: CreditCard,  text: hasUsedTrial ? "Cobrado imediatamente — trial já utilizado nesta conta." : "7 dias grátis antes da primeira cobrança." },
+    // O Mercado Pago avisa que não há parcelas no checkout de assinatura;
+    // dizer antes evita a impressão de que algo deu errado.
+    { icon: Zap,         text: `Cobrança à vista de ${price}, sem parcelamento — é uma assinatura recorrente.` },
     { icon: ShieldCheck, text: "Não há reembolsos após o período de 7 dias grátis." },
     { icon: Clock,       text: "Ao cancelar, seu acesso é mantido até o fim do período pago." },
     { icon: RefreshCcw,  text: "Renovação automática. Você pode cancelar a qualquer momento." },
@@ -76,14 +79,16 @@ function ConfirmModal({ open, plan, hasUsedTrial, loading, onConfirm, onClose }:
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && !loading && onClose()}>
-      <DialogContent className="sm:max-w-lg p-0 overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-600 to-sky-500 px-6 py-5">
+      {/* Altura limitada à viewport: o conteúdo rola por dentro em vez de
+          empurrar o modal para fora da tela em telas baixas */}
+      <DialogContent className="flex max-h-[90dvh] flex-col overflow-hidden p-0 sm:max-w-lg">
+        <div className="shrink-0 bg-gradient-to-r from-blue-600 to-sky-500 px-6 py-5">
           <DialogHeader>
             <DialogTitle className="text-2xl font-black text-white tracking-tight">
               Confirmar assinatura
             </DialogTitle>
             <DialogDescription className="text-white/70 text-sm mt-1">
-              Revise as condições antes de prosseguir para o pagamento.
+              Revise as condições. O pagamento é concluído no Mercado Pago.
             </DialogDescription>
           </DialogHeader>
 
@@ -117,9 +122,9 @@ function ConfirmModal({ open, plan, hasUsedTrial, loading, onConfirm, onClose }:
           )}
         </div>
 
-        <div className="px-6 py-5 space-y-5">
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-5">
           <div>
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">Condições de pagamento</p>
+            <p className="mb-2.5 text-xs font-bold uppercase tracking-widest text-muted-foreground">Condições de pagamento</p>
             <div className="space-y-2">
               {policies.map(({ icon: Icon, text }) => (
                 <div key={text} className="flex items-start gap-3 rounded-lg border border-border/50 bg-muted/30 px-3 py-2.5">
@@ -148,11 +153,21 @@ function ConfirmModal({ open, plan, hasUsedTrial, loading, onConfirm, onClose }:
             </span>
           </label>
 
+          {/* Deixa explícito para onde o botão leva antes do clique */}
+          <div className="flex items-center gap-3 rounded-xl border border-[#009EE3]/30 bg-[#009EE3]/[0.08] px-3.5 py-2.5">
+            <ShieldCheck className="h-4 w-4 shrink-0 text-[#009EE3]" aria-hidden="true" />
+            <p className="text-xs leading-snug text-muted-foreground">
+              <span className="font-semibold text-foreground">Pagamento pelo Mercado Pago:</span>{" "}
+              cartão, Pix ou saldo, no ambiente seguro deles. Por ser assinatura,
+              o aviso de parcelas indisponíveis é esperado.
+            </p>
+          </div>
+
           <div className="flex gap-3">
             <Button variant="outline" className="flex-1" onClick={onClose} disabled={loading}>Voltar</Button>
             <Button className="flex-1 h-11 text-base font-bold" onClick={onConfirm} disabled={!agreed || loading}>
               {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CreditCard className="mr-2 h-4 w-4" />}
-              Ir para pagamento
+              {loading ? "Abrindo Mercado Pago..." : "Ir para o Mercado Pago"}
             </Button>
           </div>
         </div>
@@ -582,9 +597,11 @@ function AssinaturaPageContent() {
         </>
       )}
 
-      <p className="text-center text-xs text-muted-foreground">
+      <p className="text-center text-xs leading-relaxed text-muted-foreground">
         Pagamento processado com segurança pelo{" "}
         <span className="font-semibold text-[#009EE3]">Mercado Pago</span>
+        <br />
+        Cartão de crédito, Pix ou saldo em conta. A Valora não guarda os dados do seu cartão.
       </p>
 
       {/* Modals */}

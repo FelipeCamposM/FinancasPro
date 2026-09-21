@@ -23,6 +23,7 @@ import cofrinhosRoutes from "./routes/cofrinhos.routes";
 import relatoriosRoutes from "./routes/relatorios.routes";
 import adminRoutes from "./routes/admin.routes";
 import subscriptionRoutes from "./routes/subscription.routes";
+import pluggyRoutes from "./routes/pluggy.routes";
 
 const app = express();
 const emProducao = process.env.NODE_ENV === "production";
@@ -131,6 +132,7 @@ app.use("/api/cofrinhos", cofrinhosRoutes);
 app.use("/api/relatorios", relatoriosRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/subscriptions", subscriptionRoutes);
+app.use("/api/pluggy", pluggyRoutes);
 
 // 404
 app.use((_req, res) => {

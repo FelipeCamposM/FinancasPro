@@ -10,7 +10,9 @@
     "migrate": "ts-node database/run-migrations.ts",
     "migrate:build": "node dist/database/run-migrations.js",
     "db:reset": "ts-node database/reset-db.ts",
-    "seed": "ts-node database/seed.ts"
+    "seed": "ts-node database/seed.ts",
+    "check:openfinance": "ts-node --files src/utils/openfinance-regras.check.ts",
+    "check:openfinance-sql": "ts-node --files src/utils/openfinance-sql.check.ts"
   },
   "dependencies": {
     "@types/morgan": "^1.9.10",

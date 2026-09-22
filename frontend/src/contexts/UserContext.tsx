@@ -15,6 +15,7 @@ export interface UserProfile {
   email: string;
   avatar?: string | null;
   user_level: string;
+  open_finance_habilitado?: boolean;
   email_verified: boolean;
   created_at: string;
 }

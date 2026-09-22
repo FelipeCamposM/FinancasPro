@@ -26,6 +26,7 @@ import {
   PiggyBank,
   ShieldCheck,
   Crown,
+  Landmark,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUser } from "@/contexts/UserContext";
@@ -97,11 +98,23 @@ const navItems = [
   },
 ];
 
+// Fora de navItems porque depende da flag da conta: a área Open Finance é
+// liberada por usuário (users.open_finance_habilitado).
+const openFinanceItem = {
+  href: "/openfinance",
+  icon: Landmark,
+  label: "Open Finance",
+  iconColor: "text-emerald-400/70",
+  activeIconColor: "text-emerald-400",
+  activeBg: "data-[active=true]:bg-emerald-500/10",
+};
+
 export default function AppSidebar() {
   const pathname = usePathname();
   const { isMobile, setOpenMobile } = useSidebar();
   const { user } = useUser();
   const isAdmin = user?.user_level === "admin";
+  const temOpenFinance = Boolean(user?.open_finance_habilitado);
 
   function closeMobileSidebar() {
     if (isMobile) setOpenMobile(false);
@@ -135,7 +148,7 @@ export default function AppSidebar() {
             Navegação
           </SidebarGroupLabel>
           <SidebarMenu className="gap-2 md:gap-1.5">
-            {navItems.map((item) => {
+            {[...navItems, ...(temOpenFinance ? [openFinanceItem] : [])].map((item) => {
               const isActive =
                 pathname === item.href || pathname.startsWith(item.href + "/");
               return (

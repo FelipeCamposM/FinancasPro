@@ -1,5 +1,7 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import crypto from "crypto";
+import pool from "../config/database";
+import { CreatePluggyItemInput } from "../schemas/pluggy.schema";
 
 const WEBHOOK_SECRET = process.env.PLUGGY_WEBHOOK_SECRET ?? "";
 
@@ -43,4 +45,64 @@ export const handleWebhook = async (
   // ponytail: por enquanto só registra o evento. A sincronização de
   // accounts/transactions entra quando a tabela pluggy_items existir.
   console.log("[pluggy] webhook", { event, itemId });
+};
+
+// ── conexões (itemId) ─────────────────────────────────────────────────────────
+// O GET /v2/items da Pluggy é opt-in e está desabilitado na conta, então o
+// itemId é copiado do dashboard e cadastrado aqui na mão.
+
+export const listItems = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const { rows } = await pool.query(
+      "SELECT * FROM pluggy_items WHERE user_id = $1 ORDER BY created_at",
+      [req.user!.userId],
+    );
+    res.json({ data: rows });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const createItem = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const { item_id, apelido }: CreatePluggyItemInput = req.body;
+    const { rows } = await pool.query(
+      `INSERT INTO pluggy_items (user_id, item_id, apelido)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (user_id, item_id) DO UPDATE SET apelido = EXCLUDED.apelido
+       RETURNING *`,
+      [req.user!.userId, item_id, apelido ?? null],
+    );
+    res.status(201).json(rows[0]);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const deleteItem = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const { rowCount } = await pool.query(
+      "DELETE FROM pluggy_items WHERE id = $1 AND user_id = $2",
+      [req.params.id, req.user!.userId],
+    );
+    if (!rowCount) {
+      res.status(404).json({ error: "Conexão não encontrada" });
+      return;
+    }
+    res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
 };

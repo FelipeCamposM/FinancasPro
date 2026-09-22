@@ -260,7 +260,7 @@ export const me = async (
 ): Promise<void> => {
   try {
     const { rows } = await pool.query(
-      "SELECT id, name, email, avatar, user_level, email_verified, created_at, updated_at FROM users WHERE id = $1",
+      "SELECT id, name, email, avatar, user_level, email_verified, open_finance_habilitado, created_at, updated_at FROM users WHERE id = $1",
       [req.user!.userId],
     );
     if (!rows[0]) {

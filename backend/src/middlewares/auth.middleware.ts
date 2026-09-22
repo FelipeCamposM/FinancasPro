@@ -97,6 +97,31 @@ export const requireAdmin = (
   next();
 };
 
+/**
+ * Libera a integração Open Finance apenas para contas com a flag ligada.
+ * A flag vive no banco (users.open_finance_habilitado) e não no JWT, senão
+ * um token emitido antes da liberação continuaria barrado por 7 dias.
+ */
+export const requireOpenFinance = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const { rows } = await pool.query(
+      "SELECT open_finance_habilitado FROM users WHERE id = $1",
+      [req.user!.userId],
+    );
+    if (!rows[0]?.open_finance_habilitado) {
+      res.status(403).json({ error: "Open Finance não habilitado para esta conta" });
+      return;
+    }
+    next();
+  } catch (err) {
+    next(err);
+  }
+};
+
 /** Aceita JWT Bearer ou API Key. */
 export const authenticateAny = async (
   req: Request,

@@ -11,7 +11,10 @@ const connectionString = isSupabase
 const pool = new Pool({
   connectionString,
   max: 20,
-  idleTimeoutMillis: 30000,
+  // Banco fica em us-west-2: cada handshake TLS custa ~1.5s. Manter conexao
+  // viva 10min evita pagar isso a cada acesso depois de um periodo ocioso.
+  idleTimeoutMillis: 600000,
+  keepAlive: true,
   connectionTimeoutMillis: 5000,
   ssl: isSupabase ? { rejectUnauthorized: false } : false,
 });

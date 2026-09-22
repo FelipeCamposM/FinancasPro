@@ -2,6 +2,8 @@
   "name": "gerenciar-gastos",
   "private": true,
   "scripts": {
+    "dev:clean": "powershell -NoProfile -Command \"Get-CimInstance Win32_Process -Filter \\\"Name='node.exe'\\\" | Where-Object { $_.CommandLine -match 'GERENCIAR_GASTOS_NOTION|ts-node-dev-hook' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }; Start-Sleep 2\"",
+    "predev": "npm run dev:clean",
     "dev": "concurrently -n back,front -c blue,green \"npm --prefix backend run dev\" \"npm --prefix frontend run dev\""
   },
   "devDependencies": {
